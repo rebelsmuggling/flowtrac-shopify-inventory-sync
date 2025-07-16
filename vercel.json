@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "app/next.config.js", "use": "@vercel/next" }
-  ],
-  "routes": [],
+  "buildCommand": "cd app && npm run build",
+  "outputDirectory": "app/.next",
+  "installCommand": "cd app && npm install",
   "crons": [
     {
       "path": "/api/sync",
