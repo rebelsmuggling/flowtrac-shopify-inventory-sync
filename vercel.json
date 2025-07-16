@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "app/next.config.ts", "use": "@vercel/next" }
+  ],
+  "routes": [],
+  "crons": [
+    {
+      "path": "/api/sync",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+} 

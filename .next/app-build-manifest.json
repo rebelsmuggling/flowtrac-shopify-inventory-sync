@@ -1,0 +1,9 @@
+{
+  "pages": {
+    "/api/sync/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/sync/route.js"
+    ]
+  }
+}
