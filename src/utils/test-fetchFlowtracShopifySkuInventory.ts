@@ -3,7 +3,7 @@ dotenv.config({ path: '.env.local' });
 
 import path from 'path';
 import fs from 'fs';
-import { fetchFlowtracInventory } from '@/services/flowtrac';
+import { fetchFlowtracInventory } from '../../services/flowtrac';
 
 async function test() {
   // 1. Load mapping.json
