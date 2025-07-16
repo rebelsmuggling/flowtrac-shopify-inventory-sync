@@ -1,1 +1,47 @@
-../mapping.json
+{
+  "products": [
+    {
+      "shopify_variant_id": "gid://shopify/ProductVariant/51107621470517",
+      "shopify_sku": "IC-KOOL-0045",
+      "flowtrac_sku": "IC-KOOL-0045",
+      "flowtrac_product_id": "5fe728d0-daad-11ef-a397-0a09fb0c967d",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317"
+    },
+    {
+      "shopify_variant_id": "gid://shopify/ProductVariant/50060778340661",
+      "shopify_sku": "IC-HCPK-0096",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-HCPK-0048",
+          "quantity": 2,
+          "flowtrac_product_id": "72875cc6-0984-11ef-a0b2-0a09fb0c967d"
+        }
+      ],
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52109248790837"
+    },
+    {
+      "shopify_variant_id": "gid://shopify/ProductVariant/51118375076149",
+      "shopify_sku": "RS-SUNF-GB21",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-DAVI-012",
+          "quantity": 1,
+          "flowtrac_product_id": "51fa5c70-cd89-11ed-a0a5-0a09fb0c967d"
+        },
+        {
+          "flowtrac_sku": "IC-BIGS-009",
+          "quantity": 1,
+          "flowtrac_product_id": "1ff6b078-0af3-11ee-a0a5-0a09fb0c967d"
+        }
+      ],
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53148657680693"
+    },
+    {
+      "shopify_variant_id": "gid://shopify/ProductVariant/44717479166261",
+      "shopify_sku": "IC-BIGS-009",
+      "flowtrac_sku": "IC-BIGS-009",
+      "flowtrac_product_id": "1ff6b078-0af3-11ee-a0a5-0a09fb0c967d",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/46766307934517"
+    }
+  ]
+}
