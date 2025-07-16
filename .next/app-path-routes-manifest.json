@@ -1,6 +1,0 @@
-{
-  "/favicon.ico/route": "/favicon.ico",
-  "/api/sync/route": "/api/sync",
-  "/_not-found/page": "/_not-found",
-  "/page": "/"
-}
