@@ -2,7 +2,7 @@ import axios from 'axios';
 import qs from 'qs';
 import fs from 'fs';
 import path from 'path';
-import type { MappingFile } from '../types/mapping';
+import type { MappingFile } from '@/types/mapping';
 
 const FLOWTRAC_API_URL = process.env.FLOWTRAC_API_URL;
 const FLOWTRAC_BADGE = process.env.FLOWTRAC_BADGE;
