@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import { rateLimit } from '../../middleware/rateLimit';
-import logger from '../../utils/logger';
 import path from 'path';
 import fs from 'fs';
 import { fetchFlowtracInventory } from '../../services/flowtrac';
@@ -11,7 +10,7 @@ export async function POST(request: NextRequest) {
   // const rateLimitResult = rateLimit(request);
   // if (rateLimitResult) return rateLimitResult;
 
-  logger.info('Sync job started');
+  console.log('Sync job started');
 
   try {
     // 1. Load mapping.json
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Fetch inventory data from Flowtrac
     const flowtracInventory = await fetchFlowtracInventory(Array.from(skus));
-    logger.info('Fetched Flowtrac inventory', { flowtracInventory });
+    console.log('Fetched Flowtrac inventory', { flowtracInventory });
 
     // 4. Build shopifyInventory map (simple and bundle SKUs)
     const shopifyInventory: Record<string, number> = {};
@@ -60,24 +59,24 @@ export async function POST(request: NextRequest) {
       const inventoryItemId = product?.shopify_inventory_item_id;
       if (!inventoryItemId) {
         updateResults[sku] = { success: false, error: 'No shopify_inventory_item_id in mapping.json' };
-        logger.error(`No shopify_inventory_item_id for SKU ${sku}`);
+        console.error(`No shopify_inventory_item_id for SKU ${sku}`);
         continue;
       }
       try {
         await updateShopifyInventory(inventoryItemId, quantity);
         updateResults[sku] = { success: true };
-        logger.info(`Updated Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
+        console.log(`Updated Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
       } catch (err: any) {
         updateResults[sku] = { success: false, error: err.message };
-        logger.error(`Failed to update Shopify inventory for SKU ${sku}: ${err.message}`);
+        console.error(`Failed to update Shopify inventory for SKU ${sku}: ${err.message}`);
       }
     }
 
-    logger.info('Sync job completed successfully');
+    console.log('Sync job completed successfully');
     // 7. Return success response
     return NextResponse.json({ success: true, message: 'Sync completed.', shopifyInventory, updateResults });
   } catch (error) {
-    logger.error('Sync job failed', { error });
+    console.error('Sync job failed', { error });
     // Handle errors
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
