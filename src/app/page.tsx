@@ -12,6 +12,9 @@ export default function Home() {
   const [importResult, setImportResult] = useState<string | null>(null);
   const [bulkData, setBulkData] = useState('');
   const [showImportTools, setShowImportTools] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [mappingData, setMappingData] = useState<any>(null);
+  const [loadingMapping, setLoadingMapping] = useState(false);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -51,6 +54,8 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         setImportResult(`✅ ${data.message}`);
+        // Refresh mapping data after import
+        loadMappingData();
       } else {
         setImportResult(`❌ Import failed: ${data.error}`);
       }
@@ -77,6 +82,8 @@ export default function Home() {
       if (data.success) {
         setImportResult(`✅ ${data.message}`);
         setBulkData('');
+        // Refresh mapping data after import
+        loadMappingData();
       } else {
         setImportResult(`❌ Bulk add failed: ${data.error}`);
       }
@@ -84,6 +91,43 @@ export default function Home() {
       setImportResult("❌ Invalid JSON or request failed: " + (err as Error).message);
     }
     setImporting(false);
+  };
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/export-csv");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mapping-export-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Export failed');
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+    setExporting(false);
+  };
+
+  const loadMappingData = async () => {
+    setLoadingMapping(true);
+    try {
+      const res = await fetch("/api/mapping");
+      const data = await res.json();
+      if (data.success) {
+        setMappingData(data);
+      }
+    } catch (err) {
+      console.error('Failed to load mapping:', err);
+    }
+    setLoadingMapping(false);
   };
 
   return (
@@ -139,6 +183,85 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+        </div>
+
+        {/* --- Mapping Info and Export --- */}
+        <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button
+              onClick={loadMappingData}
+              disabled={loadingMapping}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: loadingMapping ? "#ccc" : "#17a2b8",
+                color: "#fff",
+                border: "none",
+                cursor: loadingMapping ? "not-allowed" : "pointer",
+                flex: 1,
+              }}
+            >
+              {loadingMapping ? "Loading..." : "📋 View Current Mapping"}
+            </button>
+            <button
+              onClick={handleExportCSV}
+              disabled={exporting}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: exporting ? "#ccc" : "#6c757d",
+                color: "#fff",
+                border: "none",
+                cursor: exporting ? "not-allowed" : "pointer",
+                flex: 1,
+              }}
+            >
+              {exporting ? "Exporting..." : "📥 Export CSV"}
+            </button>
+          </div>
+
+          {/* Mapping Data Display */}
+          {mappingData && (
+            <div style={{ 
+              border: "1px solid #ddd", 
+              padding: 16, 
+              borderRadius: 6,
+              background: "#f8f9fa",
+              marginBottom: 16
+            }}>
+              <h4>Current Mapping ({mappingData.productCount} products)</h4>
+              <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: 12 }}>
+                Last updated: {new Date(mappingData.lastUpdated).toLocaleString()}
+              </p>
+              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                <table style={{ width: "100%", fontSize: "0.8rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #ddd" }}>
+                      <th style={{ textAlign: "left", padding: "4px" }}>Shopify SKU</th>
+                      <th style={{ textAlign: "left", padding: "4px" }}>Flowtrac SKU</th>
+                      <th style={{ textAlign: "left", padding: "4px" }}>Product Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mappingData.mapping.products.slice(0, 10).map((product: any, index: number) => (
+                      <tr key={index} style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "4px" }}>{product.shopify_sku}</td>
+                        <td style={{ padding: "4px" }}>{product.flowtrac_sku}</td>
+                        <td style={{ padding: "4px" }}>{product.product_name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {mappingData.productCount > 10 && (
+                  <p style={{ fontSize: "0.8rem", color: "#666", marginTop: 8 }}>
+                    Showing first 10 of {mappingData.productCount} products. Export CSV to see all.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
