@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from '../../middleware/rateLimit';
+// import { rateLimit } from '../../middleware/rateLimit';
 import logger from '../../utils/logger';
 import path from 'path';
 import fs from 'fs';
@@ -8,8 +8,8 @@ import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory 
 
 export async function POST(request: NextRequest) {
   // Rate limiting
-  const rateLimitResult = rateLimit(request);
-  if (rateLimitResult) return rateLimitResult;
+  // const rateLimitResult = rateLimit(request);
+  // if (rateLimitResult) return rateLimitResult;
 
   logger.info('Sync job started');
 
