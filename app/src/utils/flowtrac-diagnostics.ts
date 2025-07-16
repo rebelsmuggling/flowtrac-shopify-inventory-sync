@@ -3,9 +3,9 @@ dotenv.config({ path: '.env.local' });
 
 import fs from 'fs';
 import path from 'path';
-import { testFlowtracConnection, filterProductsToSync, fetchFlowtracInventory } from '../services/flowtrac';
+import { testFlowtracConnection, filterProductsToSync, fetchFlowtracInventory } from '@/services/flowtrac';
 import { mapFlowtracToShopify } from './mapFlowtracToShopify';
-import type { MappingFile, ProductMapping } from '../types/mapping';
+import type { MappingFile, ProductMapping } from '@/types/mapping';
 
 async function main() {
   console.log('Starting Flowtrac diagnostics with inventory mapping...');

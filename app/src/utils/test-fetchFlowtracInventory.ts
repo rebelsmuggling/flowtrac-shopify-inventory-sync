@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-import { fetchFlowtracInventory } from '../services/flowtrac';
+import { fetchFlowtracInventory } from '@/services/flowtrac';
 
 async function test() {
   // Using real SKUs provided by the user

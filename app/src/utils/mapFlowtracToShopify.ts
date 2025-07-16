@@ -1,4 +1,4 @@
-import type { ProductMapping } from '../types/mapping';
+import type { ProductMapping } from '@/types/mapping';
 
 export interface ShopifyInventoryUpdate {
   shopify_product_id: string;

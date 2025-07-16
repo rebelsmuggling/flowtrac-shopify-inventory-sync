@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { testFlowtracConnection } from '../../src/services/flowtrac';
+import { testFlowtracConnection } from '@/services/flowtrac';
 import { testShopifyConnection } from '../../src/services/shopify';
 
 export async function GET(request: NextRequest) {
