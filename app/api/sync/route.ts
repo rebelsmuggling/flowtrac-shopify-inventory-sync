@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // import { rateLimit } from '../../middleware/rateLimit';
 import path from 'path';
 import fs from 'fs';
-import { fetchFlowtracInventory } from '../../services/flowtrac';
+import { fetchFlowtracInventory } from '../../src/services/flowtrac';
 import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory } from '../../services/shopify';
 
 export async function POST(request: NextRequest) {
