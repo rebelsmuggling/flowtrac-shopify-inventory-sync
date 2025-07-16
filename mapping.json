@@ -1,7 +1,6 @@
 {
   "products": [
     {
-      "shopify_product_id": "111111111",
       "shopify_variant_id": "gid://shopify/ProductVariant/51107621470517",
       "shopify_sku": "IC-KOOL-0045",
       "flowtrac_sku": "IC-KOOL-0045",
@@ -9,7 +8,6 @@
       "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317"
     },
     {
-      "shopify_product_id": "333333333",
       "shopify_variant_id": "gid://shopify/ProductVariant/50060778340661",
       "shopify_sku": "IC-HCPK-0096",
       "bundle_components": [
@@ -22,7 +20,6 @@
       "shopify_inventory_item_id": "gid://shopify/InventoryItem/52109248790837"
     },
     {
-      "shopify_product_id": "555555555",
       "shopify_variant_id": "gid://shopify/ProductVariant/51118375076149",
       "shopify_sku": "RS-SUNF-GB21",
       "bundle_components": [
@@ -40,7 +37,6 @@
       "shopify_inventory_item_id": "gid://shopify/InventoryItem/53148657680693"
     },
     {
-      "shopify_product_id": "999999999",
       "shopify_variant_id": "gid://shopify/ProductVariant/44717479166261",
       "shopify_sku": "IC-BIGS-009",
       "flowtrac_sku": "IC-BIGS-009",
