@@ -73,7 +73,7 @@ export async function getMantecaLocationId(): Promise<string> {
   const manteca = locations.find((loc: any) => loc.name.toLowerCase() === 'manteca');
   if (!manteca) throw new Error('Manteca location not found in Shopify locations');
   mantecaLocationId = manteca.id.toString();
-  return mantecaLocationId;
+  return mantecaLocationId!;
 }
 
 function extractIdFromGid(gid: string): string {
