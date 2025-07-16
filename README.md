@@ -1,55 +1,36 @@
-# Flowtrac-Shopify Inventory Sync
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Project Purpose
-Synchronize inventory quantities for specific products from Flowtrac to Shopify. Supports thousands of products, including complex bundles where multiple Flowtrac SKUs and quantities map to individual Shopify items.
+## Getting Started
 
-## Features
-- Sync inventory for simple and bundled products
-- Batch upload of new SKUs and mappings
-- Fast Shopify inventory ID sync using GraphQL
-- Optimized for Vercel deployment (Next.js, serverless)
+First, run the development server:
 
-## Quick Start
-1. **Clone the repository:**
-   ```sh
-   git clone git@github.com:rebelsmuggling/flowtrac-shopify-inventory-sync.git
-   cd flowtrac-shopify-inventory-sync
-   ```
-2. **Install dependencies:**
-   ```sh
-   npm install
-   ```
-3. **Set up environment variables:**
-   - Copy `.env.example` to `.env.local` and fill in your API keys and secrets.
-4. **Run the development server:**
-   ```sh
-   npm run dev
-   ```
-5. **Deploy to Vercel:**
-   - Connect your repo to Vercel and follow the deployment instructions.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Vercel Deployment & Environment Setup
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-1. **Connect your GitHub repository to Vercel:**
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard) and import your project.
-2. **Set environment variables in Vercel:**
-   - In your Vercel project, go to **Settings > Environment Variables**.
-   - Add all variables from `.env.example` with your production values.
-3. **Verify scheduled syncs:**
-   - The `/api/sync` endpoint will be triggered every 30 minutes by the Vercel cron job (see `vercel.json`).
-   - Check Vercel logs for sync job output and errors.
-4. **Redeploy as needed:**
-   - Any changes to environment variables or code will require a redeploy to take effect.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Project Checklist
-See [`docs/project_checklist.md`](docs/project_checklist.md) for the full project plan and progress.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Documentation
-- Flowtrac API: See [`docs/`](docs/)
-- Shopify API: See [`docs/shopify_api_reference.md`](docs/shopify_api_reference.md)
+## Learn More
 
-## Contributing
-Pull requests and issues are welcome! For major changes, please open an issue first to discuss what you would like to change.
+To learn more about Next.js, take a look at the following resources:
 
-## License
-[MIT](LICENSE) 
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

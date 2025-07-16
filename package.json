@@ -1,13 +1,32 @@
 {
   "name": "flowtrac-shopify-inventory-sync",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "cd app && npm run build",
-    "dev": "cd app && npm run dev",
-    "start": "cd app && npm run start"
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "workspaces": [
-    "app"
-  ]
-} 
+  "dependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/qs": "^6.14.0",
+    "@types/winston": "^2.4.4",
+    "axios": "^1.10.0",
+    "dotenv": "^17.2.0",
+    "next": "^15.4.1",
+    "qs": "^6.14.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20.19.8",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.1",
+    "typescript": "^5"
+  }
+}
