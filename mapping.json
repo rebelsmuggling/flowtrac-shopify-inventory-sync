@@ -3,6 +3,7 @@
     {
       "shopify_variant_id": "gid://shopify/ProductVariant/51107621470517",
       "shopify_sku": "IC-KOOL-0045",
+      "amazon_sku": "IC-KOOL-0045",
       "flowtrac_sku": "IC-KOOL-0045",
       "flowtrac_product_id": "5fe728d0-daad-11ef-a397-0a09fb0c967d",
       "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317"
@@ -10,6 +11,7 @@
     {
       "shopify_variant_id": "gid://shopify/ProductVariant/50060778340661",
       "shopify_sku": "IC-HCPK-0096",
+      "amazon_sku": "",
       "bundle_components": [
         {
           "flowtrac_sku": "IC-HCPK-0048",
@@ -22,6 +24,7 @@
     {
       "shopify_variant_id": "gid://shopify/ProductVariant/51118375076149",
       "shopify_sku": "RS-SUNF-GB21",
+      "amazon_sku": "",
       "bundle_components": [
         {
           "flowtrac_sku": "IC-DAVI-012",
@@ -39,9 +42,10 @@
     {
       "shopify_variant_id": "gid://shopify/ProductVariant/44717479166261",
       "shopify_sku": "IC-BIGS-009",
+      "amazon_sku": "",
       "flowtrac_sku": "IC-BIGS-009",
       "flowtrac_product_id": "1ff6b078-0af3-11ee-a0a5-0a09fb0c967d",
       "shopify_inventory_item_id": "gid://shopify/InventoryItem/46766307934517"
     }
   ]
-}
+} 

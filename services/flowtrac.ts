@@ -3,6 +3,7 @@ import qs from 'qs';
 import fs from 'fs';
 import path from 'path';
 import type { MappingFile } from '../src/types/mapping';
+import { Parser as CsvParser } from 'json2csv';
 
 const FLOWTRAC_API_URL = process.env.FLOWTRAC_API_URL;
 const FLOWTRAC_BADGE = process.env.FLOWTRAC_BADGE;
@@ -158,6 +159,135 @@ export function filterProductsToSync(flowtracProducts: any[], onlyActive = true)
   );
 }
 
+export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Record<string, { quantity: number, bins: string[], binBreakdown: Record<string, number> }>> {
+  // 1. Authenticate to get session cookie
+  const flowAuthCookie = await getFlowtracAuthCookie();
+
+  // 2. Load mapping.json
+  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+
+  // 3. Fetch all Flowtrac products once (for self-healing)
+  const products = await fetchAllFlowtracProducts(flowAuthCookie);
+  const skuToProductId: Record<string, string> = {};
+  for (const p of products) {
+    if (p.product) skuToProductId[p.product] = p.product_id;
+    if (p.barcode) skuToProductId[p.barcode] = p.product_id;
+  }
+
+  let mappingUpdated = false;
+  // 4. Ensure all SKUs have product_id, self-heal if missing
+  const skuToPidForQuery: Record<string, string> = {};
+  for (const sku of skus) {
+    let pid = getProductIdForSku(sku, mapping);
+    if (!pid) {
+      pid = skuToProductId[sku];
+      if (pid) {
+        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+      } else {
+        throw new Error(`SKU '${sku}' not found in Flowtrac products.`);
+      }
+    }
+    skuToPidForQuery[sku] = pid;
+  }
+  if (mappingUpdated) {
+    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+    console.log('mapping.json updated with missing Flowtrac product_ids during sync.');
+  }
+
+  // 5. Query Flowtrac using product_id for each SKU
+  const inventory: Record<string, { quantity: number, bins: string[], binBreakdown: Record<string, number> }> = {};
+  const today = new Date();
+  for (const [sku, product_id] of Object.entries(skuToPidForQuery)) {
+    // Query all bins for the product_id
+    const params = { product_id };
+    const binsRes = await axios.get(`${FLOWTRAC_API_URL}/product-warehouse-bins`, {
+      headers: { Cookie: flowAuthCookie },
+      params,
+      withCredentials: true,
+    });
+    const bins = binsRes.data;
+    // Use the same filter as fetchFlowtracInventory
+    const validBins = bins.filter((b: any) => {
+      if (b.include_in_available !== 'Yes') return false;
+      if (b.warehouse !== 'Manteca') return false;
+      if (b.expiration_date) {
+        const exp = new Date(b.expiration_date);
+        if (exp < today) return false;
+      }
+      return true;
+    });
+    if (sku === 'IC-KOOL-0045') {
+      console.log(`Breakdown for IC-KOOL-0045:`, validBins.map(b => ({ bin: b.bin, quantity: b.quantity })));
+    }
+    // Sum total quantity and also sum by bin
+    const binQuantities: Record<string, number> = {};
+    for (const b of validBins) {
+      const binName = b.bin || 'UNKNOWN';
+      binQuantities[binName] = (binQuantities[binName] || 0) + (Number(b.quantity) || 0);
+    }
+    // Remove bins with 0 quantity after summing
+    const filteredBinQuantities: Record<string, number> = {};
+    for (const [bin, qty] of Object.entries(binQuantities)) {
+      if (qty !== 0) filteredBinQuantities[bin] = qty;
+    }
+    inventory[sku] = {
+      quantity: Object.values(filteredBinQuantities).reduce((sum, q) => sum + q, 0),
+      bins: Object.keys(filteredBinQuantities),
+      binBreakdown: filteredBinQuantities,
+    };
+    if (sku === 'IC-KOOL-0045') {
+      console.log('Final binBreakdown for IC-KOOL-0045:', filteredBinQuantities);
+    }
+  }
+  return inventory;
+}
+
+export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> {
+  const flowAuthCookie = await getFlowtracAuthCookie();
+  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  const products = await fetchAllFlowtracProducts(flowAuthCookie);
+  const skuToProductId: Record<string, string> = {};
+  for (const p of products) {
+    if (p.product) skuToProductId[p.product] = p.product_id;
+    if (p.barcode) skuToProductId[p.barcode] = p.product_id;
+  }
+  let mappingUpdated = false;
+  const skuToPidForQuery: Record<string, string> = {};
+  for (const sku of skus) {
+    let pid = getProductIdForSku(sku, mapping);
+    if (!pid) {
+      pid = skuToProductId[sku];
+      if (pid) {
+        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+      } else {
+        throw new Error(`SKU '${sku}' not found in Flowtrac products.`);
+      }
+    }
+    skuToPidForQuery[sku] = pid;
+  }
+  if (mappingUpdated) {
+    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+    console.log('mapping.json updated with missing Flowtrac product_ids during export.');
+  }
+  const allBins: any[] = [];
+  for (const [sku, product_id] of Object.entries(skuToPidForQuery)) {
+    const params = { product_id };
+    const binsRes = await axios.get(`${FLOWTRAC_API_URL}/product-warehouse-bins`, {
+      headers: { Cookie: flowAuthCookie },
+      params,
+      withCredentials: true,
+    });
+    const bins = binsRes.data;
+    for (const bin of bins) {
+      allBins.push({ sku, ...bin });
+    }
+  }
+  const csvParser = new CsvParser();
+  const csv = csvParser.parse(allBins);
+  fs.writeFileSync('flowtrac_bins_raw.csv', csv);
+  console.log('Exported raw Flowtrac bin data to flowtrac_bins_raw.csv');
+}
+
 // Test function to verify Flowtrac API connectivity using /device-login/
 export async function testFlowtracConnection(): Promise<any> {
   try {
@@ -205,4 +335,18 @@ export async function testFlowtracConnection(): Promise<any> {
   } catch (error) {
     return { error: (error as Error).message };
   }
+}
+
+if (require.main === module) {
+  // Example usage: node services/flowtrac.js
+  (async () => {
+    try {
+      const skus = ['IC-KOOL-0045']; // Add more SKUs as needed
+      await exportRawFlowtracBinsToCsv(skus);
+      console.log('Export complete.');
+    } catch (err) {
+      console.error('Error exporting Flowtrac bins to CSV:', err);
+      process.exit(1);
+    }
+  })();
 } 
