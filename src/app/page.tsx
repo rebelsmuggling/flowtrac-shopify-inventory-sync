@@ -13,6 +13,9 @@ export default function Home() {
   const [bulkData, setBulkData] = useState('');
   const [showImportTools, setShowImportTools] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingToSheets, setExportingToSheets] = useState(false);
+  const [importingFromSheets, setImportingFromSheets] = useState(false);
+  const [sheetsResult, setSheetsResult] = useState<string | null>(null);
   const [mappingData, setMappingData] = useState<any>(null);
   const [loadingMapping, setLoadingMapping] = useState(false);
 
@@ -130,6 +133,59 @@ export default function Home() {
     setLoadingMapping(false);
   };
 
+  const handleExportToSheets = async () => {
+    setExportingToSheets(true);
+    try {
+      const res = await fetch("/api/export-to-sheets");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mapping-for-google-sheets-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setSheetsResult("✅ CSV exported! Now you can import this into Google Sheets for easy editing.");
+      } else {
+        setSheetsResult("❌ Export failed");
+      }
+    } catch (err) {
+      setSheetsResult("❌ Export failed: " + (err as Error).message);
+    }
+    setExportingToSheets(false);
+  };
+
+  const handleImportFromSheets = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportingFromSheets(true);
+    setSheetsResult(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch("/api/import-from-sheets", { 
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSheetsResult(`✅ ${data.message}`);
+        // Refresh mapping data after import
+        loadMappingData();
+      } else {
+        setSheetsResult(`❌ Import failed: ${data.error}`);
+      }
+    } catch (err) {
+      setSheetsResult("❌ Import failed: " + (err as Error).message);
+    }
+    setImportingFromSheets(false);
+  };
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -208,6 +264,69 @@ export default function Home() {
                   }
                 })}
               </ul>
+            </div>
+          )}
+        </div>
+
+        {/* --- Google Sheets Integration --- */}
+        <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
+          <h3 style={{ marginBottom: 16, color: "#333" }}>📊 Google Sheets Integration</h3>
+          <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: 16 }}>
+            Export your mapping to Google Sheets for easy editing, then import it back!
+          </p>
+          
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button
+              onClick={handleExportToSheets}
+              disabled={exportingToSheets}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: exportingToSheets ? "#ccc" : "#28a745",
+                color: "#fff",
+                border: "none",
+                cursor: exportingToSheets ? "not-allowed" : "pointer",
+                flex: 1,
+              }}
+            >
+              {exportingToSheets ? "Exporting..." : "📤 Export to Sheets"}
+            </button>
+            <label
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: importingFromSheets ? "#ccc" : "#ffc107",
+                color: "#000",
+                border: "none",
+                cursor: importingFromSheets ? "not-allowed" : "pointer",
+                flex: 1,
+                textAlign: "center",
+                display: "block"
+              }}
+            >
+              {importingFromSheets ? "Importing..." : "📥 Import from Sheets"}
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportFromSheets}
+                disabled={importingFromSheets}
+                style={{ display: "none" }}
+              />
+            </label>
+          </div>
+          
+          {sheetsResult && (
+            <div style={{ 
+              marginTop: 8, 
+              padding: "8px 12px", 
+              borderRadius: "4px",
+              background: sheetsResult.includes("✅") ? "#d4edda" : "#f8d7da",
+              color: sheetsResult.includes("✅") ? "#155724" : "#721c24",
+              fontSize: "0.9rem"
+            }}>
+              {sheetsResult}
             </div>
           )}
         </div>
