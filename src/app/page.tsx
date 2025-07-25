@@ -15,6 +15,7 @@ export default function Home() {
   const [exporting, setExporting] = useState(false);
   const [exportingToSheets, setExportingToSheets] = useState(false);
   const [importingFromSheets, setImportingFromSheets] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   const [sheetsResult, setSheetsResult] = useState<string | null>(null);
   const [mappingData, setMappingData] = useState<any>(null);
   const [loadingMapping, setLoadingMapping] = useState(false);
@@ -186,6 +187,26 @@ export default function Home() {
     setImportingFromSheets(false);
   };
 
+  const handleMigrateBundleFormat = async () => {
+    setMigrating(true);
+    setSheetsResult(null);
+    
+    try {
+      const res = await fetch("/api/migrate-bundle-format", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSheetsResult(`✅ ${data.message}`);
+        // Refresh mapping data after migration
+        loadMappingData();
+      } else {
+        setSheetsResult(`❌ Migration failed: ${data.error}`);
+      }
+    } catch (err) {
+      setSheetsResult("❌ Migration failed: " + (err as Error).message);
+    }
+    setMigrating(false);
+  };
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -285,6 +306,25 @@ export default function Home() {
           }}>
             <strong>Bundle Components Format:</strong> Use "SKU1:2; SKU2:1" format instead of JSON.<br/>
             Example: "IC-KOOL-0045:2; IC-HCPK-0096:1" means 2 of IC-KOOL-0045 and 1 of IC-HCPK-0096
+          </div>
+          
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button
+              onClick={handleMigrateBundleFormat}
+              disabled={migrating}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: migrating ? "#ccc" : "#dc3545",
+                color: "#fff",
+                border: "none",
+                cursor: migrating ? "not-allowed" : "pointer",
+                flex: 1,
+              }}
+            >
+              {migrating ? "Migrating..." : "🔄 Migrate Old Format"}
+            </button>
           </div>
           
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>

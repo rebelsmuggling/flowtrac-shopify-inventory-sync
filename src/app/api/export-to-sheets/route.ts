@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
     // Add data rows
     for (const product of mapping.products) {
       let bundleComponentsText = '';
-      if (product.bundle_components && Array.isArray(product.bundle_components)) {
+      if (product.bundle_components_simple) {
+        // Use pre-migrated simple format
+        bundleComponentsText = product.bundle_components_simple;
+      } else if (product.bundle_components && Array.isArray(product.bundle_components)) {
+        // Convert from JSON format to simple format on-the-fly
         bundleComponentsText = product.bundle_components
           .map((comp: any) => `${comp.flowtrac_sku}:${comp.quantity}`)
           .join('; ');
