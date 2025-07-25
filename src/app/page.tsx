@@ -177,11 +177,36 @@ export default function Home() {
             <div style={{ marginTop: 16 }}>
               <h4>Sync Results:</h4>
               <ul style={{ paddingLeft: 20 }}>
-                {Object.entries(details).map(([sku, res]: any) => (
-                  <li key={sku} style={{ color: res.success ? "green" : "red" }}>
-                    <strong>{sku}:</strong> {res.success ? "Success" : `Error: ${res.error}`}
-                  </li>
-                ))}
+                {Object.entries(details).map(([sku, res]: any) => {
+                  // Handle different result structures
+                  if (sku === 'shipstation') {
+                    // ShipStation results are nested
+                    return Object.entries(res).map(([ssSku, ssRes]: any) => (
+                      <li key={`shipstation-${ssSku}`} style={{ color: ssRes.success ? "green" : "red" }}>
+                        <strong>ShipStation {ssSku}:</strong> {ssRes.success ? "Success" : `Error: ${ssRes.error || 'Unknown error'}`}
+                      </li>
+                    ));
+                  } else {
+                    // Regular SKU results have shopify and amazon properties
+                    const shopifyResult = res.shopify;
+                    const amazonResult = res.amazon;
+                    return (
+                      <li key={sku}>
+                        <strong>{sku}:</strong>
+                        <ul style={{ paddingLeft: 20, marginTop: 4 }}>
+                          <li style={{ color: shopifyResult?.success ? "green" : "red" }}>
+                            Shopify: {shopifyResult?.success ? "Success" : `Error: ${shopifyResult?.error || 'Unknown error'}`}
+                          </li>
+                          {amazonResult && (
+                            <li style={{ color: amazonResult?.success ? "green" : "red" }}>
+                              Amazon: {amazonResult?.success ? "Success" : `Error: ${amazonResult?.error || 'Unknown error'}`}
+                            </li>
+                          )}
+                        </ul>
+                      </li>
+                    );
+                  }
+                })}
               </ul>
             </div>
           )}
