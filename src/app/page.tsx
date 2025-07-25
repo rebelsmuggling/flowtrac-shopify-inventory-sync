@@ -274,6 +274,18 @@ export default function Home() {
           <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: 16 }}>
             Export your mapping to Google Sheets for easy editing, then import it back!
           </p>
+          <div style={{ 
+            fontSize: "0.8rem", 
+            color: "#666", 
+            marginBottom: 16,
+            padding: "8px 12px",
+            background: "#f8f9fa",
+            borderRadius: "4px",
+            border: "1px solid #dee2e6"
+          }}>
+            <strong>Bundle Components Format:</strong> Use "SKU1:2; SKU2:1" format instead of JSON.<br/>
+            Example: "IC-KOOL-0045:2; IC-HCPK-0096:1" means 2 of IC-KOOL-0045 and 1 of IC-HCPK-0096
+          </div>
           
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <button

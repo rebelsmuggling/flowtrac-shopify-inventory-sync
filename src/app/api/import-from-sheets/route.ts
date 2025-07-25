@@ -85,10 +85,19 @@ export async function POST(request: NextRequest) {
           case 'shopify_inventory_item_id':
             product.shopify_inventory_item_id = value;
             break;
-          case 'bundle_components_(json)':
+          case 'bundle_components_(simple_format)':
             if (value && value.trim()) {
               try {
-                product.bundle_components = JSON.parse(value);
+                // Parse simple format: "SKU1:2; SKU2:1; SKU3:3"
+                const components = value.split(';').map(comp => comp.trim()).filter(comp => comp);
+                const bundleComponents = components.map(comp => {
+                  const [flowtrac_sku, quantity] = comp.split(':').map(s => s.trim());
+                  return {
+                    flowtrac_sku,
+                    quantity: parseInt(quantity) || 1
+                  };
+                });
+                product.bundle_components = bundleComponents;
               } catch (e) {
                 console.warn(`Failed to parse bundle components for row ${i}:`, value);
               }

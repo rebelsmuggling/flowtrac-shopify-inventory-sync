@@ -19,11 +19,18 @@ export async function GET(request: NextRequest) {
       'Amazon SKU',
       'Shopify Variant ID',
       'Shopify Inventory Item ID',
-      'Bundle Components (JSON)'
+      'Bundle Components (Simple Format)'
     ]);
 
     // Add data rows
     for (const product of mapping.products) {
+      let bundleComponentsText = '';
+      if (product.bundle_components && Array.isArray(product.bundle_components)) {
+        bundleComponentsText = product.bundle_components
+          .map((comp: any) => `${comp.flowtrac_sku}:${comp.quantity}`)
+          .join('; ');
+      }
+      
       csvRows.push([
         product.shopify_sku || '',
         product.flowtrac_sku || '',
@@ -31,7 +38,7 @@ export async function GET(request: NextRequest) {
         product.amazon_sku || '',
         product.shopify_variant_id || '',
         product.shopify_inventory_item_id || '',
-        product.bundle_components ? JSON.stringify(product.bundle_components) : ''
+        bundleComponentsText
       ]);
     }
 
