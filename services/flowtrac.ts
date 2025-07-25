@@ -217,7 +217,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
       return true;
     });
     if (sku === 'IC-KOOL-0045') {
-      console.log(`Breakdown for IC-KOOL-0045:`, validBins.map(b => ({ bin: b.bin, quantity: b.quantity })));
+      console.log(`Breakdown for IC-KOOL-0045:`, validBins.map((b: any) => ({ bin: b.bin, quantity: b.quantity })));
     }
     // Sum total quantity and also sum by bin
     const binQuantities: Record<string, number> = {};
