@@ -6,6 +6,7 @@ import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory } from '../../../../services/shopify';
 import { updateAmazonInventory } from '../../../../services/amazon';
 import { updateShipStationWarehouseLocation } from '../../../../services/shipstation';
+import { getImportedMapping } from '../../../utils/imported-mapping-store';
 
 export async function POST(request: NextRequest) {
   // Rate limiting
@@ -15,10 +16,18 @@ export async function POST(request: NextRequest) {
   console.log('Sync job started');
 
   try {
-    // 1. Load mapping.json
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
-    console.log('DEBUG: Resolved mappingPath in API route:', mappingPath);
-    let mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    // 1. Load mapping.json (try imported mapping first, then fallback to file)
+    let mapping;
+    const importedMapping = getImportedMapping();
+    
+    if (importedMapping) {
+      console.log('Using imported mapping data');
+      mapping = importedMapping;
+    } else {
+      const mappingPath = path.join(process.cwd(), 'mapping.json');
+      console.log('DEBUG: Resolved mappingPath in API route:', mappingPath);
+      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    }
 
     // 2. Collect all SKUs (simple and bundle components)
     const skus = new Set<string>();
@@ -53,6 +62,7 @@ export async function POST(request: NextRequest) {
     // 5. Self-heal: Enrich mapping.json with missing Shopify variant and inventory item IDs
     await enrichMappingWithShopifyVariantAndInventoryIds();
     // Reload mapping after enrichment
+    const mappingPath = path.join(process.cwd(), 'mapping.json');
     const updatedMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
 
     // 6. Update inventory in Shopify and Amazon for each SKU

@@ -190,32 +190,27 @@ export default function Home() {
     setImportingFromSheets(false);
   };
 
-  const handleDownloadMapping = async () => {
+  const handleUpdateMapping = async () => {
     if (!importedMapping) return;
     
     try {
-      const res = await fetch("/api/download-mapping", { 
+      const res = await fetch("/api/update-mapping", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mapping: importedMapping })
       });
       
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mapping-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        setSheetsResult("✅ mapping.json downloaded! Replace your local file with this updated version.");
+      const data = await res.json();
+      if (data.success) {
+        setSheetsResult(`✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.`);
+        setImportedMapping(null); // Clear the imported mapping since it's now active
+        // Refresh mapping data
+        loadMappingData();
       } else {
-        setSheetsResult("❌ Download failed");
+        setSheetsResult(`❌ Update failed: ${data.error}`);
       }
     } catch (err) {
-      setSheetsResult("❌ Download failed: " + (err as Error).message);
+      setSheetsResult("❌ Update failed: " + (err as Error).message);
     }
   };
 
@@ -417,19 +412,19 @@ export default function Home() {
           {importedMapping && (
             <div style={{ marginTop: 8 }}>
               <button
-                onClick={handleDownloadMapping}
+                onClick={handleUpdateMapping}
                 style={{
                   padding: "0.5rem 1rem",
                   fontSize: "1rem",
                   borderRadius: "6px",
-                  background: "#007bff",
+                  background: "#28a745",
                   color: "#fff",
                   border: "none",
                   cursor: "pointer",
                   width: "100%"
                 }}
               >
-                📥 Download Updated mapping.json
+                ✅ Apply Imported Mapping
               </button>
             </div>
           )}
