@@ -17,6 +17,7 @@ export default function Home() {
   const [importingFromSheets, setImportingFromSheets] = useState(false);
   const [migrating, setMigrating] = useState(false);
   const [sheetsResult, setSheetsResult] = useState<string | null>(null);
+  const [importedMapping, setImportedMapping] = useState<any>(null);
   const [mappingData, setMappingData] = useState<any>(null);
   const [loadingMapping, setLoadingMapping] = useState(false);
 
@@ -164,6 +165,7 @@ export default function Home() {
 
     setImportingFromSheets(true);
     setSheetsResult(null);
+    setImportedMapping(null);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -176,6 +178,7 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         setSheetsResult(`✅ ${data.message}`);
+        setImportedMapping(data.mapping);
         // Refresh mapping data after import
         loadMappingData();
       } else {
@@ -185,6 +188,35 @@ export default function Home() {
       setSheetsResult("❌ Import failed: " + (err as Error).message);
     }
     setImportingFromSheets(false);
+  };
+
+  const handleDownloadMapping = async () => {
+    if (!importedMapping) return;
+    
+    try {
+      const res = await fetch("/api/download-mapping", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mapping: importedMapping })
+      });
+      
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mapping-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setSheetsResult("✅ mapping.json downloaded! Replace your local file with this updated version.");
+      } else {
+        setSheetsResult("❌ Download failed");
+      }
+    } catch (err) {
+      setSheetsResult("❌ Download failed: " + (err as Error).message);
+    }
   };
 
   const handleMigrateBundleFormat = async () => {
@@ -379,6 +411,26 @@ export default function Home() {
               fontSize: "0.9rem"
             }}>
               {sheetsResult}
+            </div>
+          )}
+          
+          {importedMapping && (
+            <div style={{ marginTop: 8 }}>
+              <button
+                onClick={handleDownloadMapping}
+                style={{
+                  padding: "0.5rem 1rem",
+                  fontSize: "1rem",
+                  borderRadius: "6px",
+                  background: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  width: "100%"
+                }}
+              >
+                📥 Download Updated mapping.json
+              </button>
             </div>
           )}
         </div>

@@ -112,30 +112,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Load existing mapping to preserve any additional metadata
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
-    let existingMapping = { products: [] };
-    
-    try {
-      existingMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    } catch (e) {
-      // If file doesn't exist or is invalid, start fresh
-    }
-
-    // Update with new products
+    // Return the parsed data instead of writing to file system
+    // (Vercel has read-only file system in serverless environment)
     const updatedMapping = {
-      ...existingMapping,
       products,
       lastUpdated: new Date().toISOString()
     };
 
-    // Write back to mapping.json
-    fs.writeFileSync(mappingPath, JSON.stringify(updatedMapping, null, 2));
-
     return NextResponse.json({ 
       success: true, 
-      message: `Successfully imported ${products.length} products from Google Sheets`,
-      productCount: products.length
+      message: `Successfully parsed ${products.length} products from Google Sheets. Download the updated mapping.json file.`,
+      productCount: products.length,
+      mapping: updatedMapping
     });
 
   } catch (error) {
