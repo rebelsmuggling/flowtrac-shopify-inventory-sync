@@ -106,7 +106,24 @@ export async function updateShopifyInventory(inventoryItemId: string, available:
 }
 
 export async function enrichMappingWithShopifyVariantAndInventoryIds(): Promise<void> {
-  const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  // Get current mapping (imported or file)
+  let mapping;
+  try {
+    const { getImportedMapping, setImportedMapping } = await import('../src/utils/imported-mapping-store');
+    const importedMapping = getImportedMapping();
+    
+    if (importedMapping) {
+      console.log('Enriching imported mapping data with Shopify IDs');
+      mapping = importedMapping;
+    } else {
+      console.log('Enriching file mapping data with Shopify IDs');
+      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    }
+  } catch (error) {
+    console.log('Using file mapping data (imported mapping not available)');
+    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  }
+
   let updated = false;
   for (const product of mapping.products) {
     if (product.shopify_sku && (!product.shopify_variant_id || !product.shopify_inventory_item_id)) {
@@ -125,8 +142,23 @@ export async function enrichMappingWithShopifyVariantAndInventoryIds(): Promise<
       continue;
     }
   }
+  
   if (updated) {
-    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-    console.log('mapping.json updated with Shopify variant and inventory item IDs.');
+    try {
+      const { getImportedMapping, setImportedMapping } = await import('../src/utils/imported-mapping-store');
+      const importedMapping = getImportedMapping();
+      
+      if (importedMapping) {
+        setImportedMapping(mapping);
+        console.log('Imported mapping updated with Shopify variant and inventory item IDs.');
+      } else {
+        fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+        console.log('mapping.json updated with Shopify variant and inventory item IDs.');
+      }
+    } catch (error) {
+      // Fallback to file system
+      fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+      console.log('mapping.json updated with Shopify variant and inventory item IDs.');
+    }
   }
 } 

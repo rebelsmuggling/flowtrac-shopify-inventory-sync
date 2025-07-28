@@ -61,16 +61,29 @@ export async function POST(request: NextRequest) {
 
     // 5. Self-heal: Enrich mapping.json with missing Shopify variant and inventory item IDs
     await enrichMappingWithShopifyVariantAndInventoryIds();
-    // Reload mapping after enrichment
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
-    const updatedMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    
+    // Reload mapping after enrichment (try imported mapping first, then fallback to file)
+    let updatedMapping;
+    const importedMappingAfterEnrichment = getImportedMapping();
+    
+    if (importedMappingAfterEnrichment) {
+      console.log('Using imported mapping data after enrichment');
+      updatedMapping = importedMappingAfterEnrichment;
+    } else {
+      const mappingPath = path.join(process.cwd(), 'mapping.json');
+      console.log('Using file mapping data after enrichment');
+      updatedMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    }
 
     // 6. Update inventory in Shopify and Amazon for each SKU
     const updateResults: Record<string, any> = {};
+    
+    // Process all products that have Shopify SKUs (for Shopify sync)
     for (const [sku, quantity] of Object.entries(shopifyInventory)) {
       const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
       const inventoryItemId = product?.shopify_inventory_item_id;
       updateResults[sku] = { shopify: null, amazon: null };
+      
       // Shopify sync
       if (!inventoryItemId) {
         updateResults[sku].shopify = { success: false, error: 'No shopify_inventory_item_id in mapping.json' };
@@ -85,8 +98,46 @@ export async function POST(request: NextRequest) {
           console.error(`Failed to update Shopify inventory for SKU ${sku}: ${err.message}`);
         }
       }
-      // Amazon sync
+      
+      // Amazon sync for products in shopifyInventory
       if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
+        try {
+          const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
+          updateResults[sku].amazon = amazonResult;
+          console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
+        } catch (err: any) {
+          updateResults[sku].amazon = { success: false, error: err.message };
+          console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+        }
+      }
+    }
+    
+    // Process all products that have Amazon SKUs but might not be in shopifyInventory
+    for (const product of updatedMapping.products) {
+      if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
+        const sku = product.shopify_sku;
+        
+        // Skip if already processed above
+        if (updateResults[sku]) continue;
+        
+        // Get quantity for this product
+        let quantity = 0;
+        if (product.bundle_components && Array.isArray(product.bundle_components)) {
+          const quantities = product.bundle_components.map((comp: any) => {
+            const available = flowtracInventory[comp.flowtrac_sku]?.quantity || 0;
+            return Math.floor(available / comp.quantity);
+          });
+          quantity = quantities.length > 0 ? Math.min(...quantities) : 0;
+        } else if (product.flowtrac_sku) {
+          quantity = flowtracInventory[product.flowtrac_sku]?.quantity || 0;
+        }
+        
+        // Initialize result entry if not exists
+        if (!updateResults[sku]) {
+          updateResults[sku] = { shopify: null, amazon: null };
+        }
+        
+        // Amazon sync
         try {
           const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
           updateResults[sku].amazon = amazonResult;

@@ -5,6 +5,7 @@ import axios from 'axios';
 import qs from 'qs';
 import fs from 'fs';
 import path from 'path';
+import { getImportedMapping, setImportedMapping } from './imported-mapping-store';
 
 const FLOWTRAC_API_URL = process.env.FLOWTRAC_API_URL;
 const FLOWTRAC_BADGE = process.env.FLOWTRAC_BADGE;
@@ -56,6 +57,58 @@ function updateMappingWithProductIds(mapping: any, skuToProductId: Record<string
     }
   }
   return updated;
+}
+
+// New function for enriching mapping with Shopify variant and inventory item IDs
+export async function enrichMappingWithShopifyVariantAndInventoryIds() {
+  try {
+    // Get current mapping (imported or file)
+    let mapping;
+    const importedMapping = getImportedMapping();
+    
+    if (importedMapping) {
+      console.log('Enriching imported mapping data');
+      mapping = importedMapping;
+    } else {
+      console.log('Enriching file mapping data');
+      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    }
+
+    // Authenticate and fetch all Flowtrac products
+    const flowAuthCookie = await getFlowtracAuthCookie();
+    const products = await fetchAllFlowtracProducts(flowAuthCookie);
+
+    // Build SKU to product_id map
+    const skuToProductId: Record<string, string> = {};
+    for (const p of products) {
+      if (p.product) skuToProductId[p.product] = p.product_id;
+      if (p.barcode) skuToProductId[p.barcode] = p.product_id;
+    }
+
+    // Update mapping in-memory
+    const updated = updateMappingWithProductIds(mapping, skuToProductId);
+
+    if (updated) {
+      // Update the imported mapping store if we're using imported data
+      if (importedMapping) {
+        setImportedMapping(mapping);
+        console.log('Imported mapping updated with Flowtrac product_ids.');
+      } else {
+        // Write to file if using file-based mapping
+        try {
+          fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+          console.log('mapping.json updated with Flowtrac product_ids.');
+        } catch (fileError) {
+          console.log('Could not write to file system (expected in Vercel):', fileError);
+        }
+      }
+    } else {
+      console.log('No updates needed. All SKUs already have product_ids.');
+    }
+  } catch (error) {
+    console.error('Error enriching mapping:', error);
+    throw error;
+  }
 }
 
 async function main() {
