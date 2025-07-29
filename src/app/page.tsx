@@ -157,14 +157,26 @@ export default function Home() {
       const simpleData = await simpleRes.json();
       console.log('Simple endpoint result:', simpleData);
       
-      // Now test GitHub endpoint
+      // Now test GitHub endpoint with timeout
       console.log('Testing GitHub endpoint...');
-      const res = await fetch("/api/test-github");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const res = await fetch("/api/test-github", {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       const data = await res.json();
+      console.log('GitHub endpoint result:', data);
       setGithubTestResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Test failed:', err);
-      setGithubTestResult({ success: false, error: (err as Error).message });
+      if (err.name === 'AbortError') {
+        setGithubTestResult({ success: false, error: 'Request timed out - likely no GitHub token configured' });
+      } else {
+        setGithubTestResult({ success: false, error: (err as Error).message });
+      }
     }
   };
 
