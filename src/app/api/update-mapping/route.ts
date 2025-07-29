@@ -31,6 +31,23 @@ export async function POST(request: NextRequest) {
     } catch (persistError) {
       console.log('Could not persist mapping (this is okay for local development):', persistError);
     }
+
+    // Also update GitHub if token is available
+    if (process.env.GITHUB_TOKEN) {
+      try {
+        const githubRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mapping })
+        });
+        if (githubRes.ok) {
+          const githubData = await githubRes.json();
+          console.log('Mapping data updated on GitHub successfully');
+        }
+      } catch (githubError) {
+        console.log('Could not update GitHub mapping:', githubError);
+      }
+    }
     
     // Also try to write to file system (for local development)
     try {

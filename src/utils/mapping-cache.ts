@@ -1,6 +1,6 @@
 // Simple in-memory cache with timestamp for persistence tracking
 let mappingCache: { data: any; timestamp: number } | null = null;
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
 export function setCachedMapping(mapping: any) {
   mappingCache = {

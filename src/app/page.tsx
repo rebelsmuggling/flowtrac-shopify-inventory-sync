@@ -356,6 +356,8 @@ export default function Home() {
                 <strong>Mapping Status:</strong> 
                 {mappingStatus?.hasCachedMapping ? 
                   ` ✅ Active (${mappingStatus.productCount} products)` : 
+                  mappingData?.source === 'github' ?
+                  ` 🔗 GitHub (${mappingData?.productCount} products)` :
                   ' ⚠️ Using original mapping.json'
                 }
               </span>
