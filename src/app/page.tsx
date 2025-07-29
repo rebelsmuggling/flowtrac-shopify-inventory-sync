@@ -22,6 +22,7 @@ export default function Home() {
   const [loadingMapping, setLoadingMapping] = useState(false);
   const [mappingStatus, setMappingStatus] = useState<any>(null);
   const [githubTestResult, setGithubTestResult] = useState<any>(null);
+  const [syncingToGitHub, setSyncingToGitHub] = useState(false);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -247,7 +248,8 @@ export default function Home() {
       
       const data = await res.json();
       if (data.success) {
-        setSheetsResult(`✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.`);
+        const githubStatus = data.githubUpdated ? ' (GitHub updated)' : ' (GitHub update failed)';
+        setSheetsResult(`✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.${githubStatus}`);
         setImportedMapping(null); // Clear the imported mapping since it's now active
         // Refresh mapping data
         loadMappingData();
@@ -257,6 +259,40 @@ export default function Home() {
     } catch (err) {
       setSheetsResult("❌ Update failed: " + (err as Error).message);
     }
+  };
+
+  const syncCurrentMappingToGitHub = async () => {
+    setSyncingToGitHub(true);
+    try {
+      // Get current mapping data
+      const mappingRes = await fetch("/api/mapping");
+      const mappingData = await mappingRes.json();
+      
+      if (!mappingData.success) {
+        setSheetsResult("❌ Failed to get current mapping data");
+        return;
+      }
+
+      // Update GitHub with current mapping
+      const updateRes = await fetch("/api/update-mapping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mapping: mappingData.mapping })
+      });
+      
+      const updateData = await updateRes.json();
+      if (updateData.success) {
+        const githubStatus = updateData.githubUpdated ? ' (GitHub updated)' : ' (GitHub update failed)';
+        setSheetsResult(`✅ Current mapping synced to GitHub${githubStatus}`);
+        // Clear any previous test results
+        setGithubTestResult(null);
+      } else {
+        setSheetsResult(`❌ GitHub sync failed: ${updateData.error}`);
+      }
+    } catch (err) {
+      setSheetsResult("❌ GitHub sync failed: " + (err as Error).message);
+    }
+    setSyncingToGitHub(false);
   };
 
   const handleMigrateBundleFormat = async () => {
@@ -417,10 +453,26 @@ export default function Home() {
                   background: "#28a745",
                   color: "#fff",
                   border: "none",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  marginRight: "8px"
                 }}
               >
                 Test GitHub
+              </button>
+              <button
+                onClick={syncCurrentMappingToGitHub}
+                disabled={syncingToGitHub}
+                style={{
+                  padding: "2px 8px",
+                  fontSize: "0.7rem",
+                  borderRadius: "3px",
+                  background: syncingToGitHub ? "#6c757d" : "#dc3545",
+                  color: "#fff",
+                  border: "none",
+                  cursor: syncingToGitHub ? "not-allowed" : "pointer"
+                }}
+              >
+                {syncingToGitHub ? "Syncing..." : "Sync to GitHub"}
               </button>
             </div>
             

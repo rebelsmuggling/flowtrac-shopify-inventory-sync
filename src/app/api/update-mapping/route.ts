@@ -33,20 +33,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Also update GitHub if token is available
+    let githubUpdateSuccess = false;
     if (process.env.GITHUB_TOKEN) {
       try {
+        console.log('Attempting to update GitHub mapping...');
         const githubRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mapping })
         });
+        
         if (githubRes.ok) {
           const githubData = await githubRes.json();
-          console.log('Mapping data updated on GitHub successfully');
+          console.log('Mapping data updated on GitHub successfully:', githubData);
+          githubUpdateSuccess = true;
+        } else {
+          const errorText = await githubRes.text();
+          console.error('GitHub update failed:', githubRes.status, errorText);
         }
       } catch (githubError) {
-        console.log('Could not update GitHub mapping:', githubError);
+        console.error('Could not update GitHub mapping:', githubError);
       }
+    } else {
+      console.log('GITHUB_TOKEN not available, skipping GitHub update');
     }
     
     // Also try to write to file system (for local development)
@@ -60,7 +69,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       message: `Successfully updated mapping with ${mapping.products?.length || 0} products`,
-      productCount: mapping.products?.length || 0
+      productCount: mapping.products?.length || 0,
+      githubUpdated: githubUpdateSuccess
     });
 
   } catch (error) {
