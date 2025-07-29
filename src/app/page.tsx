@@ -21,6 +21,7 @@ export default function Home() {
   const [mappingData, setMappingData] = useState<any>(null);
   const [loadingMapping, setLoadingMapping] = useState(false);
   const [mappingStatus, setMappingStatus] = useState<any>(null);
+  const [githubTestResult, setGithubTestResult] = useState<any>(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -145,6 +146,16 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Failed to check mapping status:', err);
+    }
+  };
+
+  const testGitHubMapping = async () => {
+    try {
+      const res = await fetch("/api/test-github");
+      const data = await res.json();
+      setGithubTestResult(data);
+    } catch (err) {
+      setGithubTestResult({ success: false, error: (err as Error).message });
     }
   };
 
@@ -370,12 +381,57 @@ export default function Home() {
                   background: "#007bff",
                   color: "#fff",
                   border: "none",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  marginRight: "8px"
                 }}
               >
                 Refresh
               </button>
+              <button
+                onClick={testGitHubMapping}
+                style={{
+                  padding: "2px 8px",
+                  fontSize: "0.7rem",
+                  borderRadius: "3px",
+                  background: "#28a745",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer"
+                }}
+              >
+                Test GitHub
+              </button>
             </div>
+            
+            {/* GitHub Test Result */}
+            {githubTestResult && (
+              <div style={{ 
+                fontSize: "0.8rem", 
+                color: "#666", 
+                marginBottom: 16,
+                padding: "8px 12px",
+                background: githubTestResult.success ? "#d4edda" : "#f8d7da",
+                borderRadius: "4px",
+                border: `1px solid ${githubTestResult.success ? "#c3e6cb" : "#f5c6cb"}`
+              }}>
+                <strong>GitHub Test Result:</strong> {githubTestResult.success ? 
+                  `✅ ${githubTestResult.message} (${githubTestResult.productCount} products)` :
+                  `❌ ${githubTestResult.error || githubTestResult.message}`
+                }
+                {githubTestResult.success && githubTestResult.products && (
+                  <div style={{ marginTop: "4px", fontSize: "0.7rem" }}>
+                    <strong>Products in GitHub:</strong>
+                    <div style={{ maxHeight: "100px", overflowY: "auto", marginTop: "2px" }}>
+                      {githubTestResult.products.map((p: any, i: number) => (
+                        <div key={i} style={{ marginBottom: "1px" }}>
+                          {p.flowtrac_sku} → {p.shopify_sku} {p.amazon_sku ? `(${p.amazon_sku})` : ''}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ 
             fontSize: "0.8rem", 
