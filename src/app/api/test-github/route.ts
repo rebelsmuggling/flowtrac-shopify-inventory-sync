@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_REPO = process.env.GITHUB_REPO || 'rebelsmuggling/flowtrac-shopify-inventory-sync';
-const MAPPING_FILE_PATH = 'mapping.json';
-
 export async function GET() {
   try {
+    // First, let's test if the endpoint is working at all
+    console.log('Test GitHub endpoint called');
+    
+    // Check if GitHub token exists
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    
     if (!GITHUB_TOKEN) {
       return NextResponse.json({ 
         success: false, 
         error: 'GITHUB_TOKEN not configured',
-        message: 'Please set up your GitHub token first'
+        message: 'Please set up your GitHub token first',
+        debug: 'No token found in environment'
       });
     }
+
+    // Test basic GitHub API connectivity
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'rebelsmuggling/flowtrac-shopify-inventory-sync';
+    const MAPPING_FILE_PATH = 'mapping.json';
+
+    console.log('Attempting to fetch from GitHub:', GITHUB_REPO);
 
     const response = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/contents/${MAPPING_FILE_PATH}`,
@@ -24,15 +33,27 @@ export async function GET() {
       }
     );
 
+    console.log('GitHub API response status:', response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.log('GitHub API error response:', errorText);
+      
       return NextResponse.json({ 
         success: false, 
         error: `GitHub API error: ${response.status}`,
-        message: 'Could not fetch mapping from GitHub'
+        message: 'Could not fetch mapping from GitHub',
+        debug: {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText.substring(0, 200) // First 200 chars
+        }
       });
     }
 
     const data = await response.json();
+    console.log('GitHub API success, parsing content');
+    
     const content = Buffer.from(data.content, 'base64').toString('utf-8');
     const mapping = JSON.parse(content);
 
@@ -53,7 +74,8 @@ export async function GET() {
     console.error('Test GitHub failed:', error);
     return NextResponse.json({ 
       success: false, 
-      error: (error as Error).message 
+      error: (error as Error).message,
+      debug: 'Exception caught in try-catch'
     }, { status: 500 });
   }
 } 

@@ -151,10 +151,19 @@ export default function Home() {
 
   const testGitHubMapping = async () => {
     try {
+      // First test if API routing is working
+      console.log('Testing simple endpoint first...');
+      const simpleRes = await fetch("/api/test-simple");
+      const simpleData = await simpleRes.json();
+      console.log('Simple endpoint result:', simpleData);
+      
+      // Now test GitHub endpoint
+      console.log('Testing GitHub endpoint...');
       const res = await fetch("/api/test-github");
       const data = await res.json();
       setGithubTestResult(data);
     } catch (err) {
+      console.error('Test failed:', err);
       setGithubTestResult({ success: false, error: (err as Error).message });
     }
   };
