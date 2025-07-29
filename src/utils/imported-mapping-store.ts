@@ -6,7 +6,24 @@ export function setImportedMapping(mapping: any) {
 }
 
 export function getImportedMapping() {
-  return importedMappingData;
+  // First try the immediate imported mapping
+  if (importedMappingData) {
+    return importedMappingData;
+  }
+  
+  // Fallback to cached mapping if available
+  try {
+    const { getCachedMapping } = require('./mapping-cache');
+    const cachedMapping = getCachedMapping();
+    if (cachedMapping) {
+      console.log('Using cached mapping data as fallback');
+      return cachedMapping;
+    }
+  } catch (error) {
+    console.log('No cached mapping available');
+  }
+  
+  return null;
 }
 
 export function clearImportedMapping() {

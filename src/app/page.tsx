@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import styles from "./page.module.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [syncing, setSyncing] = useState(false);
@@ -20,6 +20,7 @@ export default function Home() {
   const [importedMapping, setImportedMapping] = useState<any>(null);
   const [mappingData, setMappingData] = useState<any>(null);
   const [loadingMapping, setLoadingMapping] = useState(false);
+  const [mappingStatus, setMappingStatus] = useState<any>(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -135,6 +136,18 @@ export default function Home() {
     setLoadingMapping(false);
   };
 
+  const checkMappingStatus = async () => {
+    try {
+      const res = await fetch("/api/persist-mapping");
+      const data = await res.json();
+      if (data.success) {
+        setMappingStatus(data);
+      }
+    } catch (err) {
+      console.error('Failed to check mapping status:', err);
+    }
+  };
+
   const handleExportToSheets = async () => {
     setExportingToSheets(true);
     try {
@@ -234,6 +247,11 @@ export default function Home() {
     setMigrating(false);
   };
 
+  // Check mapping status on component mount
+  useEffect(() => {
+    checkMappingStatus();
+  }, []);
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -322,6 +340,41 @@ export default function Home() {
           <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: 16 }}>
             Export your mapping to Google Sheets for easy editing, then import it back!
           </p>
+          
+          {/* Mapping Status Indicator */}
+          <div style={{ 
+            fontSize: "0.8rem", 
+            color: "#666", 
+            marginBottom: 16,
+            padding: "8px 12px",
+            background: "#e7f3ff",
+            borderRadius: "4px",
+            border: "1px solid #b3d9ff"
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>
+                <strong>Mapping Status:</strong> 
+                {mappingStatus?.hasCachedMapping ? 
+                  ` ✅ Active (${mappingStatus.productCount} products)` : 
+                  ' ⚠️ Using original mapping.json'
+                }
+              </span>
+              <button
+                onClick={checkMappingStatus}
+                style={{
+                  padding: "2px 8px",
+                  fontSize: "0.7rem",
+                  borderRadius: "3px",
+                  background: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer"
+                }}
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
           <div style={{ 
             fontSize: "0.8rem", 
             color: "#666", 

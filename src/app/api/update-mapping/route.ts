@@ -15,8 +15,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Store the mapping data in memory
+    // Store the mapping data in memory and persist it
     setImportedMapping(mapping);
+    
+    // Also persist to the cache for longer-term storage
+    try {
+      const persistRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/persist-mapping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mapping })
+      });
+      if (persistRes.ok) {
+        console.log('Mapping data persisted successfully');
+      }
+    } catch (persistError) {
+      console.log('Could not persist mapping (this is okay for local development):', persistError);
+    }
     
     // Also try to write to file system (for local development)
     try {
