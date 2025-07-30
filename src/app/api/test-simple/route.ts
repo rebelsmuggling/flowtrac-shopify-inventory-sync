@@ -8,7 +8,7 @@ export async function GET() {
     if (!GITHUB_TOKEN) {
       return NextResponse.json({ 
         success: true, 
-        message: 'Simple test endpoint is working',
+        message: 'Simple test endpoint is working (updated)',
         timestamp: new Date().toISOString(),
         github: 'No token configured'
       });
