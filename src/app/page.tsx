@@ -249,7 +249,13 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         const githubStatus = data.githubUpdated ? ' (GitHub updated)' : ' (GitHub update failed)';
-        setSheetsResult(`✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.${githubStatus}`);
+        let resultMessage = `✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.${githubStatus}`;
+        
+        if (!data.githubUpdated && data.githubError) {
+          resultMessage += `\n\nGitHub Error Details: ${JSON.stringify(data.githubError, null, 2)}`;
+        }
+        
+        setSheetsResult(resultMessage);
         setImportedMapping(null); // Clear the imported mapping since it's now active
         // Refresh mapping data
         loadMappingData();
@@ -283,7 +289,13 @@ export default function Home() {
       const updateData = await updateRes.json();
       if (updateData.success) {
         const githubStatus = updateData.githubUpdated ? ' (GitHub updated)' : ' (GitHub update failed)';
-        setSheetsResult(`✅ Current mapping synced to GitHub${githubStatus}`);
+        let resultMessage = `✅ Current mapping synced to GitHub${githubStatus}`;
+        
+        if (!updateData.githubUpdated && updateData.githubError) {
+          resultMessage += `\n\nGitHub Error Details: ${JSON.stringify(updateData.githubError, null, 2)}`;
+        }
+        
+        setSheetsResult(resultMessage);
         // Clear any previous test results
         setGithubTestResult(null);
       } else {

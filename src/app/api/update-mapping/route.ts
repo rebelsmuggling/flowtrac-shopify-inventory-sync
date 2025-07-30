@@ -34,14 +34,20 @@ export async function POST(request: NextRequest) {
 
     // Also update GitHub if token is available
     let githubUpdateSuccess = false;
+    let githubErrorDetails = null;
+    
     if (process.env.GITHUB_TOKEN) {
       try {
         console.log('Attempting to update GitHub mapping...');
+        console.log('Token available, length:', process.env.GITHUB_TOKEN.length);
+        
         const githubRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mapping })
         });
+        
+        console.log('GitHub API response status:', githubRes.status);
         
         if (githubRes.ok) {
           const githubData = await githubRes.json();
@@ -50,12 +56,22 @@ export async function POST(request: NextRequest) {
         } else {
           const errorText = await githubRes.text();
           console.error('GitHub update failed:', githubRes.status, errorText);
+          githubErrorDetails = {
+            status: githubRes.status,
+            statusText: githubRes.statusText,
+            errorText: errorText.substring(0, 500) // First 500 chars
+          };
         }
       } catch (githubError) {
         console.error('Could not update GitHub mapping:', githubError);
+        githubErrorDetails = {
+          error: (githubError as Error).message,
+          stack: (githubError as Error).stack
+        };
       }
     } else {
       console.log('GITHUB_TOKEN not available, skipping GitHub update');
+      githubErrorDetails = 'No GITHUB_TOKEN configured';
     }
     
     // Also try to write to file system (for local development)
@@ -70,7 +86,8 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: `Successfully updated mapping with ${mapping.products?.length || 0} products`,
       productCount: mapping.products?.length || 0,
-      githubUpdated: githubUpdateSuccess
+      githubUpdated: githubUpdateSuccess,
+      githubError: githubErrorDetails
     });
 
   } catch (error) {
