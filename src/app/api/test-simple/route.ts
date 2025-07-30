@@ -1,9 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
-  return NextResponse.json({ 
-    success: true, 
-    message: 'Simple test endpoint is working',
-    timestamp: new Date().toISOString()
-  });
+  try {
+    // Test GitHub repository access
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    
+    if (!GITHUB_TOKEN) {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Simple test endpoint is working',
+        timestamp: new Date().toISOString(),
+        github: 'No token configured'
+      });
+    }
+
+    // Test GitHub repository access
+    const response = await fetch('https://api.github.com/repos/rebelsmuggling/flowtrac-shopify-inventory-sync', {
+      headers: {
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (response.ok) {
+      const repoData = await response.json();
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Simple test endpoint is working',
+        timestamp: new Date().toISOString(),
+        github: {
+          status: 'success',
+          repository: repoData.name,
+          full_name: repoData.full_name,
+          private: repoData.private
+        }
+      });
+    } else {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Simple test endpoint is working',
+        timestamp: new Date().toISOString(),
+        github: {
+          status: 'error',
+          error: `Repository access failed: ${response.status}`
+        }
+      });
+    }
+
+  } catch (error) {
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Simple test endpoint is working',
+      timestamp: new Date().toISOString(),
+      github: {
+        status: 'error',
+        error: (error as Error).message
+      }
+    });
+  }
 } 
