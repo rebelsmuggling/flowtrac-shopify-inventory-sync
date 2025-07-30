@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     
     // Also persist to the cache for longer-term storage
     try {
-      const persistRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/persist-mapping`, {
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+      const persistRes = await fetch(`${baseUrl}/api/persist-mapping`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mapping })
@@ -41,7 +42,8 @@ export async function POST(request: NextRequest) {
         console.log('Attempting to update GitHub mapping...');
         console.log('Token available, length:', process.env.GITHUB_TOKEN.length);
         
-        const githubRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+        const githubRes = await fetch(`${baseUrl}/api/github-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mapping })
