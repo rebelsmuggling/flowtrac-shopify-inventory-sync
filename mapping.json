@@ -12,7 +12,7 @@
       "shopify_sku": "IC-HCPK-0096",
       "flowtrac_sku": "",
       "product_name": "",
-      "amazon_sku": "",
+      "amazon_sku": "RS-HCPK-0096",
       "shopify_variant_id": "gid://shopify/ProductVariant/50060778340661",
       "shopify_inventory_item_id": "gid://shopify/InventoryItem/52109248790837",
       "bundle_components": [
@@ -120,9 +120,39 @@
       "shopify_sku": "IC-BIGS-009",
       "flowtrac_sku": "IC-BIGS-009",
       "product_name": "",
-      "amazon_sku": "",
+      "amazon_sku": "RS-BIGS-009",
       "shopify_variant_id": "gid://shopify/ProductVariant/44717479166261",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/46766307934517"
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/46766307934517",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "DX-ZIGE-1031",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1039",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1038",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IY-IW85-QLPE",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1036",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1035",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-103",
+          "quantity": 1
+        }
+      ]
     },
     {
       "shopify_sku": "IC-MILI-0028",
@@ -137,8 +167,8 @@
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-MILI-0056",
-      "shopify_variant_id": "gid://shopify/ProductVariant/50651419672885",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52686435778869",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
       "bundle_components": [
         {
           "flowtrac_sku": "IC-MILI-0028",
@@ -151,11 +181,27 @@
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-KEWS-0005",
-      "shopify_variant_id": "gid://shopify/ProductVariant/51118373273909",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53148655878453",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
       "bundle_components": [
         {
           "flowtrac_sku": "TT-5LOP-DIO3",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "3L-E499-25UI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "2L-1EO5-FLOR",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "2L-EIOP-CJFH",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "78-DORU-MMZC",
           "quantity": 1
         }
       ]
@@ -165,16 +211,16 @@
       "flowtrac_sku": "IC-HCPK-0048",
       "product_name": "",
       "amazon_sku": "RS-HCPK-0048",
-      "shopify_variant_id": "gid://shopify/ProductVariant/50060778012981",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52109248463157"
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
     },
     {
       "shopify_sku": "IC-FURI-0008",
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-FURI-0008",
-      "shopify_variant_id": "gid://shopify/ProductVariant/49955890725173",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52004304421173",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
       "bundle_components": [
         {
           "flowtrac_sku": "NV-23DE-DKEI",
@@ -215,8 +261,8 @@
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-COOK-0030",
-      "shopify_variant_id": "gid://shopify/ProductVariant/51118371832117",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53148654436661",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
       "bundle_components": [
         {
           "flowtrac_sku": "QP-WLEK-2300",
@@ -279,7 +325,3345 @@
           "quantity": 2
         }
       ]
+    },
+    {
+      "shopify_sku": "IC-MRSD-SEA12",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-MRSD-SEA12",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "QW-JDKL-1001",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1004",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1005",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1006",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1007",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1008",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1009",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1010",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1011",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-1012",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-DDUU",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-JDKL-UIOP",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-SKIN-PRES5",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SKIN-PRES5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "EI-LD45-WOPI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "34-DTYI-C39K",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "95-FKLI-WLDF",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "UW-45FK-8887",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QQ-3487-CLDI",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-RBBE-0002",
+      "flowtrac_sku": "IC-RBBE-0002",
+      "product_name": "",
+      "amazon_sku": "RS-RBBE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FRSO-0002",
+      "flowtrac_sku": "IC-FRSO-0002",
+      "product_name": "",
+      "amazon_sku": "RS-FRSO-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LICB-0002",
+      "flowtrac_sku": "IC-LICB-0002",
+      "product_name": "",
+      "amazon_sku": "RS-LICB-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SLCM-0002",
+      "flowtrac_sku": "IC-SLCM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SLCM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-NBCB-0002",
+      "flowtrac_sku": "IC-NBCB-0002",
+      "product_name": "",
+      "amazon_sku": "RS-NBCB-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LIFE-PEP2",
+      "flowtrac_sku": "IC-LIFE-PEP2",
+      "product_name": "",
+      "amazon_sku": "RS-LPEP-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LIFE-WIN2",
+      "flowtrac_sku": "IC-LIFE-WIN2",
+      "product_name": "",
+      "amazon_sku": "RS-LWIN-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LISP-0001",
+      "flowtrac_sku": "IC-LISP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-LISP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LIRA-0001",
+      "flowtrac_sku": "IC-LIRA-0001",
+      "product_name": "",
+      "amazon_sku": "RS-LIRA-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LISC-0001",
+      "flowtrac_sku": "IC-LISC-0001",
+      "product_name": "",
+      "amazon_sku": "RS-LISC-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LISW-0001",
+      "flowtrac_sku": "IC-LISW-0001",
+      "product_name": "",
+      "amazon_sku": "RS-LISW-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LISO-0001",
+      "flowtrac_sku": "IC-LISO-0001",
+      "product_name": "",
+      "amazon_sku": "RS-LISO-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-WILB-0005",
+      "flowtrac_sku": "IC-WILB-0005",
+      "product_name": "",
+      "amazon_sku": "RS-WILB-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CABT-0050",
+      "flowtrac_sku": "IC-CABT-0050",
+      "product_name": "",
+      "amazon_sku": "RS-CABT-0050",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RPIE-0002",
+      "flowtrac_sku": "IC-RPIE-0002",
+      "product_name": "",
+      "amazon_sku": "RS-RPIE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SKIT-005",
+      "flowtrac_sku": "IC-SKIT-005",
+      "product_name": "",
+      "amazon_sku": "RS-SKIT-005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-NERD-010",
+      "flowtrac_sku": "IC-NERD-010",
+      "product_name": "",
+      "amazon_sku": "RS-NERD-010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GJBS-0001",
+      "flowtrac_sku": "IC-GJBS-0001",
+      "product_name": "",
+      "amazon_sku": "RS-GJBS-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BROR-0002",
+      "flowtrac_sku": "IC-BROR-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BROR-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SPAO-0002",
+      "flowtrac_sku": "IC-SPAO-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SPAO-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-DOSL-0001",
+      "flowtrac_sku": "IC-DOSL-0001",
+      "product_name": "",
+      "amazon_sku": "RS-DOSL-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ORMT-0002",
+      "flowtrac_sku": "IC-ORMT-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ORMT-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GUST-0002",
+      "flowtrac_sku": "IC-GUST-0002",
+      "product_name": "",
+      "amazon_sku": "RS-GUST-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SOUC-0002",
+      "flowtrac_sku": "IC-SOUC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SOUC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-NEVB-0002",
+      "flowtrac_sku": "IC-NEVB-0002",
+      "product_name": "",
+      "amazon_sku": "RS-NEVB-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SPCD-0002",
+      "flowtrac_sku": "IC-SPCD-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SPCD-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SPLP-0001",
+      "flowtrac_sku": "IC-SPLP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SPLP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CINL-0002",
+      "flowtrac_sku": "IC-CINL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CINL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHEL-0002",
+      "flowtrac_sku": "IC-CHEL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CHEL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-UBEA-0001",
+      "flowtrac_sku": "IC-UBEA-0001",
+      "product_name": "",
+      "amazon_sku": "RS-UBEA-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SAND-0002",
+      "flowtrac_sku": "IC-SAND-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SAND-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IS-NEGU-0002",
+      "flowtrac_sku": "IS-NEGU-0002",
+      "product_name": "",
+      "amazon_sku": "RS-NEGU-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHSL-0002",
+      "flowtrac_sku": "IC-CHSL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CHSL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ORSL-0002",
+      "flowtrac_sku": "IC-ORSL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ORSL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FLSC-0002",
+      "flowtrac_sku": "IC-FLSC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-FLSC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-KLDI-0002",
+      "flowtrac_sku": "IC-KLDI-0002",
+      "product_name": "",
+      "amazon_sku": "RS-KLDI-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CAAP-0002",
+      "flowtrac_sku": "IC-CAAP-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CAAP-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CORC-0002",
+      "flowtrac_sku": "IC-CORC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CORC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SKIT-SOU2",
+      "flowtrac_sku": "IC-SKIT-SOU2",
+      "product_name": "",
+      "amazon_sku": "RS-SKIT-SOU2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BROB-0002",
+      "flowtrac_sku": "IC-BROB-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BROB-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GCAD-0001",
+      "flowtrac_sku": "IC-GCAD-0001",
+      "product_name": "",
+      "amazon_sku": "RS-GCAD-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BTDC-0002",
+      "flowtrac_sku": "IC-BTDC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BTDC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CRYB-0002",
+      "flowtrac_sku": "IC-CRYB-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CRYB-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CBTS-0005",
+      "flowtrac_sku": "IC-CBTS-0005",
+      "product_name": "",
+      "amazon_sku": "RS-CBTS-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BONZ-0002",
+      "flowtrac_sku": "IC-BONZ-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BONZ-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BONZ-0005",
+      "flowtrac_sku": "IC-BONZ-0005",
+      "product_name": "",
+      "amazon_sku": "RS-BONZ-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BOTC-0002",
+      "flowtrac_sku": "IC-BOTC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BOTC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STMI-0002",
+      "flowtrac_sku": "IC-STMI-0002",
+      "product_name": "",
+      "amazon_sku": "RS-STMI-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RIGM-0001",
+      "flowtrac_sku": "IC-RIGM-0001",
+      "product_name": "",
+      "amazon_sku": "RS-RIGM-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BANA-0002",
+      "flowtrac_sku": "IC-BANA-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BANA-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-BEEH-0001",
+      "flowtrac_sku": "RS-BEEH-0001",
+      "product_name": "",
+      "amazon_sku": "RS-BEEH-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SUNK-0002",
+      "flowtrac_sku": "IC-SUNK-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SUNK-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FINN-0001",
+      "flowtrac_sku": "IC-FINN-0001",
+      "product_name": "",
+      "amazon_sku": "RS-FINN-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GSFL-001",
+      "flowtrac_sku": "IC-GSFL-001",
+      "product_name": "",
+      "amazon_sku": "RS-GSFL-001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GSGS-0001",
+      "flowtrac_sku": "IC-GSGS-0001",
+      "product_name": "",
+      "amazon_sku": "RS-GSGS-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CNDC-0002",
+      "flowtrac_sku": "IC-CNDC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CNDC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ROOT-0002",
+      "flowtrac_sku": "IC-ROOT-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ROOT-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-STLI-0002",
+      "flowtrac_sku": "RS-STLI-0002",
+      "product_name": "",
+      "amazon_sku": "RS-STLI-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-RSWG-0002",
+      "flowtrac_sku": "RS-RSWG-0002",
+      "product_name": "",
+      "amazon_sku": "RS-RSWG-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SULI-0001",
+      "flowtrac_sku": "RS-SULI-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SULI-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-BEAG-0001",
+      "flowtrac_sku": "RS-BEAG-0001",
+      "product_name": "",
+      "amazon_sku": "RS-BEAG-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-ICEI-0001",
+      "flowtrac_sku": "RS-ICEI-0001",
+      "product_name": "",
+      "amazon_sku": "RS-ICEI-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-TIDB-0001",
+      "flowtrac_sku": "RS-TIDB-0001",
+      "product_name": "",
+      "amazon_sku": "RS-TIDB-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-DUCO-0001",
+      "flowtrac_sku": "RS-DUCO-0001",
+      "product_name": "",
+      "amazon_sku": "RS-DUCO-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-FARM-0001",
+      "flowtrac_sku": "RS-FARM-0001",
+      "product_name": "",
+      "amazon_sku": "RS-FARM-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-DROP-0001",
+      "flowtrac_sku": "RS-DROP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-DROP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GSGP-0001",
+      "flowtrac_sku": "IC-GSGP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-GSGP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-DLIC-0001",
+      "flowtrac_sku": "RS-DLIC-0001",
+      "product_name": "",
+      "amazon_sku": "RS-DLIC-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-CAHO-0001",
+      "flowtrac_sku": "RS-CAHO-0001",
+      "product_name": "",
+      "amazon_sku": "RS-CAHO-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-10FL-0002",
+      "flowtrac_sku": "IC-10FL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-10FL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SUNR-0002",
+      "flowtrac_sku": "IC-SUNR-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SUNR-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-MIKE-0002",
+      "flowtrac_sku": "RS-MIKE-0002",
+      "product_name": "",
+      "amazon_sku": "RS-MIKE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-HOTT-0002",
+      "flowtrac_sku": "RS-HOTT-0002",
+      "product_name": "",
+      "amazon_sku": "RS-HOTT-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SWED-0002",
+      "flowtrac_sku": "RS-SWED-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SWED-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SWEF-0002",
+      "flowtrac_sku": "RS-SWEF-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SWEF-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-MISW-0002",
+      "flowtrac_sku": "RS-MISW-0002",
+      "product_name": "",
+      "amazon_sku": "RS-MISW-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SBRL-0002",
+      "flowtrac_sku": "RS-SBRL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SBRL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RUFC-0002",
+      "flowtrac_sku": "IC-RUFC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-RUFC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-WACU-0001",
+      "flowtrac_sku": "RS-WACU-0001",
+      "product_name": "",
+      "amazon_sku": "RS-WACU-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-EFRU-0028",
+      "flowtrac_sku": "RS-EFRU-0028",
+      "product_name": "",
+      "amazon_sku": "RS-EFRU-0028",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-010-1",
+      "flowtrac_sku": "IC-STAR-010-1",
+      "product_name": "",
+      "amazon_sku": "RS-STAR-010-1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-RED2-1",
+      "flowtrac_sku": "IC-STAR-RED2-1",
+      "product_name": "",
+      "amazon_sku": "RS-STAR-RED2-1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-YEL2",
+      "flowtrac_sku": "IC-STAR-YEL2",
+      "product_name": "",
+      "amazon_sku": "RS-STAR-YEL2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-ORA2",
+      "flowtrac_sku": "IC-STAR-ORA2",
+      "product_name": "",
+      "amazon_sku": "RS-STAR-ORA2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-PIN2",
+      "flowtrac_sku": "IC-STAR-PIN2",
+      "product_name": "",
+      "amazon_sku": "RS-STAR-PIN2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-CHE5",
+      "flowtrac_sku": "IC-JRAN-CHE5",
+      "product_name": "",
+      "amazon_sku": "RS-JRAN-CHE5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-WAT5",
+      "flowtrac_sku": "IC-JRAN-WAT5",
+      "product_name": "",
+      "amazon_sku": "RS-JRAN-WAT5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-BRA5",
+      "flowtrac_sku": "IC-JRAN-BRA5",
+      "product_name": "",
+      "amazon_sku": "RS-JRAN-BRA5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-GAP5",
+      "flowtrac_sku": "IC-JRAN-GAP5",
+      "product_name": "",
+      "amazon_sku": "RS-JRAN-GAP5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-GRA5",
+      "flowtrac_sku": "IC-JRAN-GRA5",
+      "product_name": "",
+      "amazon_sku": "RS-JRAN-GRA5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-FAVE2",
+      "flowtrac_sku": "IC-STAR-FAVE2",
+      "product_name": "",
+      "amazon_sku": "RS-STAR-FAVE2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FVRD-0005",
+      "flowtrac_sku": "IC-FVRD-0005",
+      "product_name": "",
+      "amazon_sku": "RS-FVRD-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SBWM-0001",
+      "flowtrac_sku": "IC-SBWM-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SBWM-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SBFP-0001",
+      "flowtrac_sku": "IC-SBFP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SBFP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LIFE-ASS2",
+      "flowtrac_sku": "IC-LIFE-ASS2",
+      "product_name": "",
+      "amazon_sku": "RS-LIFE-ASS2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LIFE-ASS5",
+      "flowtrac_sku": "IC-LIFE-ASS5",
+      "product_name": "",
+      "amazon_sku": "RS-LIFE-ASS5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LDVM-0002",
+      "flowtrac_sku": "IC-LDVM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-LDVM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LDVM-0005",
+      "flowtrac_sku": "IC-LDVM-0005",
+      "product_name": "",
+      "amazon_sku": "RS-LDVM-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CSOC-0001",
+      "flowtrac_sku": "IC-CSOC-0001",
+      "product_name": "",
+      "amazon_sku": "RS-CSOC-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CSSC-0001",
+      "flowtrac_sku": "IC-CSSC-0001",
+      "product_name": "",
+      "amazon_sku": "RS-CSSC-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CSOS-0002",
+      "flowtrac_sku": "IC-CSOS-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CSOS-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRTM-0002",
+      "flowtrac_sku": "IC-JRTM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-JRTM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHER-0002",
+      "flowtrac_sku": "IC-CHER-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CHER-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BLUE-0002",
+      "flowtrac_sku": "IC-BLUE-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BLUE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-APPL-0002",
+      "flowtrac_sku": "IC-APPL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-APPL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-WATE-0002",
+      "flowtrac_sku": "IC-WATE-0002",
+      "product_name": "",
+      "amazon_sku": "RS-WATE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GRAP-0002",
+      "flowtrac_sku": "IC-GRAP-0002",
+      "product_name": "",
+      "amazon_sku": "RS-GRAP-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SNIC-0002",
+      "flowtrac_sku": "IC-SNIC-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SNIC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ANDM-0002",
+      "flowtrac_sku": "IC-ANDM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ANDM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-MKWY-0002",
+      "flowtrac_sku": "IC-MKWY-0002",
+      "product_name": "",
+      "amazon_sku": "RS-MKWY-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TWIX-0002",
+      "flowtrac_sku": "IC-TWIX-0002",
+      "product_name": "",
+      "amazon_sku": "RS-TWIX-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TWIM-0002",
+      "flowtrac_sku": "IC-TWIM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-TWIM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CRSS-0002",
+      "flowtrac_sku": "IC-CRSS-0002",
+      "product_name": "",
+      "amazon_sku": "RS-CRSS-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SKFS-0005",
+      "flowtrac_sku": "IC-SKFS-0005",
+      "product_name": "",
+      "amazon_sku": "RS-SKFS-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STSK-0005",
+      "flowtrac_sku": "IC-STSK-0005",
+      "product_name": "",
+      "amazon_sku": "RS-STSK-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAF-0002",
+      "flowtrac_sku": "IC-STAF-0002",
+      "product_name": "",
+      "amazon_sku": "RS-STAF-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RCSC-0001",
+      "flowtrac_sku": "IC-RCSC-0001",
+      "product_name": "",
+      "amazon_sku": "RS-RCSC-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RCSL-0001",
+      "flowtrac_sku": "IC-RCSL-0001",
+      "product_name": "",
+      "amazon_sku": "RS-RCSL-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RCSL-0002",
+      "flowtrac_sku": "IC-RCSL-0002",
+      "product_name": "",
+      "amazon_sku": "RS-RCSL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-REBC-0001",
+      "flowtrac_sku": "IC-REBC-0001",
+      "product_name": "",
+      "amazon_sku": "RS-REBC-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RERB-0001",
+      "flowtrac_sku": "IC-RERB-0001",
+      "product_name": "",
+      "amazon_sku": "RS-RERB-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-GRAP2",
+      "flowtrac_sku": "IC-PEZ-GRAP2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-GRAP2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-CHER2",
+      "flowtrac_sku": "IC-PEZ-CHER2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-CHER2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-RASP2",
+      "flowtrac_sku": "IC-PEZ-RASP2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-RASP2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-LEMO2",
+      "flowtrac_sku": "IC-PEZ-LEMO2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-LEMO2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-STRA2",
+      "flowtrac_sku": "IC-PEZ-STRA2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-STRA2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-ORAN2",
+      "flowtrac_sku": "IC-PEZ-ORAN2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-ORAN2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-SOUR2",
+      "flowtrac_sku": "IC-PEZ-SOUR2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-SOUR2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-ASS2",
+      "flowtrac_sku": "IC-PEZ-ASS2",
+      "product_name": "",
+      "amazon_sku": "RS-PEZ-ASS2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZA-0005",
+      "flowtrac_sku": "IC-PEZA-0005",
+      "product_name": "",
+      "amazon_sku": "RS-PEZA-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-ORA60",
+      "flowtrac_sku": "IC-TPOP-ORA60",
+      "product_name": "",
+      "amazon_sku": "RS-TPOP-ORA60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-CHO60",
+      "flowtrac_sku": "IC-TPOP-CHO60",
+      "product_name": "",
+      "amazon_sku": "RS-TPOP-CHO60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-CHE60",
+      "flowtrac_sku": "IC-TPOP-CHE60",
+      "product_name": "",
+      "amazon_sku": "RS-TPOP-CHE60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-GRA60",
+      "flowtrac_sku": "IC-TPOP-GRA60",
+      "product_name": "",
+      "amazon_sku": "RS-TPOP-GRA60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-RRAS60",
+      "flowtrac_sku": "IC-TPOP-RRAS60",
+      "product_name": "",
+      "amazon_sku": "RS-TPOP-RRAS60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CATP-0060",
+      "flowtrac_sku": "IC-CATP-0060",
+      "product_name": "",
+      "amazon_sku": "RS-CATP-0060",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CATP-0030",
+      "flowtrac_sku": "IC-CATP-0030",
+      "product_name": "",
+      "amazon_sku": "RS-CATP-0030",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHOC-0030",
+      "flowtrac_sku": "IC-CHOC-0030",
+      "product_name": "",
+      "amazon_sku": "RS-CHOC-0030",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SALM-0002",
+      "flowtrac_sku": "IC-SALM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SALM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-CA20-0020",
+      "flowtrac_sku": "RS-CA20-0020",
+      "product_name": "",
+      "amazon_sku": "RS-CA20-0020",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-POPR-009",
+      "flowtrac_sku": "IC-POPR-009",
+      "product_name": "",
+      "amazon_sku": "RS-POPR-009",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CER9-0018",
+      "flowtrac_sku": "IC-CER9-0018",
+      "product_name": "",
+      "amazon_sku": "RS-CER9-0018",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-MAYI-0009",
+      "flowtrac_sku": "IC-MAYI-0009",
+      "product_name": "",
+      "amazon_sku": "RS-MAYI-0009",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CERB-0025",
+      "flowtrac_sku": "IC-CERB-0025",
+      "product_name": "",
+      "amazon_sku": "RS-CERB-0025",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CITD-0004",
+      "flowtrac_sku": "IC-CITD-0004",
+      "product_name": "",
+      "amazon_sku": "RS-CITD-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TABM-0016",
+      "flowtrac_sku": "IC-TABM-0016",
+      "product_name": "",
+      "amazon_sku": "RS-TABM-0016",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-NUTE-MINI16",
+      "flowtrac_sku": "IC-NUTE-MINI16",
+      "product_name": "",
+      "amazon_sku": "RS-NUTE-MINI16",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ALT-007",
+      "flowtrac_sku": "IC-ALT-007",
+      "product_name": "",
+      "amazon_sku": "RS-ALT-007",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRTM-0002",
+      "flowtrac_sku": "IC-JRTM-0002",
+      "product_name": "",
+      "amazon_sku": "IC-JRTM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-KPOP-0008",
+      "flowtrac_sku": "IC-KPOP-0008",
+      "product_name": "",
+      "amazon_sku": "IC-KPOP-0008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SKIT-SOU2",
+      "flowtrac_sku": "IC-SKIT-SOU2",
+      "product_name": "",
+      "amazon_sku": "IC-SKIT-SOU2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SOUC-0002",
+      "flowtrac_sku": "IC-SOUC-0002",
+      "product_name": "",
+      "amazon_sku": "IC-SOUC-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STBR-0001",
+      "flowtrac_sku": "IC-STBR-0001",
+      "product_name": "",
+      "amazon_sku": "IC-STBR-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHOC-0030",
+      "flowtrac_sku": "IC-CHOC-0030",
+      "product_name": "",
+      "amazon_sku": "IC-CHOC-0030",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-BRA5",
+      "flowtrac_sku": "IC-JRAN-BRA5",
+      "product_name": "",
+      "amazon_sku": "IC-JRAN-BRA5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-GAP5",
+      "flowtrac_sku": "IC-JRAN-GAP5",
+      "product_name": "",
+      "amazon_sku": "IC-JRAN-GAP5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-WAT5",
+      "flowtrac_sku": "IC-JRAN-WAT5",
+      "product_name": "",
+      "amazon_sku": "IC-JRAN-WAT5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-CHE5",
+      "flowtrac_sku": "IC-JRAN-CHE5",
+      "product_name": "",
+      "amazon_sku": "IC-JRAN-CHE5",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JELLO-REG15",
+      "flowtrac_sku": "IC-JELLO-REG15",
+      "product_name": "",
+      "amazon_sku": "IC-JELLO-REG15",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEZ-GRAP2",
+      "flowtrac_sku": "IC-PEZ-GRAP2",
+      "product_name": "",
+      "amazon_sku": "IC-PEZ-GRAP2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FINS-0001",
+      "flowtrac_sku": "IC-FINS-0001",
+      "product_name": "",
+      "amazon_sku": "IC-FINS-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-010-1",
+      "flowtrac_sku": "IC-STAR-010-1",
+      "product_name": "",
+      "amazon_sku": "IC-STAR-010-1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-005-1",
+      "flowtrac_sku": "IC-STAR-005-1",
+      "product_name": "",
+      "amazon_sku": "IC-STAR-005-1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-RED2-1",
+      "flowtrac_sku": "IC-STAR-RED2-1",
+      "product_name": "",
+      "amazon_sku": "IC-STAR-RED2-1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STAR-YEL2",
+      "flowtrac_sku": "IC-STAR-YEL2",
+      "product_name": "",
+      "amazon_sku": "IC-STAR-YEL2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-ORA60",
+      "flowtrac_sku": "IC-TPOP-ORA60",
+      "product_name": "",
+      "amazon_sku": "IC-TPOP-ORA60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TPOP-CHE60",
+      "flowtrac_sku": "IC-TPOP-CHE60",
+      "product_name": "",
+      "amazon_sku": "IC-TPOP-CHE60",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TICTAC1-05",
+      "flowtrac_sku": "IC-TICTAC1-05",
+      "product_name": "",
+      "amazon_sku": "IC-TICTAC1-05",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SBOR-0005",
+      "flowtrac_sku": "IC-SBOR-0005",
+      "product_name": "",
+      "amazon_sku": "IC-SBOR-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHER-0002",
+      "flowtrac_sku": "IC-CHER-0002",
+      "product_name": "",
+      "amazon_sku": "IC-CHER-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-WATE-0002",
+      "flowtrac_sku": "IC-WATE-0002",
+      "product_name": "",
+      "amazon_sku": "IC-WATE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GRAP-0002",
+      "flowtrac_sku": "IC-GRAP-0002",
+      "product_name": "",
+      "amazon_sku": "IC-GRAP-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TWIM-0002",
+      "flowtrac_sku": "IC-TWIM-0002",
+      "product_name": "",
+      "amazon_sku": "IC-TWIM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-STBR-0001",
+      "flowtrac_sku": "IC-STBR-0001",
+      "product_name": "",
+      "amazon_sku": "IC-STBR-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-WAT1",
+      "flowtrac_sku": "IC-JRAN-WAT1",
+      "product_name": "",
+      "amazon_sku": "IC-JRAN-WAT1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JRAN-GRA1",
+      "flowtrac_sku": "IC-JRAN-GRA1",
+      "product_name": "",
+      "amazon_sku": "IC-JRAN-GRA1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-COM7-0007",
+      "flowtrac_sku": "IC-COM7-0007",
+      "product_name": "",
+      "amazon_sku": "RS-COM7-0007",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-HUBB-0008",
+      "flowtrac_sku": "IC-HUBB-0008",
+      "product_name": "",
+      "amazon_sku": "IC-HUBB-0008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FSHS-0002",
+      "flowtrac_sku": "IC-FSHS-0002",
+      "product_name": "",
+      "amazon_sku": "IC-FSHS-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-EXRE-0005",
+      "flowtrac_sku": "IC-EXRE-0005",
+      "product_name": "",
+      "amazon_sku": "IC-EXRE-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FSCO-0003",
+      "flowtrac_sku": "IC-FSCO-0003",
+      "product_name": "",
+      "amazon_sku": "RS-FSCO-0003",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-FIVE-0007",
+      "flowtrac_sku": "IC-FIVE-0007",
+      "product_name": "",
+      "amazon_sku": "IC-FIVE-0007",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-HEIN-MIN3",
+      "flowtrac_sku": "IC-HEIN-MIN3",
+      "product_name": "",
+      "amazon_sku": "RS-HEIN-MIN3",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-HE75-0200",
+      "flowtrac_sku": "IC-HE75-0200",
+      "product_name": "",
+      "amazon_sku": "RS-HE75-0200",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PUPE-0005",
+      "flowtrac_sku": "IC-PUPE-0005",
+      "product_name": "",
+      "amazon_sku": "RS-PUPE-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SUNS-0003",
+      "flowtrac_sku": "IC-SUNS-0003",
+      "product_name": "",
+      "amazon_sku": "RS-SUNS-0003",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-BIGS-0005",
+      "flowtrac_sku": "IC-BIGS-0005",
+      "product_name": "",
+      "amazon_sku": "RS-BIGS-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-THEA-0012",
+      "flowtrac_sku": "IC-THEA-0012",
+      "product_name": "",
+      "amazon_sku": "RS-THEA-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-MMWP-001",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-MMWP-001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "AA-EW94-1001",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "AA-EW94-1002",
+          "quantity": 6
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-GMPL-0001",
+      "flowtrac_sku": "IC-GMPL-0001",
+      "product_name": "",
+      "amazon_sku": "RS-GMPL-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-BRRW-0002",
+      "flowtrac_sku": "RS-BRRW-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BRRW-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-CHLO-0001",
+      "flowtrac_sku": "RS-CHLO-0001",
+      "product_name": "",
+      "amazon_sku": "RS-CHLO-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-ROCK-0001",
+      "flowtrac_sku": "RS-ROCK-0001",
+      "product_name": "",
+      "amazon_sku": "RS-ROCK-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-ROCK-WH01",
+      "flowtrac_sku": "RS-ROCK-WH01",
+      "product_name": "",
+      "amazon_sku": "RS-ROCK-WH01",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SALL-0001",
+      "flowtrac_sku": "RS-SALL-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SALL-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-LCUB-0001",
+      "flowtrac_sku": "RS-LCUB-0001",
+      "product_name": "",
+      "amazon_sku": "RS-LCUB-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-DUTZ-0001",
+      "flowtrac_sku": "RS-DUTZ-0001",
+      "product_name": "",
+      "amazon_sku": "RS-DUTZ-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-BLLA-0002",
+      "flowtrac_sku": "RS-BLLA-0002",
+      "product_name": "",
+      "amazon_sku": "RS-BLLA-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-FIST-0001",
+      "flowtrac_sku": "RS-FIST-0001",
+      "product_name": "",
+      "amazon_sku": "RS-FIST-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SBCH-0001",
+      "flowtrac_sku": "RS-SBCH-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SBCH-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SBAP-0001",
+      "flowtrac_sku": "RS-SBAP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SBAP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-COWG-0001",
+      "flowtrac_sku": "RS-COWG-0001",
+      "product_name": "",
+      "amazon_sku": "RS-COWG-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-STCH-0001",
+      "flowtrac_sku": "RS-STCH-0001",
+      "product_name": "",
+      "amazon_sku": "RS-STCH-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-BLAP-0001",
+      "flowtrac_sku": "RS-BLAP-0001",
+      "product_name": "",
+      "amazon_sku": "RS-BLAP-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SSGB-0001",
+      "flowtrac_sku": "RS-SSGB-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SSGB-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SCCG-0001",
+      "flowtrac_sku": "RS-SCCG-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SCCG-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SBRS-0001",
+      "flowtrac_sku": "RS-SBRS-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SBRS-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-SORA-0001",
+      "flowtrac_sku": "RS-SORA-0001",
+      "product_name": "",
+      "amazon_sku": "RS-SORA-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-RS2L-0002",
+      "flowtrac_sku": "RS-RS2L-0002",
+      "product_name": "",
+      "amazon_sku": "RS-RS2L-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-NERD-005",
+      "flowtrac_sku": "IC-NERD-005",
+      "product_name": "",
+      "amazon_sku": "RS-NERD-005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SKIN-007",
+      "flowtrac_sku": "IC-SKIN-007",
+      "product_name": "",
+      "amazon_sku": "RS-SKIN-007",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-NUTE-CUP20",
+      "flowtrac_sku": "IC-NUTE-CUP20",
+      "product_name": "",
+      "amazon_sku": "RS-NUTE-CUP20",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-AIRH-006",
+      "flowtrac_sku": "IC-AIRH-006",
+      "product_name": "",
+      "amazon_sku": "RS-AIRH-006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHEX-016",
+      "flowtrac_sku": "IC-CHEX-016",
+      "product_name": "",
+      "amazon_sku": "RS-CHEX-016",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ZOTE-0002",
+      "flowtrac_sku": "IC-ZOTE-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ZOTE-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ZOBR-0002",
+      "flowtrac_sku": "IC-ZOBR-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ZOBR-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ZOTW-0002",
+      "flowtrac_sku": "IC-ZOTW-0002",
+      "product_name": "",
+      "amazon_sku": "RS-ZOTW-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LTUM-0002",
+      "flowtrac_sku": "IC-LTUM-0002",
+      "product_name": "",
+      "amazon_sku": "RS-LTUM-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-MGSE-0005",
+      "flowtrac_sku": "IC-MGSE-0005",
+      "product_name": "",
+      "amazon_sku": "RS-MGSE-0005",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-HZMI-0012",
+      "flowtrac_sku": "IC-HZMI-0012",
+      "product_name": "",
+      "amazon_sku": "RS-HZMI-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JELLO-PD09",
+      "flowtrac_sku": "IC-JELLO-PD09",
+      "product_name": "",
+      "amazon_sku": "RS-JELLO-PD09",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-JELLO-SF08",
+      "flowtrac_sku": "IC-JELLO-SF08",
+      "product_name": "",
+      "amazon_sku": "RS-JELLO-SF08",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ALTA-0006",
+      "flowtrac_sku": "IC-ALTA-0006",
+      "product_name": "",
+      "amazon_sku": "RS-ALTA-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-MISS-0006",
+      "flowtrac_sku": "IC-MISS-0006",
+      "product_name": "",
+      "amazon_sku": "RS-MISS-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TRID-0004",
+      "flowtrac_sku": "IC-TRID-0004",
+      "product_name": "",
+      "amazon_sku": "RS-TRID-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TRI5-0010",
+      "flowtrac_sku": "IC-TRI5-0010",
+      "product_name": "",
+      "amazon_sku": "RS-TRI5-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-YUCA7-TAB1",
+      "flowtrac_sku": "IC-YUCA7-TAB1",
+      "product_name": "",
+      "amazon_sku": "RS-YUCA7-TAB1",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PE4P-0004",
+      "flowtrac_sku": "IC-PE4P-0004-2",
+      "product_name": "",
+      "amazon_sku": "RS-PE4P-0040",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PEEP-0009",
+      "flowtrac_sku": "IC-PEEP-0009",
+      "product_name": "",
+      "amazon_sku": "RS-PEEP-0090",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-CHSL-0002",
+      "flowtrac_sku": "IC-CHSL-0002",
+      "product_name": "",
+      "amazon_sku": "IC-CHSL-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-GUM1-GB32",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-GUM1-GB32",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-EXTR-0009",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IC-HUBB-0008",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "GG-GKLF-34FH",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "OL-34EU-34UI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FD-WEJI-34FJ",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "EE-WWRE-4JIO",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "TI-ERLF-45UI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IC-TRI5-0010",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-GUM2-GB17",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-GUM2-GB17",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-TRID-0004",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IC-ICEB-008",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IC-EXRE-0005",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SPCD-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SPCD-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-SPCD-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SPCD-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SPCD-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-SPCD-0002",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SPCD-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SPCD-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-SPCD-0002",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-FRSO-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-FRSO-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-FRSO-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-FRSO-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-FRSO-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-FRSO-0002",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-FRSO-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-FRSO-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-FRSO-0002",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-LICB-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-LICB-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-LICB-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-LICB-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-LICB-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-LICB-0002",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-LICB-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-LICB-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-LICB-0002",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SLCM-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SLCM-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-SLCM-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SLCM-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SLCM-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-SLCM-0002",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SLCM-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-SLCM-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-SLCM-0002",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NBCB-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NBCB-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "RS-NBCB-0004",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NBCB-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NBCB-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "RS-NBCB-0006",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NBCB-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NBCB-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "RS-NBCB-0010",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEVB-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEVB-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEVB-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEVB-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEVB-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEVB-0002",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEVB-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEVB-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEVB-0002",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEGU-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEGU-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEGU-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEGU-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEGU-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEGU-0002",
+          "quantity": 4
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEGU-0010",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEGU-0010",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEGU-0002",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NEGU-0030",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NEGU-0030",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-NEGU-0002",
+          "quantity": 15
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-SUNB-0002",
+      "flowtrac_sku": "RS-SUNB-0002",
+      "product_name": "",
+      "amazon_sku": "RS-SUNB-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "EI-DIEO-49EI",
+      "flowtrac_sku": "EI-DIEO-49EI",
+      "product_name": "",
+      "amazon_sku": "RS-KCHO-0002",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-POPR-018",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-POPR-018",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-POPS-0009",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-POPR-021",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "IC-POPR-021",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-POPS-0009",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "4R-HIHU-A3E4",
+          "quantity": 12
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-EDKL-4536",
+      "flowtrac_sku": "IC-EDKL-4536",
+      "product_name": "",
+      "amazon_sku": "RS-EDKL-4536",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-RAMU-0012",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-RAMU-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "GH-LIOP-ELIO",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-WUIY-1587",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-FFFF-1005",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-FFFF-1007",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-FFFF-1008",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-FFFF-1009",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-EUIR-4059",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-FFFF-1010",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-FFFF-1006",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "45-3LF5-EL68",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "48-091U-OPLA",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "YY-ELOP-3425",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-ICEB-0008",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-ICEB-0008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "ER-WSKD-23ER",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QD-WEDJ-234F",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "WE-FFDW-34FF",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DW-WEDS-2343",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "43-1DWE-CCVV",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "EW-3DFE-4433",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "TE-SFJE-23FD",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "PP-WEDS-3456",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-HIME-0012",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-HIME-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "SD-CLDE-3410",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3411",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3412",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3413",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3414",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3415",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3416",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3417",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3418",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3419",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3420",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SD-CLDE-3423",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-MABO-0012",
+      "flowtrac_sku": "IC-MABO-0012",
+      "product_name": "",
+      "amazon_sku": "RS-MABO-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PE4P-0008",
+      "flowtrac_sku": "IC-PE4P-0008",
+      "product_name": "",
+      "amazon_sku": "RS-PE4P-0008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LFWS-0006",
+      "flowtrac_sku": "IC-LFWS-0006",
+      "product_name": "",
+      "amazon_sku": "RS-LFWS-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-KCHO-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-KCHO-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "EI-DIEO-49EI",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-KCHO-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-KCHO-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "EI-DIEO-49EI",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-CORC-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-CORC-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-CORC-0002",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-CORC-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-CORC-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-CORC-0002",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-DAVI-012",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-DAVI-012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "DX-ZIGE-1041",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "XF-74QO-JVNE",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1043",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1044",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1045",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1046",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1047",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1048",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1049",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-ELOP-3928",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "GL-5849-ELIO",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "33-RJJJ-4895",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-JELLO-SFRE8",
+      "flowtrac_sku": "IC-JELLO-SFRE8",
+      "product_name": "",
+      "amazon_sku": "RS-JELLO-SFRE8",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ICEB-008",
+      "flowtrac_sku": "IC-ICEB-008",
+      "product_name": "",
+      "amazon_sku": "RS-ICEB-008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-POPR-0036",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-POPR-0036",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-POPS-0009",
+          "quantity": 4
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-MENT-0008",
+      "flowtrac_sku": "IC-MENT-0008",
+      "product_name": "",
+      "amazon_sku": "RS-MENT-0008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-DUKE-0006",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-DUKE-0006",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "DX-ZIGE-1052",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1053",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1050",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1051",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "EH-DEFJ-34UI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "FH-EDIO-239E",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-MAR12-0012",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-MAR12-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "LO-WEOP-32KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "LC-SDLK-23KD",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "YT-ELWK-34KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "VN-SDKJ-23JJ",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DC-SDCD-23KJ",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-LDKS-23LK",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "LN-CVMN-DFKJ",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-LDKS-WEDS",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-DLEW-23KF",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "WL-SDCD-32KD",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "MN-CSWE-LKDJ",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QL-EDLW-23LK",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-HECO-0024",
+      "flowtrac_sku": "IC-HECO-0024",
+      "product_name": "",
+      "amazon_sku": "RS-HECO-0024",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-HERS-SYR3",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-HERS-SYR3",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "TW-U6KO-3Q56",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "TW-U6KO-3Q58",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "TW-U6KO-3Q57",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-KOOL-0090",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-KOOL-0090",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IC-KOOL-0045",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-YUCA-0013",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-YUCA-0013",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "FK-GFDF-FDGH",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "AA-EW94-1004",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "AA-EW94-1005",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "AA-EW94-1006",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "AA-EW94-1003",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-EW94-1006",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-EW94-1007",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QP-WLEK-2322",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QP-WLEK-2323",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QP-WLEK-2324",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QP-WLEK-2325",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QP-WLEK-2326",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QP-WLEK-2327",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-NUTS-0048",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-NUTS-0048",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "RS-BLUD-0012",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-BLUD-0012",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "IP-YIHI-8004",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IP-YIHI-8005",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "LO-PMLK-D099",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1026",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1024",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "IP-YIHI-8003",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "EL-23LK-32KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "CL-WLDK-34KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "KL-ERWE-34KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QL-ASLE-2390",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "JD-23JK-PLOP",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "LK-WEKL-23KL",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-MARU-0044",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-MARU-0044",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "FK-WLEK-2300",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2301",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2302",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2303",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2305",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2306",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2307",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2308",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2309",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2310",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "FK-WLEK-2311",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-JBPE-0008",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-JBPE-0008",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "GV-DJEI-W010",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "GV-DJEI-W011",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "GV-DJEI-W012",
+          "quantity": 2
+        },
+        {
+          "flowtrac_sku": "GV-DJEI-W013",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-PEHA-0004",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-PEHA-0004",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "ER-WDEW-34KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "UI-45JK-34KL",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "JK-DLSF-34JK",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "EL-34EW-45PP",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "shopify_sku": "RS-JBPE-0003",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "RS-JBPE-0003",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "DL-ED34-JKFL",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-KPOP-0008",
+      "product_name": "",
+      "amazon_sku": "11-ITMJ-1TZ8",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-LIFE-ASS5",
+      "product_name": "",
+      "amazon_sku": "1D-H6JJ-H395",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-JRAN-BRA5",
+      "product_name": "",
+      "amazon_sku": "1K-DAXK-0AHJ",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-GRAP-0002",
+      "flowtrac_sku": "IC-GRAP-0002",
+      "product_name": "",
+      "amazon_sku": "43-0JL6-4Y6T",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-PE4P-0004-2",
+      "flowtrac_sku": "IC-PE4P-0004-2",
+      "product_name": "",
+      "amazon_sku": "4P-DPNQ-OYY7",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-RCMT-0005",
+      "product_name": "",
+      "amazon_sku": "8J-W1MC-XDBF",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "EH-DIEU-30EI",
+      "product_name": "",
+      "amazon_sku": "EH-DIEU-30EI",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-LFWS-0006",
+      "flowtrac_sku": "IC-LFWS-0006",
+      "product_name": "",
+      "amazon_sku": "EW-NI31-4P2P",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-ICEB-008",
+      "flowtrac_sku": "IC-ICEB-008",
+      "product_name": "",
+      "amazon_sku": "FT-HUSF-JCIJ",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "GV-DJEI-W014",
+      "product_name": "",
+      "amazon_sku": "GV-DJEI-W014",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "GV-DJEI-W014",
+          "quantity": 12
+        }
+      ]
+    },
+    {
+      "shopify_sku": "IC-SATW-0001",
+      "flowtrac_sku": "IC-SATW-0001",
+      "product_name": "",
+      "amazon_sku": "IC-SATW-0001",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-SKIT-0025",
+      "flowtrac_sku": "IC-SKIT-0025",
+      "product_name": "",
+      "amazon_sku": "IC-SKIT-0025",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-SKIT-SOU2",
+      "product_name": "",
+      "amazon_sku": "IC-SKIT-SOU2-2",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "MP-PXHZ-7L5E",
+      "product_name": "",
+      "amazon_sku": "MP-PXHZ-7L5E",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-TPOP-CHO60",
+      "product_name": "",
+      "amazon_sku": "QW-34JK-3KLJ",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-PEZA-0005",
+      "product_name": "",
+      "amazon_sku": "QW-DKEW-34KL",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "SN-30R6-4UMK",
+      "product_name": "",
+      "amazon_sku": "SN-30R6-4UMK",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-EXTR-0009",
+      "flowtrac_sku": "IC-EXTR-0009",
+      "product_name": "",
+      "amazon_sku": "SV-JZ29-Y77T",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "WE-DLSK-34KF",
+      "product_name": "",
+      "amazon_sku": "WE-DLSK-34KF",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-PE4P-0004-2",
+      "product_name": "",
+      "amazon_sku": "YP-ZMFM-ZFPX",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-STAR-002",
+      "product_name": "",
+      "amazon_sku": "3T-MD2B-O1PB",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "87-2AR3-SDTW",
+      "product_name": "",
+      "amazon_sku": "87-2AR3-SDTW",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "9E-4JQL-MCJY",
+      "product_name": "",
+      "amazon_sku": "9E-4JQL-MCJY",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "9P-5B71-LV40",
+      "product_name": "",
+      "amazon_sku": "9P-5B71-LV40",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "EI-DIEO-49EI",
+      "product_name": "",
+      "amazon_sku": "EI-DIEO-49EI",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "EK-WELE-349F",
+      "product_name": "",
+      "amazon_sku": "EK-WELE-349F",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-MMMC-0002",
+      "product_name": "",
+      "amazon_sku": "JQ-WEDE-34KL",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "MG-4BGU-F943",
+      "product_name": "",
+      "amazon_sku": "MG-4BGU-F943",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-STAR-005-1",
+      "product_name": "",
+      "amazon_sku": "QW-EKQK-32KL",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "",
+      "flowtrac_sku": "IC-EXTR-0009",
+      "product_name": "",
+      "amazon_sku": "RS-EXTR-0009",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "ZC-98QX-FMJS",
+      "flowtrac_sku": "ZC-98QX-FMJS",
+      "product_name": "",
+      "amazon_sku": "ZC-98QX-FMJS",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-08T20:42:34.633Z"
+  "lastUpdated": "2025-08-08T20:49:17.567Z"
 }
