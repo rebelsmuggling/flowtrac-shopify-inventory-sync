@@ -23,6 +23,7 @@ export default function Home() {
   const [mappingStatus, setMappingStatus] = useState<any>(null);
   const [githubTestResult, setGithubTestResult] = useState<any>(null);
   const [syncingToGitHub, setSyncingToGitHub] = useState(false);
+  const [exportingInventory, setExportingInventory] = useState(false);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -327,6 +328,29 @@ export default function Home() {
     setMigrating(false);
   };
 
+  const handleExportInventoryCSV = async () => {
+    setExportingInventory(true);
+    try {
+      const res = await fetch("/api/export-inventory-csv");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Inventory export failed');
+      }
+    } catch (err) {
+      console.error('Inventory export failed:', err);
+    }
+    setExportingInventory(false);
+  };
+
   // Check mapping status on component mount
   useEffect(() => {
     checkMappingStatus();
@@ -346,32 +370,46 @@ export default function Home() {
         
         <h1>Flowtrac → Shopify Inventory Sync</h1>
         
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: 16 }}>
+          Sync inventory from Flowtrac to Shopify and Amazon. Use the Preview CSV button to see what quantities would be synced without actually performing the sync.
+        </p>
 
         {/* --- Sync Now Button and Feedback --- */}
         <div style={{ marginTop: 32, width: "100%", maxWidth: 480 }}>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            style={{
-              padding: "0.75rem 1.5rem",
-              fontSize: "1.1rem",
-              borderRadius: "6px",
-              background: syncing ? "#ccc" : "#0070f3",
-              color: "#fff",
-              border: "none",
-              cursor: syncing ? "not-allowed" : "pointer",
-              width: "100%",
-              marginBottom: 16,
-            }}
-          >
-            {syncing ? "Syncing..." : "Sync Now"}
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              style={{
+                padding: "0.75rem 1.5rem",
+                fontSize: "1.1rem",
+                borderRadius: "6px",
+                background: syncing ? "#ccc" : "#0070f3",
+                color: "#fff",
+                border: "none",
+                cursor: syncing ? "not-allowed" : "pointer",
+                flex: 2,
+              }}
+            >
+              {syncing ? "Syncing..." : "Sync Now"}
+            </button>
+            <button
+              onClick={handleExportInventoryCSV}
+              disabled={exportingInventory}
+              style={{
+                padding: "0.75rem 1rem",
+                fontSize: "0.9rem",
+                borderRadius: "6px",
+                background: exportingInventory ? "#ccc" : "#28a745",
+                color: "#fff",
+                border: "none",
+                cursor: exportingInventory ? "not-allowed" : "pointer",
+                flex: 1,
+              }}
+            >
+              {exportingInventory ? "Exporting..." : "📊 Preview CSV"}
+            </button>
+          </div>
           {result && (
             <div style={{ marginTop: 8, fontWeight: 500 }}>{result}</div>
           )}
