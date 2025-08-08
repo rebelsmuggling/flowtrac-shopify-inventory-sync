@@ -380,15 +380,33 @@ export default function Home() {
       // Remove duplicates
       const uniqueSkus = [...new Set(skus)];
 
-      // Fetch descriptions
-      const res = await fetch("/api/get-product-descriptions", {
+      // Fetch descriptions and export CSV
+      const res = await fetch("/api/export-product-descriptions-csv", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skus: uniqueSkus })
       });
       
-      const data = await res.json();
-      setDescriptionsResult(data);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `product-descriptions-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // Set success result
+        setDescriptionsResult({ 
+          success: true, 
+          message: `Successfully exported ${uniqueSkus.length} product descriptions to CSV` 
+        });
+      } else {
+        const errorData = await res.json();
+        setDescriptionsResult({ error: errorData.error || 'Failed to export CSV' });
+      }
     } catch (err) {
       setDescriptionsResult({ error: (err as Error).message });
     }
@@ -470,7 +488,7 @@ export default function Home() {
                 flex: 1,
               }}
             >
-              {fetchingDescriptions ? "Fetching..." : "📋 Get Product Descriptions"}
+              {fetchingDescriptions ? "Fetching..." : "📋 Export Product Descriptions CSV"}
             </button>
           </div>
           {result && (
