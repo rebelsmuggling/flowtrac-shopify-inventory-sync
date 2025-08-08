@@ -38,6 +38,13 @@ async function checkShipStationProductExists(sku: string): Promise<boolean> {
 export async function GET(request: NextRequest) {
   try {
     console.log('Exporting missing ShipStation products CSV...');
+    
+    // Add overall timeout for the entire operation
+    const overallTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Operation timed out after 4 minutes')), 240000)
+    );
+    
+    const operation = async () => {
 
     // 1. Load mapping
     let mapping;
@@ -63,17 +70,57 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. Check which SKUs exist in ShipStation
+    // 3. Check which SKUs exist in ShipStation (with concurrency and timeout)
     console.log(`Checking ${skus.size} SKUs in ShipStation...`);
     const missingSkus: string[] = [];
     const existingSkus: string[] = [];
-
-    for (const sku of skus) {
-      const exists = await checkShipStationProductExists(sku);
-      if (exists) {
-        existingSkus.push(sku);
-      } else {
-        missingSkus.push(sku);
+    const skuArray = Array.from(skus);
+    
+    // Process SKUs in batches of 10 to avoid overwhelming the API
+    const batchSize = 10;
+    const batches = [];
+    for (let i = 0; i < skuArray.length; i += batchSize) {
+      batches.push(skuArray.slice(i, i + batchSize));
+    }
+    
+    console.log(`Processing ${batches.length} batches of up to ${batchSize} SKUs each`);
+    
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} SKUs)`);
+      
+      // Process batch concurrently with timeout
+      const batchPromises = batch.map(async (sku) => {
+        try {
+          const exists = await Promise.race([
+            checkShipStationProductExists(sku),
+            new Promise<boolean>((_, reject) => 
+              setTimeout(() => reject(new Error(`Timeout checking SKU ${sku}`)), 10000)
+            )
+          ]);
+          return { sku, exists, error: null };
+        } catch (error) {
+          console.error(`Error checking SKU ${sku}:`, error);
+          return { sku, exists: false, error: (error as Error).message };
+        }
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      
+      for (const result of batchResults) {
+        if (result.error) {
+          // If there's an error, assume the product doesn't exist (safer assumption)
+          missingSkus.push(result.sku);
+        } else if (result.exists) {
+          existingSkus.push(result.sku);
+        } else {
+          missingSkus.push(result.sku);
+        }
+      }
+      
+      // Add a small delay between batches to be respectful to the API
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
@@ -83,7 +130,12 @@ export async function GET(request: NextRequest) {
     let productDescriptions: Record<string, { description: string, product_name: string }> = {};
     if (missingSkus.length > 0) {
       console.log('Fetching product descriptions for missing SKUs...');
-      productDescriptions = await getProductDescriptions(missingSkus);
+      try {
+        productDescriptions = await getProductDescriptions(missingSkus);
+      } catch (error) {
+        console.error('Failed to fetch product descriptions, continuing with basic data:', error);
+        // Continue without descriptions if Flowtrac is unavailable
+      }
     }
 
     // 5. Generate CSV content
@@ -105,6 +157,17 @@ export async function GET(request: NextRequest) {
         'Product needs to be created in ShipStation'
       ];
     });
+    
+    // Add a summary row if there were any errors
+    if (missingSkus.length > 0 && Object.keys(productDescriptions).length === 0) {
+      csvData.push([
+        'NOTE',
+        'Some product descriptions could not be fetched',
+        'Check Flowtrac connection if descriptions are missing',
+        '',
+        'Generated on ' + new Date().toISOString()
+      ]);
+    }
 
     const csvContent = [
       headers.join(','),
@@ -117,18 +180,22 @@ export async function GET(request: NextRequest) {
       ].join(','))
     ].join('\n');
 
-    // 6. Return CSV file
-    const filename = `missing-shipstation-products-${new Date().toISOString().split('T')[0]}.csv`;
+      // 6. Return CSV file
+      const filename = `missing-shipstation-products-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      console.log(`CSV export completed: ${missingSkus.length} missing products`);
+      
+      return new NextResponse(csvContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      });
+    };
     
-    console.log(`CSV export completed: ${missingSkus.length} missing products`);
-    
-    return new NextResponse(csvContent, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-      },
-    });
+    // Execute with timeout
+    return await Promise.race([operation(), overallTimeout]);
 
   } catch (error) {
     console.error('Export missing ShipStation products failed:', error);
