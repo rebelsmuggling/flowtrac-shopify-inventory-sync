@@ -40,11 +40,11 @@ export async function GET(request: NextRequest) {
     console.log('Exporting missing ShipStation products CSV...');
     
     // Add overall timeout for the entire operation
-    const overallTimeout = new Promise((_, reject) => 
+    const overallTimeout = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error('Operation timed out after 4 minutes')), 240000)
     );
     
-    const operation = async () => {
+    const operation = async (): Promise<NextResponse> => {
 
     // 1. Load mapping
     let mapping;
