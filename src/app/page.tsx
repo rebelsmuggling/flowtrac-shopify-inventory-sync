@@ -24,6 +24,8 @@ export default function Home() {
   const [githubTestResult, setGithubTestResult] = useState<any>(null);
   const [syncingToGitHub, setSyncingToGitHub] = useState(false);
   const [exportingInventory, setExportingInventory] = useState(false);
+  const [fetchingDescriptions, setFetchingDescriptions] = useState(false);
+  const [descriptionsResult, setDescriptionsResult] = useState<any>(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -351,6 +353,48 @@ export default function Home() {
     setExportingInventory(false);
   };
 
+  const handleFetchDescriptions = async () => {
+    setFetchingDescriptions(true);
+    setDescriptionsResult(null);
+    try {
+      // Get SKUs from the current mapping
+      const mappingRes = await fetch("/api/mapping");
+      const mappingData = await mappingRes.json();
+      
+      if (!mappingData.success) {
+        setDescriptionsResult({ error: 'Failed to get mapping data' });
+        return;
+      }
+
+      // Extract SKUs from mapping
+      const skus: string[] = [];
+      for (const product of mappingData.mapping.products) {
+        if (product.flowtrac_sku) skus.push(product.flowtrac_sku);
+        if (Array.isArray(product.bundle_components)) {
+          for (const comp of product.bundle_components) {
+            if (comp.flowtrac_sku) skus.push(comp.flowtrac_sku);
+          }
+        }
+      }
+
+      // Remove duplicates
+      const uniqueSkus = [...new Set(skus)];
+
+      // Fetch descriptions
+      const res = await fetch("/api/get-product-descriptions", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skus: uniqueSkus })
+      });
+      
+      const data = await res.json();
+      setDescriptionsResult(data);
+    } catch (err) {
+      setDescriptionsResult({ error: (err as Error).message });
+    }
+    setFetchingDescriptions(false);
+  };
+
   // Check mapping status on component mount
   useEffect(() => {
     checkMappingStatus();
@@ -410,6 +454,25 @@ export default function Home() {
               {exportingInventory ? "Exporting..." : "📊 Preview CSV"}
             </button>
           </div>
+          
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button
+              onClick={handleFetchDescriptions}
+              disabled={fetchingDescriptions}
+              style={{
+                padding: "0.75rem 1rem",
+                fontSize: "0.9rem",
+                borderRadius: "6px",
+                background: fetchingDescriptions ? "#ccc" : "#17a2b8",
+                color: "#fff",
+                border: "none",
+                cursor: fetchingDescriptions ? "not-allowed" : "pointer",
+                flex: 1,
+              }}
+            >
+              {fetchingDescriptions ? "Fetching..." : "📋 Get Product Descriptions"}
+            </button>
+          </div>
           {result && (
             <div style={{ marginTop: 8, fontWeight: 500 }}>{result}</div>
           )}
@@ -451,6 +514,80 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* --- Product Descriptions Results --- */}
+        {descriptionsResult && (
+          <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
+            <h4>Product Descriptions Results:</h4>
+            {descriptionsResult.error ? (
+              <div style={{ 
+                padding: "8px 12px", 
+                borderRadius: "4px",
+                background: "#f8d7da",
+                color: "#721c24",
+                fontSize: "0.9rem"
+              }}>
+                ❌ Error: {descriptionsResult.error}
+              </div>
+            ) : descriptionsResult.success ? (
+              <div style={{ 
+                border: "1px solid #ddd", 
+                padding: 16, 
+                borderRadius: 6,
+                background: "#f8f9fa",
+                marginBottom: 16
+              }}>
+                <div style={{ marginBottom: 12 }}>
+                  <strong>Summary:</strong> Found {descriptionsResult.data.totalFound} of {descriptionsResult.data.totalRequested} products
+                  {descriptionsResult.data.totalNotFound > 0 && (
+                    <span style={{ color: "#dc3545" }}> ({descriptionsResult.data.totalNotFound} not found)</span>
+                  )}
+                </div>
+                
+                <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                  {descriptionsResult.data.products.map((product: any, index: number) => (
+                    <div key={index} style={{ 
+                      border: "1px solid #eee", 
+                      padding: 12, 
+                      marginBottom: 8, 
+                      borderRadius: 4,
+                      background: "#fff"
+                    }}>
+                      <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+                        {product.sku} - {product.product_name}
+                      </div>
+                      <div style={{ fontSize: "0.9rem", color: "#666", marginBottom: 4 }}>
+                        <strong>Description:</strong> {product.description || 'No description available'}
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "#888" }}>
+                        <strong>Type:</strong> {product.type} | <strong>Price:</strong> ${product.sell_price} | <strong>Sync to Shopify:</strong> {product.sync_to_shopify}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {descriptionsResult.data.notFound.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <strong style={{ color: "#dc3545" }}>Not Found:</strong>
+                    <div style={{ fontSize: "0.9rem", color: "#666" }}>
+                      {descriptionsResult.data.notFound.join(', ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ 
+                padding: "8px 12px", 
+                borderRadius: "4px",
+                background: "#f8d7da",
+                color: "#721c24",
+                fontSize: "0.9rem"
+              }}>
+                ❌ Request failed
+              </div>
+            )}
+          </div>
+        )}
 
         {/* --- Google Sheets Integration --- */}
         <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
