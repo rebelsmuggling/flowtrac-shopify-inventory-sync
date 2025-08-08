@@ -353,46 +353,19 @@ export default function Home() {
     setExportingInventory(false);
   };
 
-  const handleFetchDescriptions = async () => {
+  const handleExportMissingShipStationProducts = async () => {
     setFetchingDescriptions(true);
     setDescriptionsResult(null);
     try {
-      // Get SKUs from the current mapping
-      const mappingRes = await fetch("/api/mapping");
-      const mappingData = await mappingRes.json();
-      
-      if (!mappingData.success) {
-        setDescriptionsResult({ error: 'Failed to get mapping data' });
-        return;
-      }
-
-      // Extract SKUs from mapping
-      const skus: string[] = [];
-      for (const product of mappingData.mapping.products) {
-        if (product.flowtrac_sku) skus.push(product.flowtrac_sku);
-        if (Array.isArray(product.bundle_components)) {
-          for (const comp of product.bundle_components) {
-            if (comp.flowtrac_sku) skus.push(comp.flowtrac_sku);
-          }
-        }
-      }
-
-      // Remove duplicates
-      const uniqueSkus = [...new Set(skus)];
-
-      // Fetch descriptions and export CSV
-      const res = await fetch("/api/export-product-descriptions-csv", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skus: uniqueSkus })
-      });
+      // Export missing ShipStation products CSV
+      const res = await fetch("/api/export-missing-shipstation-products");
       
       if (res.ok) {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `product-descriptions-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `missing-shipstation-products-${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -401,7 +374,7 @@ export default function Home() {
         // Set success result
         setDescriptionsResult({ 
           success: true, 
-          message: `Successfully exported ${uniqueSkus.length} product descriptions to CSV` 
+          message: `Successfully exported missing ShipStation products to CSV` 
         });
       } else {
         const errorData = await res.json();
@@ -475,7 +448,7 @@ export default function Home() {
           
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <button
-              onClick={handleFetchDescriptions}
+              onClick={handleExportMissingShipStationProducts}
               disabled={fetchingDescriptions}
               style={{
                 padding: "0.75rem 1rem",
@@ -488,7 +461,7 @@ export default function Home() {
                 flex: 1,
               }}
             >
-              {fetchingDescriptions ? "Fetching..." : "📋 Export Product Descriptions CSV"}
+              {fetchingDescriptions ? "Exporting..." : "📋 Export Missing ShipStation Products"}
             </button>
           </div>
           {result && (
@@ -533,10 +506,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- Product Descriptions Results --- */}
+        {/* --- Missing ShipStation Products Results --- */}
         {descriptionsResult && (
           <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
-            <h4>Product Descriptions Results:</h4>
+            <h4>Missing ShipStation Products Results:</h4>
             {descriptionsResult.error ? (
               <div style={{ 
                 padding: "8px 12px", 
@@ -556,42 +529,17 @@ export default function Home() {
                 marginBottom: 16
               }}>
                 <div style={{ marginBottom: 12 }}>
-                  <strong>Summary:</strong> Found {descriptionsResult.data.totalFound} of {descriptionsResult.data.totalRequested} products
-                  {descriptionsResult.data.totalNotFound > 0 && (
-                    <span style={{ color: "#dc3545" }}> ({descriptionsResult.data.totalNotFound} not found)</span>
-                  )}
+                  <strong>✅ Success!</strong> {descriptionsResult.message}
                 </div>
-                
-                <div style={{ maxHeight: 300, overflowY: "auto" }}>
-                  {descriptionsResult.data.products.map((product: any, index: number) => (
-                    <div key={index} style={{ 
-                      border: "1px solid #eee", 
-                      padding: 12, 
-                      marginBottom: 8, 
-                      borderRadius: 4,
-                      background: "#fff"
-                    }}>
-                      <div style={{ fontWeight: "bold", marginBottom: 4 }}>
-                        {product.sku} - {product.product_name}
-                      </div>
-                      <div style={{ fontSize: "0.9rem", color: "#666", marginBottom: 4 }}>
-                        <strong>Description:</strong> {product.description || 'No description available'}
-                      </div>
-                      <div style={{ fontSize: "0.8rem", color: "#888" }}>
-                        <strong>Type:</strong> {product.type} | <strong>Price:</strong> ${product.sell_price} | <strong>Sync to Shopify:</strong> {product.sync_to_shopify}
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ fontSize: "0.9rem", color: "#666" }}>
+                  <strong>Next Steps:</strong>
+                  <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
+                    <li>Open the downloaded CSV file</li>
+                    <li>Review the missing products list</li>
+                    <li>Manually create these products in ShipStation</li>
+                    <li>Use the provided descriptions and "Finished Chocolate" tag</li>
+                  </ul>
                 </div>
-                
-                {descriptionsResult.data.notFound.length > 0 && (
-                  <div style={{ marginTop: 12 }}>
-                    <strong style={{ color: "#dc3545" }}>Not Found:</strong>
-                    <div style={{ fontSize: "0.9rem", color: "#666" }}>
-                      {descriptionsResult.data.notFound.join(', ')}
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div style={{ 

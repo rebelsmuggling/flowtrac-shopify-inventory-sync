@@ -337,6 +337,40 @@ export async function testFlowtracConnection(): Promise<any> {
   }
 }
 
+export async function getProductDescriptions(skus: string[]): Promise<Record<string, { description: string, product_name: string }>> {
+  try {
+    const flowAuthCookie = await getFlowtracAuthCookie();
+    const products = await fetchAllFlowtracProducts(flowAuthCookie);
+    
+    const productMap = new Map();
+    for (const product of products) {
+      if (product.product) {
+        productMap.set(product.product, product);
+      }
+      if (product.barcode) {
+        productMap.set(product.barcode, product);
+      }
+    }
+
+    const results: Record<string, { description: string, product_name: string }> = {};
+    
+    for (const sku of skus) {
+      const product = productMap.get(sku);
+      if (product) {
+        results[sku] = {
+          description: product.description || '',
+          product_name: product.product || sku
+        };
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    console.error('Failed to get product descriptions:', error);
+    return {};
+  }
+}
+
 if (require.main === module) {
   // Example usage: node services/flowtrac.js
   (async () => {

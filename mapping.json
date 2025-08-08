@@ -6,7 +6,8 @@
       "product_name": "",
       "amazon_sku": "IC-KOOL-0045",
       "shopify_variant_id": "gid://shopify/ProductVariant/51107621470517",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317"
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317",
+      "flowtrac_product_id": "5fe728d0-daad-11ef-a397-0a09fb0c967d"
     },
     {
       "shopify_sku": "IC-HCPK-0096",
@@ -18,7 +19,8 @@
       "bundle_components": [
         {
           "flowtrac_sku": "IC-HCPK-0048",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "72875cc6-0984-11ef-a0b2-0a09fb0c967d"
         }
       ]
     },
@@ -32,11 +34,13 @@
       "bundle_components": [
         {
           "flowtrac_sku": "IC-DAVI-012",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "51fa5c70-cd89-11ed-a0a5-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "IC-BIGS-009",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "1ff6b078-0af3-11ee-a0a5-0a09fb0c967d"
         }
       ]
     },
@@ -46,7 +50,8 @@
       "product_name": "",
       "amazon_sku": "",
       "shopify_variant_id": "gid://shopify/ProductVariant/44717479166261",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/46766307934517"
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/46766307934517",
+      "flowtrac_product_id": "1ff6b078-0af3-11ee-a0a5-0a09fb0c967d"
     },
     {
       "shopify_sku": "IC-MILI-0028",
@@ -54,19 +59,21 @@
       "product_name": "",
       "amazon_sku": "RS-MILI-0028",
       "shopify_variant_id": "gid://shopify/ProductVariant/49616122085685",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/51664817160501"
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/51664817160501",
+      "flowtrac_product_id": "b6e6ed34-1c60-11ef-91c9-0a09fb0c967d"
     },
     {
       "shopify_sku": "IC-MILI-0056",
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-MILI-0056",
-      "shopify_variant_id": "",
-      "shopify_inventory_item_id": "",
+      "shopify_variant_id": "gid://shopify/ProductVariant/50651419672885",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52686435778869",
       "bundle_components": [
         {
           "flowtrac_sku": "IC-MILI-0028",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "b6e6ed34-1c60-11ef-91c9-0a09fb0c967d"
         }
       ]
     },
@@ -75,62 +82,73 @@
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-KEWS-0005",
-      "shopify_variant_id": "",
-      "shopify_inventory_item_id": "",
+      "shopify_variant_id": "gid://shopify/ProductVariant/51118373273909",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53148655878453",
       "bundle_components": [
         {
           "flowtrac_sku": "TT-5LOP-DIO3",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "d92e0624-16c7-11ee-a0a5-0a09fb0c967d"
         }
       ]
     },
+
     {
       "shopify_sku": "IC-HCPK-0048",
       "flowtrac_sku": "IC-HCPK-0048",
       "product_name": "",
       "amazon_sku": "RS-HCPK-0048",
-      "shopify_variant_id": "",
-      "shopify_inventory_item_id": ""
+      "shopify_variant_id": "gid://shopify/ProductVariant/50060778012981",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52109248463157",
+      "flowtrac_product_id": "72875cc6-0984-11ef-a0b2-0a09fb0c967d"
     },
     {
       "shopify_sku": "IC-FURI-0008",
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-FURI-0008",
-      "shopify_variant_id": "",
-      "shopify_inventory_item_id": "",
+      "shopify_variant_id": "gid://shopify/ProductVariant/49955890725173",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/52004304421173",
       "bundle_components": [
         {
           "flowtrac_sku": "NV-23DE-DKEI",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "4bce9158-673e-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "DE-WELK-43JK",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "c6f29bf4-673e-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "BE-WEEJ-23KL",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "f99c59b4-673e-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "CU-10NQ-1Q57",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "6553d02a-e776-11ec-87e4-060bfa554a18"
         },
         {
           "flowtrac_sku": "FH-FFFF-1003",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "67a5109e-e776-11ec-87e4-060bfa554a18"
         },
         {
           "flowtrac_sku": "FH-FFFF-1004",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "67a510b0-e776-11ec-87e4-060bfa554a18"
         },
         {
           "flowtrac_sku": "GH-UIEY-8984",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "eac58c68-e777-11ec-87e4-060bfa554a18"
         },
         {
           "flowtrac_sku": "GH-UIEY-8989",
-          "quantity": 1
+          "quantity": 1,
+          "flowtrac_product_id": "eac58c74-e777-11ec-87e4-060bfa554a18"
         }
       ]
     },
@@ -139,68 +157,83 @@
       "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-COOK-0030",
-      "shopify_variant_id": "",
-      "shopify_inventory_item_id": "",
+      "shopify_variant_id": "gid://shopify/ProductVariant/51118371832117",
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53148654436661",
       "bundle_components": [
         {
           "flowtrac_sku": "QP-WLEK-2300",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bbb8-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2301",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bbd2-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2302",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bbec-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2303",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bc06-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2304",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bc20-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2305",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bc3a-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2306",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bc54-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2307",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bc6e-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2308",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bf2c-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2309",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bc88-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2310",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bca2-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2311",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bcbc-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "QP-WLEK-2312",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "e894bcd6-55fd-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "WL-SJEK-34JK",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "1608726a-6c0b-11f0-b03f-0a09fb0c967d"
         },
         {
           "flowtrac_sku": "UK-WEJE-34JK",
-          "quantity": 2
+          "quantity": 2,
+          "flowtrac_product_id": "3e8b7e8a-6c0b-11f0-b03f-0a09fb0c967d"
         }
       ]
     }
