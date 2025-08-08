@@ -2505,8 +2505,8 @@
       "shopify_inventory_item_id": "",
       "bundle_components": [
         {
-          "flowtrac_sku": "RS-NBCB-0004",
-          "quantity": 1
+          "flowtrac_sku": "IC-NBCB-0002",
+          "quantity": 2
         }
       ]
     },
@@ -2519,8 +2519,8 @@
       "shopify_inventory_item_id": "",
       "bundle_components": [
         {
-          "flowtrac_sku": "RS-NBCB-0006",
-          "quantity": 1
+          "flowtrac_sku": "IC-NBCB-0002",
+          "quantity": 3
         }
       ]
     },
@@ -2533,8 +2533,8 @@
       "shopify_inventory_item_id": "",
       "bundle_components": [
         {
-          "flowtrac_sku": "RS-NBCB-0010",
-          "quantity": 1
+          "flowtrac_sku": "IC-NBCB-0002",
+          "quantity": 5
         }
       ]
     },
@@ -3665,5 +3665,5 @@
       "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-08T20:49:17.567Z"
+  "lastUpdated": "2025-08-08T20:59:07.351Z"
 }
