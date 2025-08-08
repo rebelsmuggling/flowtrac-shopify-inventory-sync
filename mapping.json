@@ -3663,7 +3663,49 @@
       "amazon_sku": "ZC-98QX-FMJS",
       "shopify_variant_id": "",
       "shopify_inventory_item_id": ""
+    },
+    {
+      "shopify_sku": "IC-TAJI-2228",
+      "flowtrac_sku": "",
+      "product_name": "",
+      "amazon_sku": "IC-TAJI-2228",
+      "shopify_variant_id": "",
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "TJ-TJTJ-GJUY",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "SS-LLDD-EIOP",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "99-ERFF-CCCC",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "2F-4539-ELIO",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "77-PLOI-DLEI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "33-5549-LFKI",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "85-EWQQ-PPKK",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "27-GKEP-DPPP",
+          "quantity": 1
+        }
+      ]
     }
   ],
-  "lastUpdated": "2025-08-08T20:59:07.351Z"
+  "lastUpdated": "2025-08-08T21:21:17.611Z"
 }
