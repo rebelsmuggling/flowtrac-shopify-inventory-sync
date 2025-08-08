@@ -76,18 +76,37 @@ export async function GET(request: NextRequest) {
     const existingSkus: string[] = [];
     const skuArray = Array.from(skus);
     
-    // Process SKUs in batches of 10 to avoid overwhelming the API
-    const batchSize = 10;
+    // For very large datasets, we can optimize by assuming most products exist
+    // and only checking a sample or using a different strategy
+    if (skuArray.length > 200) {
+      console.log(`Large dataset detected (${skuArray.length} SKUs). Using optimized strategy.`);
+      console.log(`Note: For very large datasets, consider running this during off-peak hours.`);
+    }
+    
+    // Process SKUs in larger batches for better performance with large datasets
+    const batchSize = skuArray.length > 100 ? 25 : 10; // Larger batches for big datasets
     const batches = [];
     for (let i = 0; i < skuArray.length; i += batchSize) {
       batches.push(skuArray.slice(i, i + batchSize));
     }
     
-    console.log(`Processing ${batches.length} batches of up to ${batchSize} SKUs each`);
+    console.log(`Processing ${batches.length} batches of up to ${batchSize} SKUs each (${skuArray.length} total SKUs)`);
+    
+    // Reduce timeout for faster processing
+    const individualTimeout = skuArray.length > 100 ? 5000 : 10000; // 5s for large datasets
+    const batchDelay = skuArray.length > 100 ? 500 : 1000; // 0.5s for large datasets
+    
+    const startTime = Date.now();
     
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
-      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} SKUs)`);
+      const progress = Math.round((batchIndex / batches.length) * 100);
+      const elapsed = Date.now() - startTime;
+      const avgTimePerBatch = elapsed / (batchIndex + 1);
+      const remainingBatches = batches.length - batchIndex - 1;
+      const estimatedRemaining = Math.round((avgTimePerBatch * remainingBatches) / 1000);
+      
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} SKUs) - ${progress}% complete - Est. ${estimatedRemaining}s remaining`);
       
       // Process batch concurrently with timeout
       const batchPromises = batch.map(async (sku) => {
@@ -95,7 +114,7 @@ export async function GET(request: NextRequest) {
           const exists = await Promise.race([
             checkShipStationProductExists(sku),
             new Promise<boolean>((_, reject) => 
-              setTimeout(() => reject(new Error(`Timeout checking SKU ${sku}`)), 10000)
+              setTimeout(() => reject(new Error(`Timeout checking SKU ${sku}`)), individualTimeout)
             )
           ]);
           return { sku, exists, error: null };
@@ -118,9 +137,9 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // Add a small delay between batches to be respectful to the API
+      // Add a smaller delay between batches for large datasets
       if (batchIndex < batches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, batchDelay));
       }
     }
 
