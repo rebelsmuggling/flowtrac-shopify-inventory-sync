@@ -26,6 +26,7 @@ export default function Home() {
   const [exportingInventory, setExportingInventory] = useState(false);
   const [fetchingDescriptions, setFetchingDescriptions] = useState(false);
   const [descriptionsResult, setDescriptionsResult] = useState<any>(null);
+  const [missingSkusInfo, setMissingSkusInfo] = useState<any>(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -332,18 +333,30 @@ export default function Home() {
 
   const handleExportInventoryCSV = async () => {
     setExportingInventory(true);
+    setMissingSkusInfo(null);
     try {
-      const res = await fetch("/api/export-inventory-csv");
+      // Use the enhanced endpoint with missing SKU information
+      const res = await fetch("/api/export-inventory-csv?includeMissingSkus=true");
       if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        const data = await res.json();
+        
+        if (data.success) {
+          // Create and download the CSV file
+          const blob = new Blob([data.csvContent], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = data.filename || `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          // Store missing SKU information for display
+          setMissingSkusInfo(data.missingSkus);
+        } else {
+          console.error('Inventory export failed:', data.error);
+        }
       } else {
         console.error('Inventory export failed');
       }
@@ -505,6 +518,46 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* --- Missing SKU Information --- */}
+        {missingSkusInfo && (
+          <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
+            <h4>📊 Preview CSV Results:</h4>
+            <div style={{ 
+              padding: "12px 16px", 
+              borderRadius: "6px",
+              background: missingSkusInfo.missing > 0 ? "#fff3cd" : "#d4edda",
+              border: `1px solid ${missingSkusInfo.missing > 0 ? "#ffeaa7" : "#c3e6cb"}`,
+              color: missingSkusInfo.missing > 0 ? "#856404" : "#155724"
+            }}>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Summary:</strong> {missingSkusInfo.valid} valid SKUs, {missingSkusInfo.missing} missing SKUs ({missingSkusInfo.percentageValid}% valid)
+              </div>
+              {missingSkusInfo.missing > 0 && (
+                <div>
+                  <strong>Missing SKUs ({missingSkusInfo.missing}):</strong>
+                  <div style={{ 
+                    maxHeight: "200px", 
+                    overflowY: "auto", 
+                    marginTop: 8,
+                    padding: "8px",
+                    background: "#f8f9fa",
+                    borderRadius: "4px",
+                    fontSize: "0.85rem",
+                    fontFamily: "monospace"
+                  }}>
+                    {missingSkusInfo.missingSkusList.slice(0, 20).join(', ')}
+                    {missingSkusInfo.missingSkusList.length > 20 && (
+                      <div style={{ marginTop: 4, color: "#6c757d" }}>
+                        ... and {missingSkusInfo.missingSkusList.length - 20} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* --- Missing ShipStation Products Results --- */}
         {descriptionsResult && (

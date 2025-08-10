@@ -135,6 +135,7 @@ export async function GET(request: NextRequest) {
         amazon_quantity: 0,
         bundle_components: '',
         flowtrac_bins: '',
+        valid_flowtrac_connection: 'False', // Default to False, will be updated based on actual data
         data_source: dataSource,
         last_updated: new Date().toISOString()
       };
@@ -159,6 +160,12 @@ export async function GET(request: NextRequest) {
           flowtracInventory[comp.flowtrac_sku]?.bins || []
         ).flat().join(', ');
         
+        // For bundle products, check if ALL components exist in Flowtrac
+        const allComponentsExist = product.bundle_components.every((comp: any) => 
+          flowtracInventory[comp.flowtrac_sku] && flowtracInventory[comp.flowtrac_sku].quantity !== undefined
+        );
+        row.valid_flowtrac_connection = allComponentsExist ? 'True' : 'False';
+        
       } else if (product.flowtrac_sku) {
         // Simple product
         const available = flowtracInventory[product.flowtrac_sku]?.quantity || 0;
@@ -168,6 +175,9 @@ export async function GET(request: NextRequest) {
         row.shopify_quantity = available;
         row.amazon_quantity = available;
         row.flowtrac_bins = bins.join(', ');
+        
+        // For simple products, check if the SKU exists in Flowtrac
+        row.valid_flowtrac_connection = (flowtracInventory[product.flowtrac_sku] && flowtracInventory[product.flowtrac_sku].quantity !== undefined) ? 'True' : 'False';
       }
 
       csvData.push(row);
@@ -184,6 +194,7 @@ export async function GET(request: NextRequest) {
       'Amazon Quantity',
       'Bundle Components',
       'Flowtrac Bins',
+      'Valid Flowtrac Connection',
       'Data Source',
       'Last Updated'
     ];
@@ -200,6 +211,7 @@ export async function GET(request: NextRequest) {
         row.amazon_quantity,
         `"${row.bundle_components}"`,
         `"${row.flowtrac_bins}"`,
+        `"${row.valid_flowtrac_connection}"`,
         `"${row.data_source}"`,
         `"${row.last_updated}"`
       ].join(','))
