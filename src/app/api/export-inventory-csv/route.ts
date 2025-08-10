@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         
         // Process SKUs in smaller batches to avoid overwhelming the Flowtrac API
         const skuArray = Array.from(skus);
-        const batchSize = 15; // Further reduced batch size to minimize failures
+        const batchSize = 10; // Reduced batch size for better reliability and timeout safety
         const batches = [];
         for (let i = 0; i < skuArray.length; i += batchSize) {
           batches.push(skuArray.slice(i, i + batchSize));
@@ -79,17 +79,23 @@ export async function GET(request: NextRequest) {
         // Add timeout protection for Vercel's 300-second limit
         const startTime = Date.now();
         const maxExecutionTime = 240000; // 4 minutes (leaving 1 minute buffer)
+        const timeoutCheckInterval = 30000; // Check timeout every 30 seconds
+        let lastTimeoutCheck = startTime;
         let processedBatches = 0;
         let totalProcessedSkus = 0;
         
         // Process each batch
         for (let i = 0; i < batches.length; i++) {
-          // Check if we're approaching the timeout
-          if (Date.now() - startTime > maxExecutionTime) {
-            console.warn(`Approaching Vercel timeout, stopping at batch ${i + 1}/${batches.length}`);
-            console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
-            hitTimeout = true;
-            break;
+          // Check timeout more frequently for better responsiveness
+          const currentTime = Date.now();
+          if (currentTime - lastTimeoutCheck > timeoutCheckInterval) {
+            if (currentTime - startTime > maxExecutionTime) {
+              console.warn(`Approaching Vercel timeout, stopping at batch ${i + 1}/${batches.length}`);
+              console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
+              hitTimeout = true;
+              break;
+            }
+            lastTimeoutCheck = currentTime;
           }
           
           const batch = batches[i];
@@ -101,9 +107,9 @@ export async function GET(request: NextRequest) {
             processedBatches++;
             totalProcessedSkus += batch.length;
             
-            // Reduced delay between batches
+            // Reduced delay between batches (moderate reduction for safety)
             if (i < batches.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
           } catch (batchError) {
             console.error(`Failed to fetch batch ${i + 1}, trying individual SKUs:`, batchError);
@@ -114,7 +120,8 @@ export async function GET(request: NextRequest) {
             
             for (const sku of batch) {
               // Check timeout before each individual SKU
-              if (Date.now() - startTime > maxExecutionTime) {
+              const currentTime = Date.now();
+              if (currentTime - startTime > maxExecutionTime) {
                 console.warn(`Approaching Vercel timeout, stopping individual SKU processing`);
                 console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
                 hitTimeout = true;
@@ -127,14 +134,14 @@ export async function GET(request: NextRequest) {
                 successfulIndividualSkus++;
                 totalProcessedSkus++;
                 
-                // Reduced delay between individual SKUs
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // Reduced delay between individual SKUs (moderate reduction for safety)
+                await new Promise(resolve => setTimeout(resolve, 75));
               } catch (individualError) {
                 console.warn(`Failed to fetch individual SKU ${sku}:`, individualError);
                 
                 // Try one more time with a longer delay
                 try {
-                  await new Promise(resolve => setTimeout(resolve, 500));
+                  await new Promise(resolve => setTimeout(resolve, 300));
                   const retryInventory = await fetchFlowtracInventoryWithBins([sku]);
                   Object.assign(flowtracInventory, retryInventory);
                   successfulIndividualSkus++;
@@ -158,6 +165,7 @@ export async function GET(request: NextRequest) {
         if (hitTimeout) {
           console.warn(`CSV export completed with timeout after ${executionTime}ms`);
           console.warn(`Final stats: ${processedBatches} batches, ${totalProcessedSkus} SKUs processed out of ${skuArray.length} total`);
+          console.warn(`Skipped ${skuArray.length - totalProcessedSkus} SKUs due to timeout - they will show as invalid`);
         } else {
           console.log('Successfully fetched Flowtrac inventory for CSV export');
           console.log(`Final stats: ${processedBatches} batches, ${totalProcessedSkus} SKUs processed`);
