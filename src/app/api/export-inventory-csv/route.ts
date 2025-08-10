@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         
         // Process SKUs in smaller batches to avoid overwhelming the Flowtrac API
         const skuArray = Array.from(skus);
-        const batchSize = 25; // Reduced batch size for faster processing
+        const batchSize = 15; // Further reduced batch size to minimize failures
         const batches = [];
         for (let i = 0; i < skuArray.length; i += batchSize) {
           batches.push(skuArray.slice(i, i + batchSize));
@@ -87,6 +87,9 @@ export async function GET(request: NextRequest) {
             console.error(`Failed to fetch batch ${i + 1}, trying individual SKUs:`, batchError);
             
             // When a batch fails, try processing SKUs individually (with timeout check)
+            console.log(`Processing ${batch.length} SKUs individually due to batch failure`);
+            let successfulIndividualSkus = 0;
+            
             for (const sku of batch) {
               // Check timeout before each individual SKU
               if (Date.now() - startTime > maxExecutionTime) {
@@ -98,14 +101,28 @@ export async function GET(request: NextRequest) {
               try {
                 const individualInventory = await fetchFlowtracInventoryWithBins([sku]);
                 Object.assign(flowtracInventory, individualInventory);
+                successfulIndividualSkus++;
                 
                 // Reduced delay between individual SKUs
                 await new Promise(resolve => setTimeout(resolve, 100));
               } catch (individualError) {
                 console.warn(`Failed to fetch individual SKU ${sku}:`, individualError);
-                // Skip this individual SKU, but continue with others
+                
+                // Try one more time with a longer delay
+                try {
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  const retryInventory = await fetchFlowtracInventoryWithBins([sku]);
+                  Object.assign(flowtracInventory, retryInventory);
+                  successfulIndividualSkus++;
+                  console.log(`Retry successful for SKU ${sku}`);
+                } catch (retryError) {
+                  console.warn(`Retry also failed for SKU ${sku}:`, retryError);
+                  // Skip this individual SKU, but continue with others
+                }
               }
             }
+            
+            console.log(`Individual processing completed: ${successfulIndividualSkus}/${batch.length} SKUs successful`);
           }
         }
         

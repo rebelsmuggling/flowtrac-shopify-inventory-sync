@@ -949,7 +949,8 @@
       "product_name": "",
       "amazon_sku": "RS-BEEH-0001",
       "shopify_variant_id": "",
-      "shopify_inventory_item_id": ""
+      "shopify_inventory_item_id": "",
+      "flowtrac_product_id": "fbcae1b0-762f-11f0-b03f-0a09fb0c967d"
     },
     {
       "shopify_sku": "IC-SUNK-0002",
