@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     // 3. Generate inventory data (mock for now, will be enhanced with Flowtrac integration)
     console.log('Generating inventory data for CSV export');
     let flowtracInventory: Record<string, { quantity: number, bins: string[], binBreakdown: Record<string, number> }> = {};
+    let hitTimeout = false;
     
     // Check if Flowtrac credentials are available
     const hasFlowtracCredentials = process.env.FLOWTRAC_API_URL && process.env.FLOWTRAC_BADGE && process.env.FLOWTRAC_PIN;
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
         
         // Process SKUs in smaller batches to avoid overwhelming the Flowtrac API
         const skuArray = Array.from(skus);
-        const batchSize = 50; // Process 50 SKUs at a time
+        const batchSize = 25; // Reduced batch size for faster processing
         const batches = [];
         for (let i = 0; i < skuArray.length; i += batchSize) {
           batches.push(skuArray.slice(i, i + batchSize));
@@ -58,8 +59,19 @@ export async function GET(request: NextRequest) {
         
         console.log(`Processing ${batches.length} batches of up to ${batchSize} SKUs each`);
         
+        // Add timeout protection for Vercel's 300-second limit
+        const startTime = Date.now();
+        const maxExecutionTime = 240000; // 4 minutes (leaving 1 minute buffer)
+        
         // Process each batch
         for (let i = 0; i < batches.length; i++) {
+          // Check if we're approaching the timeout
+          if (Date.now() - startTime > maxExecutionTime) {
+            console.warn(`Approaching Vercel timeout, stopping at batch ${i + 1}/${batches.length}`);
+            hitTimeout = true;
+            break;
+          }
+          
           const batch = batches[i];
           console.log(`Processing batch ${i + 1}/${batches.length} (${batch.length} SKUs)`);
           
@@ -67,21 +79,28 @@ export async function GET(request: NextRequest) {
             const batchInventory = await fetchFlowtracInventoryWithBins(batch);
             Object.assign(flowtracInventory, batchInventory);
             
-            // Add a small delay between batches to avoid rate limiting
+            // Reduced delay between batches
             if (i < batches.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
           } catch (batchError) {
             console.error(`Failed to fetch batch ${i + 1}, trying individual SKUs:`, batchError);
             
-            // When a batch fails, try processing SKUs individually
+            // When a batch fails, try processing SKUs individually (with timeout check)
             for (const sku of batch) {
+              // Check timeout before each individual SKU
+              if (Date.now() - startTime > maxExecutionTime) {
+                console.warn(`Approaching Vercel timeout, stopping individual SKU processing`);
+                hitTimeout = true;
+                break;
+              }
+              
               try {
                 const individualInventory = await fetchFlowtracInventoryWithBins([sku]);
                 Object.assign(flowtracInventory, individualInventory);
                 
-                // Small delay between individual SKUs
-                await new Promise(resolve => setTimeout(resolve, 200));
+                // Reduced delay between individual SKUs
+                await new Promise(resolve => setTimeout(resolve, 100));
               } catch (individualError) {
                 console.warn(`Failed to fetch individual SKU ${sku}:`, individualError);
                 // Skip this individual SKU, but continue with others
@@ -90,7 +109,15 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        console.log('Successfully fetched Flowtrac inventory for CSV export');
+        // Check if we hit the timeout
+        const executionTime = Date.now() - startTime;
+        hitTimeout = executionTime > maxExecutionTime;
+        
+        if (hitTimeout) {
+          console.warn(`CSV export completed with timeout after ${executionTime}ms`);
+        } else {
+          console.log('Successfully fetched Flowtrac inventory for CSV export');
+        }
       } catch (flowtracError) {
         console.error('Failed to fetch Flowtrac inventory, using mock data:', flowtracError);
         console.error('Error details:', {
@@ -120,7 +147,12 @@ export async function GET(request: NextRequest) {
 
     // 4. Build inventory data for CSV and track missing SKUs
     const csvData: any[] = [];
-    const dataSource = hasFlowtracCredentials ? 'Live Flowtrac Data' : 'Mock Data (Flowtrac credentials not configured)';
+    let dataSource = hasFlowtracCredentials ? 'Live Flowtrac Data' : 'Mock Data (Flowtrac credentials not configured)';
+    
+    // Add timeout indicator if we hit the timeout
+    if (hasFlowtracCredentials && typeof hitTimeout !== 'undefined' && hitTimeout) {
+      dataSource = 'Live Flowtrac Data (Partial - Timeout)';
+    }
     const missingSkus: string[] = [];
     const validSkus: string[] = [];
     
