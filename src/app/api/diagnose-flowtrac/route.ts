@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     console.log(`Testing with ${skuArray.length} SKUs:`, skuArray);
     
     // Test Flowtrac connection
-    let flowtracInventory = {};
+    let flowtracInventory: Record<string, any> = {};
     let flowtracError = null;
     
     try {
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     
     // Check what's in the inventory object
     const inventoryKeys = Object.keys(flowtracInventory);
-    const inventorySample = {};
+    const inventorySample: Record<string, any> = {};
     for (const key of inventoryKeys.slice(0, 3)) {
       inventorySample[key] = flowtracInventory[key];
     }
