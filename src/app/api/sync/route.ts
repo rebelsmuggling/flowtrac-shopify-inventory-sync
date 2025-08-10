@@ -16,6 +16,14 @@ export async function POST(request: NextRequest) {
   console.log('Sync job started');
 
   try {
+    // Parse request body to check for dryRun parameter
+    const body = await request.json().catch(() => ({}));
+    const dryRun = body.dryRun === true;
+    
+    if (dryRun) {
+      console.log('DRY RUN MODE: Will calculate quantities but not post to Amazon/Shopify');
+    }
+
     // 1. Load mapping.json (try imported mapping first, then fallback to file)
     let mapping;
     const importedMapping = getImportedMapping();
@@ -59,20 +67,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Self-heal: Enrich mapping.json with missing Shopify variant and inventory item IDs
-    await enrichMappingWithShopifyVariantAndInventoryIds();
-    
-    // Reload mapping after enrichment (try imported mapping first, then fallback to file)
+    // 5. Self-heal: Enrich mapping.json with missing Shopify variant and inventory item IDs (skip in dry run)
     let updatedMapping;
-    const importedMappingAfterEnrichment = getImportedMapping();
-    
-    if (importedMappingAfterEnrichment) {
-      console.log('Using imported mapping data after enrichment');
-      updatedMapping = importedMappingAfterEnrichment;
+    if (dryRun) {
+      console.log('DRY RUN: Skipping Shopify enrichment to avoid API calls');
+      updatedMapping = mapping;
     } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      console.log('Using file mapping data after enrichment');
-      updatedMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+      await enrichMappingWithShopifyVariantAndInventoryIds();
+      
+      // Reload mapping after enrichment (try imported mapping first, then fallback to file)
+      const importedMappingAfterEnrichment = getImportedMapping();
+      
+      if (importedMappingAfterEnrichment) {
+        console.log('Using imported mapping data after enrichment');
+        updatedMapping = importedMappingAfterEnrichment;
+      } else {
+        const mappingPath = path.join(process.cwd(), 'mapping.json');
+        console.log('Using file mapping data after enrichment');
+        updatedMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+      }
     }
 
     // 6. Update inventory in Shopify and Amazon for each SKU
@@ -89,25 +102,35 @@ export async function POST(request: NextRequest) {
         updateResults[sku].shopify = { success: false, error: 'No shopify_inventory_item_id in mapping.json' };
         console.error(`No shopify_inventory_item_id for SKU ${sku}`);
       } else {
-        try {
-          await updateShopifyInventory(inventoryItemId, quantity);
-          updateResults[sku].shopify = { success: true };
-          console.log(`Updated Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
-        } catch (err: any) {
-          updateResults[sku].shopify = { success: false, error: err.message };
-          console.error(`Failed to update Shopify inventory for SKU ${sku}: ${err.message}`);
+        if (dryRun) {
+          updateResults[sku].shopify = { success: true, dryRun: true, message: `Would update Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}` };
+          console.log(`DRY RUN: Would update Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
+        } else {
+          try {
+            await updateShopifyInventory(inventoryItemId, quantity);
+            updateResults[sku].shopify = { success: true };
+            console.log(`Updated Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
+          } catch (err: any) {
+            updateResults[sku].shopify = { success: false, error: err.message };
+            console.error(`Failed to update Shopify inventory for SKU ${sku}: ${err.message}`);
+          }
         }
       }
       
       // Amazon sync for products in shopifyInventory
       if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
-        try {
-          const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
-          updateResults[sku].amazon = amazonResult;
-          console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
-        } catch (err: any) {
-          updateResults[sku].amazon = { success: false, error: err.message };
-          console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+        if (dryRun) {
+          updateResults[sku].amazon = { success: true, dryRun: true, message: `Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}` };
+          console.log(`DRY RUN: Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}`);
+        } else {
+          try {
+            const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
+            updateResults[sku].amazon = amazonResult;
+            console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
+          } catch (err: any) {
+            updateResults[sku].amazon = { success: false, error: err.message };
+            console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+          }
         }
       }
     }
@@ -138,13 +161,18 @@ export async function POST(request: NextRequest) {
         }
         
         // Amazon sync
-        try {
-          const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
-          updateResults[sku].amazon = amazonResult;
-          console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
-        } catch (err: any) {
-          updateResults[sku].amazon = { success: false, error: err.message };
-          console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+        if (dryRun) {
+          updateResults[sku].amazon = { success: true, dryRun: true, message: `Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}` };
+          console.log(`DRY RUN: Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}`);
+        } else {
+          try {
+            const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
+            updateResults[sku].amazon = amazonResult;
+            console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
+          } catch (err: any) {
+            updateResults[sku].amazon = { success: false, error: err.message };
+            console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+          }
         }
       }
     }
@@ -172,19 +200,33 @@ export async function POST(request: NextRequest) {
       }
       // Debug logging
       console.log(`ShipStation update for SKU ${sku}: bins=`, bins, 'warehouseLocation=', warehouseLocation);
-      try {
-        await updateShipStationWarehouseLocation(sku, warehouseLocation);
-        updateResults.shipstation[sku] = { success: true };
-        console.log(`Updated ShipStation warehouseLocation for SKU ${sku} to bins ${warehouseLocation}`);
-      } catch (err: any) {
-        updateResults.shipstation[sku] = { success: false, error: err.message };
-        console.error(`Failed to update ShipStation for SKU ${sku}: ${err.message}`);
+      
+      if (dryRun) {
+        updateResults.shipstation[sku] = { success: true, dryRun: true, message: `Would update ShipStation warehouseLocation for SKU ${sku} to bins ${warehouseLocation}` };
+        console.log(`DRY RUN: Would update ShipStation warehouseLocation for SKU ${sku} to bins ${warehouseLocation}`);
+      } else {
+        try {
+          await updateShipStationWarehouseLocation(sku, warehouseLocation);
+          updateResults.shipstation[sku] = { success: true };
+          console.log(`Updated ShipStation warehouseLocation for SKU ${sku} to bins ${warehouseLocation}`);
+        } catch (err: any) {
+          updateResults.shipstation[sku] = { success: false, error: err.message };
+          console.error(`Failed to update ShipStation for SKU ${sku}: ${err.message}`);
+        }
       }
     }
 
-    console.log('Sync job completed successfully');
+    const completionMessage = dryRun ? 'Dry run completed successfully' : 'Sync job completed successfully';
+    console.log(completionMessage);
+    
     // 8. Return success response
-    return NextResponse.json({ success: true, message: 'Sync completed.', shopifyInventory, updateResults });
+    return NextResponse.json({ 
+      success: true, 
+      message: completionMessage, 
+      dryRun,
+      shopifyInventory, 
+      updateResults 
+    });
   } catch (error) {
     console.error('Sync job failed', { error });
     // Handle errors

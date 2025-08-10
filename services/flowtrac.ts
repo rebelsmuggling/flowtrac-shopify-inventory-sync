@@ -177,6 +177,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   let mappingUpdated = false;
   // 4. Ensure all SKUs have product_id, self-heal if missing
   const skuToPidForQuery: Record<string, string> = {};
+  const missingSkus: string[] = [];
   for (const sku of skus) {
     let pid = getProductIdForSku(sku, mapping);
     if (!pid) {
@@ -184,10 +185,16 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
       if (pid) {
         if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
       } else {
-        throw new Error(`SKU '${sku}' not found in Flowtrac products.`);
+        console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
+        missingSkus.push(sku);
+        continue; // Skip this SKU instead of throwing an error
       }
     }
     skuToPidForQuery[sku] = pid;
+  }
+  
+  if (missingSkus.length > 0) {
+    console.log(`Skipped ${missingSkus.length} SKUs not found in Flowtrac:`, missingSkus);
   }
   if (mappingUpdated) {
     fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));

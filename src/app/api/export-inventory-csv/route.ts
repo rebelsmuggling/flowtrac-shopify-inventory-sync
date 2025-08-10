@@ -6,6 +6,10 @@ import { getImportedMapping } from '../../../utils/imported-mapping-store';
 export async function GET(request: NextRequest) {
   try {
     console.log('Inventory CSV export started');
+    
+    // Check if user wants missing SKU information
+    const url = new URL(request.url);
+    const includeMissingSkus = url.searchParams.get('includeMissingSkus') === 'true';
 
     // 1. Load mapping.json (try imported mapping first, then fallback to file)
     let mapping;
@@ -42,10 +46,44 @@ export async function GET(request: NextRequest) {
       try {
         // Try to import and use Flowtrac service
         const { fetchFlowtracInventoryWithBins } = await import('../../../../services/flowtrac');
-        flowtracInventory = await fetchFlowtracInventoryWithBins(Array.from(skus));
-        console.log('Fetched Flowtrac inventory for CSV export', { flowtracInventory });
+        console.log('About to fetch inventory for SKUs:', Array.from(skus).slice(0, 10), '... (total:', skus.size, ')');
+        
+        // Process SKUs in smaller batches to avoid overwhelming the Flowtrac API
+        const skuArray = Array.from(skus);
+        const batchSize = 50; // Process 50 SKUs at a time
+        const batches = [];
+        for (let i = 0; i < skuArray.length; i += batchSize) {
+          batches.push(skuArray.slice(i, i + batchSize));
+        }
+        
+        console.log(`Processing ${batches.length} batches of up to ${batchSize} SKUs each`);
+        
+        // Process each batch
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+          console.log(`Processing batch ${i + 1}/${batches.length} (${batch.length} SKUs)`);
+          
+          try {
+            const batchInventory = await fetchFlowtracInventoryWithBins(batch);
+            Object.assign(flowtracInventory, batchInventory);
+            
+            // Add a small delay between batches to avoid rate limiting
+            if (i < batches.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (batchError) {
+            console.error(`Failed to fetch batch ${i + 1}, continuing with next batch:`, batchError);
+            // Continue with next batch instead of failing completely
+          }
+        }
+        
+        console.log('Successfully fetched Flowtrac inventory for CSV export');
       } catch (flowtracError) {
         console.error('Failed to fetch Flowtrac inventory, using mock data:', flowtracError);
+        console.error('Error details:', {
+          message: (flowtracError as Error).message,
+          stack: (flowtracError as Error).stack?.split('\n').slice(0, 5)
+        });
         // Fall back to mock data
         for (const sku of skus) {
           flowtracInventory[sku] = {
@@ -67,9 +105,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. Build inventory data for CSV
+    // 4. Build inventory data for CSV and track missing SKUs
     const csvData: any[] = [];
     const dataSource = hasFlowtracCredentials ? 'Live Flowtrac Data' : 'Mock Data (Flowtrac credentials not configured)';
+    const missingSkus: string[] = [];
+    const validSkus: string[] = [];
+    
+    // Track which SKUs are missing from Flowtrac
+    if (includeMissingSkus && hasFlowtracCredentials) {
+      for (const sku of skus) {
+        if (flowtracInventory[sku] && flowtracInventory[sku].quantity !== undefined) {
+          validSkus.push(sku);
+        } else {
+          missingSkus.push(sku);
+        }
+      }
+      missingSkus.sort();
+      validSkus.sort();
+    }
     
     for (const product of mapping.products) {
       const row: any = {
@@ -152,18 +205,46 @@ export async function GET(request: NextRequest) {
       ].join(','))
     ].join('\n');
 
-    // 6. Return CSV file
-    const filename = `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
-    
-    console.log('CSV export completed successfully');
-    
-    return new NextResponse(csvContent, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-      },
-    });
+    // 6. Return response based on request type
+    if (includeMissingSkus) {
+      // Return JSON with both CSV data and missing SKU information
+      const filename = `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      console.log('CSV export with missing SKU information completed successfully');
+      
+      return NextResponse.json({
+        success: true,
+        csvContent: csvContent,
+        filename: filename,
+        missingSkus: {
+          total: skus.size,
+          valid: validSkus.length,
+          missing: missingSkus.length,
+          percentageValid: Math.round((validSkus.length / skus.size) * 100),
+          missingSkusList: missingSkus,
+          validSkusList: validSkus
+        },
+        summary: {
+          totalSkus: skus.size,
+          validSkus: validSkus.length,
+          missingSkus: missingSkus.length,
+          dataSource: dataSource
+        }
+      });
+    } else {
+      // Return CSV file as before
+      const filename = `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      console.log('CSV export completed successfully');
+      
+      return new NextResponse(csvContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      });
+    }
 
   } catch (error) {
     console.error('Inventory CSV export failed:', error);
