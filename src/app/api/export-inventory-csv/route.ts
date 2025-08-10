@@ -52,9 +52,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. Generate inventory data (mock for now, will be enhanced with Flowtrac integration)
+    // 3. Generate inventory data with resilient processing like main sync
     console.log('Generating inventory data for CSV export');
     let flowtracInventory: Record<string, { quantity: number, bins: string[], binBreakdown: Record<string, number> }> = {};
+    let skuProcessingResults: Record<string, { success: boolean, error?: string }> = {};
     let hitTimeout = false;
     
     // Check if Flowtrac credentials are available
@@ -66,103 +67,104 @@ export async function GET(request: NextRequest) {
         const { fetchFlowtracInventoryWithBins } = await import('../../../../services/flowtrac');
         console.log('About to fetch inventory for SKUs:', Array.from(skus).slice(0, 10), '... (total:', skus.size, ')');
         
-        // Process SKUs in batches to avoid overwhelming the Flowtrac API
+        // Process SKUs in smaller chunks like main sync
         const skuArray = Array.from(skus);
-        const batchSize = 20; // Increased batch size to reduce overhead
-        const batches = [];
-        for (let i = 0; i < skuArray.length; i += batchSize) {
-          batches.push(skuArray.slice(i, i + batchSize));
+        const chunkSize = 5; // Small chunks for better reliability
+        const chunks = [];
+        for (let i = 0; i < skuArray.length; i += chunkSize) {
+          chunks.push(skuArray.slice(i, i + chunkSize));
         }
         
-        console.log(`Processing ${batches.length} batches of up to ${batchSize} SKUs each`);
+        console.log(`Processing ${chunks.length} chunks of up to ${chunkSize} SKUs each`);
         
         // Add timeout protection for Vercel's 300-second limit
         const startTime = Date.now();
-        const maxExecutionTime = 180000; // 3 minutes (leaving 2 minutes buffer for safety)
-        let processedBatches = 0;
+        const maxExecutionTime = 240000; // 4 minutes (leaving 1 minute buffer)
+        let processedChunks = 0;
         let totalProcessedSkus = 0;
+        let successfulSkus = 0;
+        let failedSkus = 0;
         
-        // Process each batch
-        for (let i = 0; i < batches.length; i++) {
+        // Process each chunk
+        for (let i = 0; i < chunks.length; i++) {
           // Check if we're approaching the timeout
           if (Date.now() - startTime > maxExecutionTime) {
-            console.warn(`Approaching Vercel timeout, stopping at batch ${i + 1}/${batches.length}`);
-            console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
+            console.warn(`Approaching Vercel timeout, stopping at chunk ${i + 1}/${chunks.length}`);
+            console.warn(`Processed ${processedChunks} chunks and ${totalProcessedSkus} SKUs before timeout`);
             hitTimeout = true;
             break;
           }
           
-          const batch = batches[i];
-          console.log(`Processing batch ${i + 1}/${batches.length} (${batch.length} SKUs)`);
+          const chunk = chunks[i];
+          console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} SKUs)`);
           
-          try {
-            const batchInventory = await fetchFlowtracInventoryWithBins(batch);
-            Object.assign(flowtracInventory, batchInventory);
-            processedBatches++;
-            totalProcessedSkus += batch.length;
-            
-            // Delay between batches
-            if (i < batches.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
+          // Process each SKU in the chunk individually for better error handling
+          for (const sku of chunk) {
+            // Check timeout before each SKU
+            if (Date.now() - startTime > maxExecutionTime) {
+              console.warn(`Approaching Vercel timeout, stopping SKU processing`);
+              hitTimeout = true;
+              break;
             }
-          } catch (batchError) {
-            console.error(`Failed to fetch batch ${i + 1}, trying individual SKUs:`, batchError);
             
-            // When a batch fails, try processing SKUs individually (with timeout check)
-            console.log(`Processing ${batch.length} SKUs individually due to batch failure`);
-            let successfulIndividualSkus = 0;
-            
-            for (const sku of batch) {
-              // Check timeout before each individual SKU
-              const currentTime = Date.now();
-              if (currentTime - startTime > maxExecutionTime) {
-                console.warn(`Approaching Vercel timeout, stopping individual SKU processing`);
-                console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
-                hitTimeout = true;
-                break;
-              }
+            try {
+              const skuInventory = await fetchFlowtracInventoryWithBins([sku]);
+              Object.assign(flowtracInventory, skuInventory);
+              skuProcessingResults[sku] = { success: true };
+              successfulSkus++;
+              console.log(`✓ Successfully processed SKU ${sku}`);
+            } catch (skuError) {
+              console.warn(`✗ Failed to fetch SKU ${sku}:`, (skuError as Error).message);
+              skuProcessingResults[sku] = { 
+                success: false, 
+                error: (skuError as Error).message 
+              };
+              failedSkus++;
               
+              // Try one retry with delay
               try {
-                const individualInventory = await fetchFlowtracInventoryWithBins([sku]);
-                Object.assign(flowtracInventory, individualInventory);
-                successfulIndividualSkus++;
-                totalProcessedSkus++;
-                
-                // Delay between individual SKUs
-                await new Promise(resolve => setTimeout(resolve, 100));
-              } catch (individualError) {
-                console.warn(`Failed to fetch individual SKU ${sku}:`, individualError);
-                
-                // Try one more time with a longer delay
-                try {
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  const retryInventory = await fetchFlowtracInventoryWithBins([sku]);
-                  Object.assign(flowtracInventory, retryInventory);
-                  successfulIndividualSkus++;
-                  totalProcessedSkus++;
-                  console.log(`Retry successful for SKU ${sku}`);
-                } catch (retryError) {
-                  console.warn(`Retry also failed for SKU ${sku}:`, retryError);
-                  // Skip this individual SKU, but continue with others
-                }
+                await new Promise(resolve => setTimeout(resolve, 200));
+                const retryInventory = await fetchFlowtracInventoryWithBins([sku]);
+                Object.assign(flowtracInventory, retryInventory);
+                skuProcessingResults[sku] = { success: true };
+                successfulSkus++;
+                failedSkus--; // Adjust counts
+                console.log(`✓ Retry successful for SKU ${sku}`);
+              } catch (retryError) {
+                console.warn(`✗ Retry also failed for SKU ${sku}:`, (retryError as Error).message);
+                skuProcessingResults[sku] = { 
+                  success: false, 
+                  error: `Retry failed: ${(retryError as Error).message}` 
+                };
               }
             }
             
-            console.log(`Individual processing completed: ${successfulIndividualSkus}/${batch.length} SKUs successful`);
+            totalProcessedSkus++;
+            
+            // Small delay between SKUs
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          processedChunks++;
+          
+          // Delay between chunks
+          if (i < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
         }
         
-        // Check if we hit the timeout
+        // Log final results
         const executionTime = Date.now() - startTime;
         hitTimeout = executionTime > maxExecutionTime;
         
         if (hitTimeout) {
           console.warn(`CSV export completed with timeout after ${executionTime}ms`);
-          console.warn(`Final stats: ${processedBatches} batches, ${totalProcessedSkus} SKUs processed out of ${skuArray.length} total`);
-          console.warn(`Skipped ${skuArray.length - totalProcessedSkus} SKUs due to timeout - they will show as invalid`);
+          console.warn(`Final stats: ${processedChunks} chunks, ${totalProcessedSkus} SKUs processed out of ${skuArray.length} total`);
+          console.warn(`Success: ${successfulSkus}, Failed: ${failedSkus}, Skipped: ${skuArray.length - totalProcessedSkus}`);
         } else {
           console.log('Successfully fetched Flowtrac inventory for CSV export');
-          console.log(`Final stats: ${processedBatches} batches, ${totalProcessedSkus} SKUs processed`);
+          console.log(`Final stats: ${processedChunks} chunks, ${totalProcessedSkus} SKUs processed`);
+          console.log(`Success: ${successfulSkus}, Failed: ${failedSkus}`);
         }
       } catch (flowtracError) {
         console.error('Failed to fetch Flowtrac inventory, using mock data:', flowtracError);
@@ -177,6 +179,7 @@ export async function GET(request: NextRequest) {
             bins: ['A1', 'B2', 'C3'],
             binBreakdown: { 'A1': 50, 'B2': 30, 'C3': 20 }
           };
+          skuProcessingResults[sku] = { success: false, error: 'Using mock data due to Flowtrac error' };
         }
       }
     } else {
@@ -188,6 +191,7 @@ export async function GET(request: NextRequest) {
           bins: ['A1', 'B2', 'C3'],
           binBreakdown: { 'A1': 50, 'B2': 30, 'C3': 20 }
         };
+        skuProcessingResults[sku] = { success: false, error: 'Using mock data - no Flowtrac credentials' };
       }
     }
 
@@ -202,10 +206,10 @@ export async function GET(request: NextRequest) {
     const missingSkus: string[] = [];
     const validSkus: string[] = [];
     
-    // Track which SKUs are missing from Flowtrac
+    // Track which SKUs were successfully processed vs failed
     if (includeMissingSkus && hasFlowtracCredentials) {
       for (const sku of skus) {
-        if (flowtracInventory[sku] && flowtracInventory[sku].quantity !== undefined) {
+        if (skuProcessingResults[sku]?.success === true) {
           validSkus.push(sku);
         } else {
           missingSkus.push(sku);
@@ -251,11 +255,11 @@ export async function GET(request: NextRequest) {
           flowtracInventory[comp.flowtrac_sku]?.bins || []
         ).flat().join(', ');
         
-        // For bundle products, check if ALL components exist in Flowtrac
-        const allComponentsExist = product.bundle_components.every((comp: any) => 
-          flowtracInventory[comp.flowtrac_sku] && flowtracInventory[comp.flowtrac_sku].quantity !== undefined
+        // For bundle products, check if ALL components were successfully processed
+        const allComponentsSuccess = product.bundle_components.every((comp: any) => 
+          skuProcessingResults[comp.flowtrac_sku]?.success === true
         );
-        row.valid_flowtrac_connection = allComponentsExist ? 'True' : 'False';
+        row.valid_flowtrac_connection = allComponentsSuccess ? 'True' : 'False';
         
       } else if (product.flowtrac_sku) {
         // Simple product
@@ -267,8 +271,8 @@ export async function GET(request: NextRequest) {
         row.amazon_quantity = available;
         row.flowtrac_bins = bins.join(', ');
         
-        // For simple products, check if the SKU exists in Flowtrac
-        row.valid_flowtrac_connection = (flowtracInventory[product.flowtrac_sku] && flowtracInventory[product.flowtrac_sku].quantity !== undefined) ? 'True' : 'False';
+        // For simple products, check if the SKU was successfully processed
+        row.valid_flowtrac_connection = skuProcessingResults[product.flowtrac_sku]?.success === true ? 'True' : 'False';
       }
 
       csvData.push(row);
