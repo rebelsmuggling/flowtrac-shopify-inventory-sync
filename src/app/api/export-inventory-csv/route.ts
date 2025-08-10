@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
         const { fetchFlowtracInventoryWithBins } = await import('../../../../services/flowtrac');
         console.log('About to fetch inventory for SKUs:', Array.from(skus).slice(0, 10), '... (total:', skus.size, ')');
         
-        // Process SKUs in smaller batches to avoid overwhelming the Flowtrac API
+        // Process SKUs in batches to avoid overwhelming the Flowtrac API
         const skuArray = Array.from(skus);
-        const batchSize = 10; // Reduced batch size for better reliability and timeout safety
+        const batchSize = 20; // Increased batch size to reduce overhead
         const batches = [];
         for (let i = 0; i < skuArray.length; i += batchSize) {
           batches.push(skuArray.slice(i, i + batchSize));
@@ -78,24 +78,18 @@ export async function GET(request: NextRequest) {
         
         // Add timeout protection for Vercel's 300-second limit
         const startTime = Date.now();
-        const maxExecutionTime = 240000; // 4 minutes (leaving 1 minute buffer)
-        const timeoutCheckInterval = 30000; // Check timeout every 30 seconds
-        let lastTimeoutCheck = startTime;
+        const maxExecutionTime = 180000; // 3 minutes (leaving 2 minutes buffer for safety)
         let processedBatches = 0;
         let totalProcessedSkus = 0;
         
         // Process each batch
         for (let i = 0; i < batches.length; i++) {
-          // Check timeout more frequently for better responsiveness
-          const currentTime = Date.now();
-          if (currentTime - lastTimeoutCheck > timeoutCheckInterval) {
-            if (currentTime - startTime > maxExecutionTime) {
-              console.warn(`Approaching Vercel timeout, stopping at batch ${i + 1}/${batches.length}`);
-              console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
-              hitTimeout = true;
-              break;
-            }
-            lastTimeoutCheck = currentTime;
+          // Check if we're approaching the timeout
+          if (Date.now() - startTime > maxExecutionTime) {
+            console.warn(`Approaching Vercel timeout, stopping at batch ${i + 1}/${batches.length}`);
+            console.warn(`Processed ${processedBatches} batches and ${totalProcessedSkus} SKUs before timeout`);
+            hitTimeout = true;
+            break;
           }
           
           const batch = batches[i];
@@ -107,9 +101,9 @@ export async function GET(request: NextRequest) {
             processedBatches++;
             totalProcessedSkus += batch.length;
             
-            // Reduced delay between batches (moderate reduction for safety)
+            // Delay between batches
             if (i < batches.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 300));
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
           } catch (batchError) {
             console.error(`Failed to fetch batch ${i + 1}, trying individual SKUs:`, batchError);
@@ -134,14 +128,14 @@ export async function GET(request: NextRequest) {
                 successfulIndividualSkus++;
                 totalProcessedSkus++;
                 
-                // Reduced delay between individual SKUs (moderate reduction for safety)
-                await new Promise(resolve => setTimeout(resolve, 75));
+                // Delay between individual SKUs
+                await new Promise(resolve => setTimeout(resolve, 100));
               } catch (individualError) {
                 console.warn(`Failed to fetch individual SKU ${sku}:`, individualError);
                 
                 // Try one more time with a longer delay
                 try {
-                  await new Promise(resolve => setTimeout(resolve, 300));
+                  await new Promise(resolve => setTimeout(resolve, 500));
                   const retryInventory = await fetchFlowtracInventoryWithBins([sku]);
                   Object.assign(flowtracInventory, retryInventory);
                   successfulIndividualSkus++;
