@@ -19,9 +19,26 @@ export async function GET(request: NextRequest) {
       console.log('Using imported mapping data for CSV export');
       mapping = importedMapping;
     } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      console.log('Using file mapping data for CSV export');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+      // Try to load from mapping API first
+      try {
+        const mappingRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/mapping`);
+        if (mappingRes.ok) {
+          const mappingData = await mappingRes.json();
+          if (mappingData.success) {
+            console.log('Using mapping API data for CSV export');
+            mapping = mappingData.mapping;
+          }
+        }
+      } catch (apiError) {
+        console.log('Mapping API not available, falling back to file');
+      }
+      
+      // Fallback to file system
+      if (!mapping) {
+        const mappingPath = path.join(process.cwd(), 'mapping.json');
+        console.log('Using file mapping data for CSV export');
+        mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+      }
     }
 
     // 2. Collect all SKUs (simple and bundle components)
