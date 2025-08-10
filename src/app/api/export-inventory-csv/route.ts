@@ -72,8 +72,21 @@ export async function GET(request: NextRequest) {
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
           } catch (batchError) {
-            console.error(`Failed to fetch batch ${i + 1}, continuing with next batch:`, batchError);
-            // Continue with next batch instead of failing completely
+            console.error(`Failed to fetch batch ${i + 1}, trying individual SKUs:`, batchError);
+            
+            // When a batch fails, try processing SKUs individually
+            for (const sku of batch) {
+              try {
+                const individualInventory = await fetchFlowtracInventoryWithBins([sku]);
+                Object.assign(flowtracInventory, individualInventory);
+                
+                // Small delay between individual SKUs
+                await new Promise(resolve => setTimeout(resolve, 200));
+              } catch (individualError) {
+                console.warn(`Failed to fetch individual SKU ${sku}:`, individualError);
+                // Skip this individual SKU, but continue with others
+              }
+            }
           }
         }
         
