@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import type { MappingFile } from '../src/types/mapping';
 import { Parser as CsvParser } from 'json2csv';
+import { getImportedMapping } from '../src/utils/imported-mapping-store';
 
 const FLOWTRAC_API_URL = process.env.FLOWTRAC_API_URL;
 const FLOWTRAC_BADGE = process.env.FLOWTRAC_BADGE;
@@ -71,8 +72,17 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
   // 1. Authenticate to get session cookie
   const flowAuthCookie = await getFlowtracAuthCookie();
 
-  // 2. Load mapping.json
-  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  // 2. Load mapping (try imported mapping first, then fallback to file)
+  let mapping: MappingFile;
+  const importedMapping = getImportedMapping();
+  
+  if (importedMapping) {
+    console.log('Using imported mapping data for fetchFlowtracInventory');
+    mapping = importedMapping;
+  } else {
+    console.log('Using file mapping data for fetchFlowtracInventory');
+    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  }
 
   // 3. Fetch all Flowtrac products once (for self-healing)
   const products = await fetchAllFlowtracProducts(flowAuthCookie);
@@ -98,8 +108,7 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
     skuToPidForQuery[sku] = pid;
   }
   if (mappingUpdated) {
-    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-    console.log('mapping.json updated with missing Flowtrac product_ids during sync.');
+    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
   }
 
   // 5. Query Flowtrac using product_id for each SKU
@@ -136,9 +145,16 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
  * @param onlyActive If true, only include products with active === 'Active'
  */
 export function filterProductsToSync(flowtracProducts: any[], onlyActive = true): any[] {
-  // Load mapping.json (assume project root)
-  const mappingPath = path.resolve(__dirname, '../../../mapping.json');
-  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  // Load mapping (try imported mapping first, then fallback to file)
+  let mapping: MappingFile;
+  const importedMapping = getImportedMapping();
+  
+  if (importedMapping) {
+    mapping = importedMapping;
+  } else {
+    const mappingPath = path.resolve(__dirname, '../../../mapping.json');
+    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  }
 
   // Collect all mapped SKUs from simple and bundle products
   const mappedSkus = new Set<string>();
@@ -163,8 +179,17 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   // 1. Authenticate to get session cookie
   const flowAuthCookie = await getFlowtracAuthCookie();
 
-  // 2. Load mapping.json
-  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  // 2. Load mapping (try imported mapping first, then fallback to file)
+  let mapping: MappingFile;
+  const importedMapping = getImportedMapping();
+  
+  if (importedMapping) {
+    console.log('Using imported mapping data for fetchFlowtracInventoryWithBins');
+    mapping = importedMapping;
+  } else {
+    console.log('Using file mapping data for fetchFlowtracInventoryWithBins');
+    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  }
 
   // 3. Fetch all Flowtrac products once (for self-healing)
   const products = await fetchAllFlowtracProducts(flowAuthCookie);
@@ -197,8 +222,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
     console.log(`Skipped ${missingSkus.length} SKUs not found in Flowtrac:`, missingSkus);
   }
   if (mappingUpdated) {
-    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-    console.log('mapping.json updated with missing Flowtrac product_ids during sync.');
+    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
   }
 
   // 5. Query Flowtrac using product_id for each SKU
@@ -251,7 +275,16 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
 
 export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> {
   const flowAuthCookie = await getFlowtracAuthCookie();
-  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  
+  // Load mapping (try imported mapping first, then fallback to file)
+  let mapping: MappingFile;
+  const importedMapping = getImportedMapping();
+  
+  if (importedMapping) {
+    mapping = importedMapping;
+  } else {
+    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  }
   const products = await fetchAllFlowtracProducts(flowAuthCookie);
   const skuToProductId: Record<string, string> = {};
   for (const p of products) {
@@ -273,8 +306,7 @@ export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> 
     skuToPidForQuery[sku] = pid;
   }
   if (mappingUpdated) {
-    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-    console.log('mapping.json updated with missing Flowtrac product_ids during export.');
+    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
   }
   const allBins: any[] = [];
   for (const [sku, product_id] of Object.entries(skuToPidForQuery)) {
@@ -291,8 +323,8 @@ export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> 
   }
   const csvParser = new CsvParser();
   const csv = csvParser.parse(allBins);
-  fs.writeFileSync('flowtrac_bins_raw.csv', csv);
-  console.log('Exported raw Flowtrac bin data to flowtrac_bins_raw.csv');
+  console.log('CSV data generated but cannot write to file system in Vercel environment');
+  console.log('CSV content length:', csv.length);
 }
 
 // Test function to verify Flowtrac API connectivity using /device-login/
