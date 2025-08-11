@@ -129,7 +129,7 @@ async function startBatchProcessing() {
     
     console.log(`Started batch processing: ${totalSkus} SKUs in ${totalBatches} batches`);
     
-    // Process first batch
+    // Process first batch only and return immediately
     return await processBatch(sessionId, 1, allSkus);
     
   } catch (error) {
@@ -387,15 +387,24 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
         });
       }
       
-      // Continue to next batch automatically
-      console.log(`Batch ${batchNumber} completed, automatically starting batch ${batchNumber + 1}`);
+      // Update session and return (no automatic continuation)
       await updateSyncSession(sessionId, sessionUpdates);
       
-      // Add a small delay before starting next batch
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Recursively process next batch
-      return await processBatch(sessionId, batchNumber + 1, allSkus);
+      return NextResponse.json({
+        success: true,
+        session_id: sessionId,
+        batch_number: batchNumber,
+        batch_completed: true,
+        next_batch_available: batchNumber < (sessionResult.data?.total_batches || 0),
+        processing_time_ms: duration,
+        results: {
+          skus_processed: batchSkus.length,
+          successful: successfulSkus,
+          failed: failedSkus,
+          failed_skus: failedSkuList,
+          records_saved: inventoryRecords.length
+        }
+      });
     }
     
     return NextResponse.json({

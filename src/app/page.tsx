@@ -146,8 +146,8 @@ export default function Home() {
           setBatchProcessorStatus("Session failed");
           setResult("❌ Database update failed: " + data.error);
         } else {
-          setBatchProcessorStatus("Processing batches automatically...");
-          setResult("🔄 Database update started! Processing all batches automatically.");
+          setBatchProcessorStatus("Batch completed. Ready for next batch.");
+          setResult("✅ First batch completed! Click 'Continue Next Batch' to continue.");
         }
       } else {
         setResult("❌ Batch processor failed: " + data.error);
@@ -159,6 +159,45 @@ export default function Home() {
       setBatchProcessorStatus("Error starting batch processor");
     } finally {
       setBatchProcessorLoading(false);
+    }
+  };
+
+  const handleContinueBatchProcessor = async () => {
+    if (!batchProcessorSession?.session_id) return;
+    
+    setBatchProcessorStatus("Continuing batch processor...");
+    
+    try {
+      const res = await fetch("/api/flowtrac-batch-processor", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'continue',
+          sessionId: batchProcessorSession.session_id
+        })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setBatchProcessorSession(data);
+        
+        if (data.session_completed) {
+          setBatchProcessorStatus("All batches completed successfully!");
+          setResult("✅ Database update completed! All batches processed.");
+        } else if (data.session_failed) {
+          setBatchProcessorStatus("Session failed");
+          setResult("❌ Database update failed: " + data.error);
+        } else {
+          setBatchProcessorStatus("Batch completed. Ready for next batch.");
+          setResult("✅ Batch completed! Click 'Continue Next Batch' to continue.");
+        }
+      } else {
+        setResult("❌ Continue failed: " + data.error);
+        setBatchProcessorStatus("Failed to continue batch processor");
+      }
+    } catch (err) {
+      setResult("❌ Continue failed: " + (err as Error).message);
+      setBatchProcessorStatus("Error continuing batch processor");
     }
   };
 
@@ -752,6 +791,22 @@ export default function Home() {
                 )}
                 
                 <div style={{ display: "flex", gap: 8 }}>
+                  {batchProcessorSession.next_batch_available && (
+                    <button
+                      onClick={handleContinueBatchProcessor}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.9rem",
+                        borderRadius: "4px",
+                        background: "#28a745",
+                        color: "#fff",
+                        border: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Continue Next Batch
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setBatchProcessorSession(null);
