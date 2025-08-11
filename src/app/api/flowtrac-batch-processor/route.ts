@@ -409,7 +409,14 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
         // Trigger next batch asynchronously (don't wait for it)
         setTimeout(async () => {
           try {
-            const nextBatchUrl = `${process.env.VERCEL_URL || 'http://localhost:3000'}/api/flowtrac-batch-processor`;
+            // Construct proper URL with protocol
+            const baseUrl = process.env.VERCEL_URL 
+              ? `https://${process.env.VERCEL_URL}` 
+              : 'http://localhost:3000';
+            const nextBatchUrl = `${baseUrl}/api/flowtrac-batch-processor`;
+            
+            console.log(`Auto-triggering next batch with URL: ${nextBatchUrl}`);
+            
             await fetch(nextBatchUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
