@@ -402,33 +402,9 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
       // Update session
       await updateSyncSession(sessionId, sessionUpdates);
       
-      // Auto-trigger next batch if available
+      // Return with next batch available (frontend will handle continuation)
       if (batchNumber < session.total_batches) {
-        console.log(`Auto-triggering next batch ${batchNumber + 1} for session ${sessionId}`);
-        
-        // Trigger next batch asynchronously (don't wait for it)
-        setTimeout(async () => {
-          try {
-            // Construct proper URL with protocol
-            const baseUrl = process.env.VERCEL_URL 
-              ? `https://${process.env.VERCEL_URL}` 
-              : 'http://localhost:3000';
-            const nextBatchUrl = `${baseUrl}/api/flowtrac-batch-processor`;
-            
-            console.log(`Auto-triggering next batch with URL: ${nextBatchUrl}`);
-            
-            await fetch(nextBatchUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'continue',
-                sessionId: sessionId
-              })
-            });
-          } catch (error) {
-            console.error('Failed to auto-trigger next batch:', error);
-          }
-        }, 2000); // 2 second delay before triggering next batch
+        console.log(`Batch ${batchNumber} completed, next batch ${batchNumber + 1} available`);
         
         return NextResponse.json({
           success: true,
@@ -436,7 +412,7 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
           batch_number: batchNumber,
           batch_completed: true,
           next_batch_available: true,
-          auto_triggered: true,
+          auto_continue: true,
           processing_time_ms: duration,
           results: {
             skus_processed: batchSkus.length,

@@ -146,12 +146,14 @@ export default function Home() {
         } else if (data.session_failed) {
           setBatchProcessorStatus("Session failed");
           setResult("❌ Database update failed: " + data.error);
-        } else if (data.auto_triggered) {
-          setBatchProcessorStatus("Batch completed. Auto-triggering next batch...");
-          setResult("✅ Batch completed! Next batch starting automatically...");
+        } else if (data.auto_continue) {
+          setBatchProcessorStatus("Batch completed. Auto-continuing to next batch...");
+          setResult("✅ Batch completed! Continuing to next batch automatically...");
           
-          // Start polling for updates
-          startPollingForUpdates(data.session_id);
+          // Auto-continue to next batch after a short delay
+          setTimeout(() => {
+            handleContinueBatchProcessor();
+          }, 2000);
         } else {
           setBatchProcessorStatus("Batch completed. Ready for next batch.");
           setResult("✅ First batch completed! Click 'Continue Next Batch' to continue.");
@@ -196,9 +198,14 @@ export default function Home() {
           setBatchProcessorStatus("Session failed");
           setResult("❌ Database update failed: " + data.error);
           stopPolling();
-        } else if (data.auto_triggered) {
-          setBatchProcessorStatus("Batch completed. Auto-triggering next batch...");
-          setResult("✅ Batch completed! Next batch starting automatically...");
+        } else if (data.auto_continue) {
+          setBatchProcessorStatus("Batch completed. Auto-continuing to next batch...");
+          setResult("✅ Batch completed! Continuing to next batch automatically...");
+          
+          // Auto-continue to next batch after a short delay
+          setTimeout(() => {
+            handleContinueBatchProcessor();
+          }, 2000);
         } else {
           setBatchProcessorStatus("Batch completed. Ready for next batch.");
           setResult("✅ Batch completed! Click 'Continue Next Batch' to continue.");
