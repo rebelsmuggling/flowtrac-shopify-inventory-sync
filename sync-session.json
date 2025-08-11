@@ -1,0 +1,47 @@
+{
+  "session_id": "sync-2025-08-11T01-48-44-265Z",
+  "status": "completed",
+  "total_skus": 414,
+  "current_session": 4,
+  "total_sessions": 4,
+  "processed_skus": 414,
+  "remaining_skus": 0,
+  "batch_size": 120,
+  "started_at": "2025-08-11T01:48:44.265Z",
+  "last_updated": "2025-08-11T02:16:29.025Z",
+  "session_results": {
+    "session_1": {
+      "status": "completed",
+      "skus_processed": 120,
+      "successful": 120,
+      "failed": 0,
+      "failed_skus": []
+    },
+    "session_2": {
+      "status": "completed",
+      "skus_processed": 120,
+      "successful": 119,
+      "failed": 1,
+      "failed_skus": [
+        "IC-STAR-PIN2"
+      ],
+      "error_message": "Batch failed, used individual fallback: Request failed with status code 500"
+    },
+    "session_3": {
+      "status": "completed",
+      "skus_processed": 120,
+      "successful": 120,
+      "failed": 0,
+      "failed_skus": []
+    },
+    "session_4": {
+      "status": "completed",
+      "skus_processed": 54,
+      "successful": 53,
+      "failed": 1,
+      "failed_skus": [
+        "IC-SKIT-0025"
+      ]
+    }
+  }
+}

@@ -19,9 +19,28 @@ export async function POST(request: NextRequest) {
     // Parse request body to check for dryRun parameter
     const body = await request.json().catch(() => ({}));
     const dryRun = body.dryRun === true;
+    const useSessionMode = body.useSessionMode === true;
     
     if (dryRun) {
       console.log('DRY RUN MODE: Will calculate quantities but not post to Amazon/Shopify');
+    }
+    
+    if (useSessionMode) {
+      console.log('SESSION MODE: Using session-based batch processing');
+      // Redirect to session-based sync
+      const sessionResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/sync-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' })
+      });
+      
+      const sessionData = await sessionResponse.json();
+      return NextResponse.json({
+        success: sessionData.success,
+        message: 'Session-based sync started',
+        session: sessionData.session,
+        useSessionMode: true
+      });
     }
 
     // 1. Load mapping.json (try imported mapping first, then fallback to file)

@@ -8,6 +8,8 @@ export default function Home() {
   const [syncing, setSyncing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [details, setDetails] = useState<any>(null);
+  const [syncSession, setSyncSession] = useState<any>(null);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [bulkData, setBulkData] = useState('');
@@ -32,10 +34,22 @@ export default function Home() {
     setSyncing(true);
     setResult(null);
     setDetails(null);
+    setSyncSession(null);
+    setSessionStatus(null);
+    
     try {
-      const res = await fetch("/api/sync", { method: "POST" });
+      const res = await fetch("/api/sync", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ useSessionMode: true })
+      });
       const data = await res.json();
-      if (data.success) {
+      
+      if (data.success && data.useSessionMode) {
+        setSyncSession(data.session);
+        setResult("✅ Session-based sync started!");
+        setSessionStatus("Session 1 of " + data.session.total_sessions + " in progress...");
+      } else if (data.success) {
         setResult("✅ Sync completed successfully!");
         setDetails(data.updateResults || null);
       } else {
@@ -46,6 +60,57 @@ export default function Home() {
       setResult("❌ Sync failed: " + (err as Error).message);
     }
     setSyncing(false);
+  };
+
+  const handleContinueSession = async () => {
+    if (!syncSession) return;
+    
+    setSessionStatus("Continuing session...");
+    
+    try {
+      const res = await fetch("/api/sync-session", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'continue' })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setSyncSession(data.session);
+        
+        if (data.session_completed) {
+          setResult("✅ All sessions completed successfully!");
+          setSessionStatus(null);
+          setSyncSession(null);
+        } else if (data.session_failed) {
+          setResult("❌ Session failed: " + (data.results?.failed_skus?.join(', ') || 'Unknown error'));
+          setSessionStatus("Session failed - cannot continue");
+        } else {
+          setSessionStatus(`Session ${data.current_session} of ${data.session.total_sessions} completed. Ready for next session.`);
+        }
+      } else {
+        setResult("❌ Continue session failed: " + data.error);
+        setSessionStatus("Failed to continue session");
+      }
+    } catch (err) {
+      setResult("❌ Continue session failed: " + (err as Error).message);
+      setSessionStatus("Error continuing session");
+    }
+  };
+
+  const handleClearSession = async () => {
+    try {
+      const res = await fetch("/api/sync-session?action=clear", { method: "GET" });
+      const data = await res.json();
+      
+      if (data.success) {
+        setSyncSession(null);
+        setSessionStatus(null);
+        setResult("Session cleared");
+      }
+    } catch (err) {
+      setResult("Failed to clear session: " + (err as Error).message);
+    }
   };
 
   const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -479,6 +544,93 @@ export default function Home() {
           </div>
           {result && (
             <div style={{ marginTop: 8, fontWeight: 500 }}>{result}</div>
+          )}
+          
+          {/* Session-based sync controls */}
+          {syncSession && (
+            <div style={{ 
+              marginTop: 16, 
+              padding: 16, 
+              border: "1px solid #ddd", 
+              borderRadius: "6px",
+              backgroundColor: "#f8f9fa"
+            }}>
+              <h4 style={{ margin: "0 0 12px 0", color: "#333" }}>Session Progress</h4>
+              
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span>Progress:</span>
+                  <span>{syncSession.processed_skus} / {syncSession.total_skus} SKUs</span>
+                </div>
+                <div style={{ 
+                  width: "100%", 
+                  height: "8px", 
+                  backgroundColor: "#e9ecef", 
+                  borderRadius: "4px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{ 
+                    width: `${(syncSession.processed_skus / syncSession.total_skus) * 100}%`,
+                    height: "100%",
+                    backgroundColor: "#0070f3",
+                    transition: "width 0.3s ease"
+                  }} />
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: 12 }}>
+                <strong>Session {syncSession.current_session} of {syncSession.total_sessions}</strong>
+                <br />
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>
+                  {syncSession.remaining_skus} SKUs remaining
+                </span>
+              </div>
+              
+              {sessionStatus && (
+                <div style={{ 
+                  marginBottom: 12, 
+                  padding: "8px 12px", 
+                  backgroundColor: "#e3f2fd", 
+                  borderRadius: "4px",
+                  fontSize: "0.9rem"
+                }}>
+                  {sessionStatus}
+                </div>
+              )}
+              
+              <div style={{ display: "flex", gap: 8 }}>
+                {syncSession.status === 'in_progress' && syncSession.current_session < syncSession.total_sessions && (
+                  <button
+                    onClick={handleContinueSession}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      fontSize: "0.9rem",
+                      borderRadius: "4px",
+                      background: "#28a745",
+                      color: "#fff",
+                      border: "none",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Continue Next Session
+                  </button>
+                )}
+                <button
+                  onClick={handleClearSession}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.9rem",
+                    borderRadius: "4px",
+                    background: "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  Clear Session
+                </button>
+              </div>
+            </div>
           )}
           {details && (
             <div style={{ marginTop: 16 }}>
