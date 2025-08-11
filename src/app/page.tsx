@@ -150,8 +150,11 @@ export default function Home() {
           setBatchProcessorStatus("Batch completed. Auto-continuing to next batch...");
           setResult("✅ Batch completed! Continuing to next batch automatically...");
           
+          console.log('Auto-continuing to next batch in 2 seconds...');
+          
           // Auto-continue to next batch after a short delay
           setTimeout(() => {
+            console.log('Auto-continuation timeout fired, calling handleContinueBatchProcessor');
             handleContinueBatchProcessor();
           }, 2000);
         } else {
@@ -172,11 +175,19 @@ export default function Home() {
   };
 
   const handleContinueBatchProcessor = async () => {
-    if (!batchProcessorSession?.session_id) return;
+    console.log('handleContinueBatchProcessor called');
+    console.log('Current session:', batchProcessorSession);
+    
+    if (!batchProcessorSession?.session_id) {
+      console.log('No session ID found, returning');
+      return;
+    }
     
     setBatchProcessorStatus("Continuing batch processor...");
     
     try {
+      console.log('Making continue API call with sessionId:', batchProcessorSession.session_id);
+      
       const res = await fetch("/api/flowtrac-batch-processor", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -185,7 +196,10 @@ export default function Home() {
           sessionId: batchProcessorSession.session_id
         })
       });
+      
+      console.log('Continue API response status:', res.status);
       const data = await res.json();
+      console.log('Continue API response data:', data);
       
       if (data.success) {
         setBatchProcessorSession(data);
@@ -202,8 +216,11 @@ export default function Home() {
           setBatchProcessorStatus("Batch completed. Auto-continuing to next batch...");
           setResult("✅ Batch completed! Continuing to next batch automatically...");
           
+          console.log('Auto-continuing to next batch in 2 seconds...');
+          
           // Auto-continue to next batch after a short delay
           setTimeout(() => {
+            console.log('Auto-continuation timeout fired, calling handleContinueBatchProcessor');
             handleContinueBatchProcessor();
           }, 2000);
         } else {
