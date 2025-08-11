@@ -77,15 +77,17 @@ export async function POST(request: NextRequest) {
     
     // Convert database records to the expected format
     const flowtracInventory: Record<string, { quantity: number, bins: string[] }> = {};
-    for (const record of inventoryResult.data) {
-      flowtracInventory[record.sku] = {
-        quantity: record.quantity,
-        bins: record.bins || []
-      };
+    if (inventoryResult.data) {
+      for (const record of inventoryResult.data) {
+        flowtracInventory[record.sku] = {
+          quantity: record.quantity,
+          bins: record.bins || []
+        };
+      }
     }
     
     console.log('Fetched inventory from database', { 
-      recordsFound: inventoryResult.data.length,
+      recordsFound: inventoryResult.data?.length || 0,
       totalSkus: Array.from(skus).length 
     });
 
