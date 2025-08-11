@@ -10,6 +10,9 @@ export default function Home() {
   const [details, setDetails] = useState<any>(null);
   const [syncSession, setSyncSession] = useState<any>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [batchProcessorSession, setBatchProcessorSession] = useState<any>(null);
+  const [batchProcessorStatus, setBatchProcessorStatus] = useState<string | null>(null);
+  const [databaseStats, setDatabaseStats] = useState<any>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [bulkData, setBulkData] = useState('');
@@ -110,6 +113,84 @@ export default function Home() {
       }
     } catch (err) {
       setResult("Failed to clear session: " + (err as Error).message);
+    }
+  };
+
+  // Database-powered batch processor functions
+  const handleStartBatchProcessor = async () => {
+    setBatchProcessorStatus("Starting batch processor...");
+    
+    try {
+      const res = await fetch("/api/flowtrac-batch-processor", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setBatchProcessorSession(data);
+        setBatchProcessorStatus(`Batch ${data.batch_number} of ${data.session?.total_batches} completed. Ready for next batch.`);
+        setResult("✅ Database batch processor started!");
+      } else {
+        setResult("❌ Batch processor failed: " + data.error);
+        setBatchProcessorStatus("Failed to start batch processor");
+      }
+    } catch (err) {
+      setResult("❌ Batch processor failed: " + (err as Error).message);
+      setBatchProcessorStatus("Error starting batch processor");
+    }
+  };
+
+  const handleContinueBatchProcessor = async () => {
+    if (!batchProcessorSession?.session_id) return;
+    
+    setBatchProcessorStatus("Continuing batch processor...");
+    
+    try {
+      const res = await fetch("/api/flowtrac-batch-processor", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'continue',
+          sessionId: batchProcessorSession.session_id
+        })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setBatchProcessorSession(data);
+        
+        if (data.session_completed) {
+          setResult("✅ All batches completed! Database updated with latest inventory.");
+          setBatchProcessorStatus(null);
+          setBatchProcessorSession(null);
+        } else if (data.session_failed) {
+          setResult("❌ Batch failed: " + (data.results?.failed_skus?.join(', ') || 'Unknown error'));
+          setBatchProcessorStatus("Batch failed - cannot continue");
+        } else {
+          setBatchProcessorStatus(`Batch ${data.batch_number} of ${data.session?.total_batches} completed. Ready for next batch.`);
+        }
+      } else {
+        setResult("❌ Continue batch processor failed: " + data.error);
+        setBatchProcessorStatus("Failed to continue batch processor");
+      }
+    } catch (err) {
+      setResult("❌ Continue batch processor failed: " + (err as Error).message);
+      setBatchProcessorStatus("Error continuing batch processor");
+    }
+  };
+
+  const handleLoadDatabaseStats = async () => {
+    try {
+      const res = await fetch("/api/flowtrac-batch-processor?action=status", { method: "GET" });
+      const data = await res.json();
+      
+      if (data.success) {
+        setDatabaseStats(data);
+      }
+    } catch (err) {
+      console.error("Failed to load database stats:", err);
     }
   };
 
@@ -541,6 +622,164 @@ export default function Home() {
             >
               {fetchingDescriptions ? "Exporting..." : "📋 Export Missing ShipStation Products"}
             </button>
+          </div>
+          
+          {/* Database Batch Processor Section */}
+          <div style={{ 
+            marginTop: 32, 
+            padding: 20, 
+            border: "2px solid #e9ecef", 
+            borderRadius: "8px",
+            backgroundColor: "#f8f9fa"
+          }}>
+            <h3 style={{ margin: "0 0 16px 0", color: "#495057" }}>🗄️ Database-Powered Inventory Sync</h3>
+            <p style={{ fontSize: "0.9rem", color: "#6c757d", marginBottom: 16 }}>
+              Update the database with Flowtrac inventory data in batches, then sync to Shopify/Amazon from the database.
+            </p>
+            
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button
+                onClick={handleStartBatchProcessor}
+                disabled={batchProcessorSession}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  borderRadius: "6px",
+                  background: batchProcessorSession ? "#ccc" : "#6f42c1",
+                  color: "#fff",
+              border: "none",
+                  cursor: batchProcessorSession ? "not-allowed" : "pointer",
+                  flex: 2,
+                }}
+              >
+                🚀 Start Database Update
+              </button>
+              <button
+                onClick={handleLoadDatabaseStats}
+                style={{
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.9rem",
+                  borderRadius: "6px",
+                  background: "#6c757d",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  flex: 1,
+                }}
+              >
+                📊 Database Stats
+              </button>
+            </div>
+            
+            {/* Database Stats Display */}
+            {databaseStats && (
+              <div style={{ 
+                marginBottom: 16, 
+                padding: 12, 
+                backgroundColor: "#fff", 
+                borderRadius: "4px",
+                border: "1px solid #dee2e6"
+              }}>
+                <h4 style={{ margin: "0 0 8px 0", fontSize: "0.9rem" }}>Database Statistics</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: "0.8rem" }}>
+                  <div><strong>Inventory Records:</strong> {databaseStats.inventory?.total_inventory_records || 0}</div>
+                  <div><strong>Unique SKUs:</strong> {databaseStats.inventory?.unique_skus || 0}</div>
+                  <div><strong>Last Update:</strong> {databaseStats.inventory?.last_inventory_update ? new Date(databaseStats.inventory.last_inventory_update).toLocaleString() : 'Never'}</div>
+                  <div><strong>Total Sessions:</strong> {databaseStats.sessions?.total_sessions || 0}</div>
+                </div>
+              </div>
+            )}
+            
+            {/* Batch Processor Session Controls */}
+            {batchProcessorSession && (
+              <div style={{ 
+                marginTop: 16, 
+                padding: 16, 
+                border: "1px solid #dee2e6", 
+                borderRadius: "6px",
+                backgroundColor: "#fff"
+              }}>
+                <h4 style={{ margin: "0 0 12px 0", color: "#495057" }}>Database Update Progress</h4>
+                
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span>Progress:</span>
+                    <span>{batchProcessorSession.session?.processed_skus || 0} / {batchProcessorSession.session?.total_skus || 0} SKUs</span>
+                  </div>
+                  <div style={{ 
+                    width: "100%", 
+                    height: "8px", 
+                    backgroundColor: "#e9ecef", 
+                    borderRadius: "4px",
+                    overflow: "hidden"
+                  }}>
+                    <div style={{ 
+                      width: `${((batchProcessorSession.session?.processed_skus || 0) / (batchProcessorSession.session?.total_skus || 1)) * 100}%`,
+                      height: "100%",
+                      backgroundColor: "#6f42c1",
+                      transition: "width 0.3s ease"
+                    }} />
+                  </div>
+                </div>
+                
+                <div style={{ marginBottom: 12 }}>
+                  <strong>Batch {batchProcessorSession.batch_number || 0} of {batchProcessorSession.session?.total_batches || 0}</strong>
+                  <br />
+                  <span style={{ fontSize: "0.9rem", color: "#6c757d" }}>
+                    {batchProcessorSession.session?.remaining_skus || 0} SKUs remaining
+                  </span>
+                </div>
+                
+                {batchProcessorStatus && (
+                  <div style={{ 
+                    marginBottom: 12, 
+                    padding: "8px 12px", 
+                    backgroundColor: "#e3f2fd", 
+                    borderRadius: "4px",
+                    fontSize: "0.9rem"
+                  }}>
+                    {batchProcessorStatus}
+                  </div>
+                )}
+                
+                <div style={{ display: "flex", gap: 8 }}>
+                  {batchProcessorSession.session?.status === 'in_progress' && 
+                   batchProcessorSession.batch_number < batchProcessorSession.session?.total_batches && (
+                    <button
+                      onClick={handleContinueBatchProcessor}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.9rem",
+                        borderRadius: "4px",
+                        background: "#28a745",
+                        color: "#fff",
+                        border: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Continue Next Batch
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setBatchProcessorSession(null);
+                      setBatchProcessorStatus(null);
+                    }}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      fontSize: "0.9rem",
+                      borderRadius: "4px",
+                      background: "#dc3545",
+                      color: "#fff",
+                      border: "none",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Clear Session
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           {result && (
             <div style={{ marginTop: 8, fontWeight: 500 }}>{result}</div>

@@ -67,10 +67,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Fetch inventory data from Flowtrac (with bins)
-    const flowtracInventory = await fetchFlowtracInventoryWithBins(Array.from(skus));
-    // flowtracInventory is { [sku]: { quantity: number, bins: string[] } }
-    console.log('Fetched Flowtrac inventory with bins', { flowtracInventory });
+    // 3. Fetch inventory data from database (instead of Flowtrac directly)
+    const { getFlowtracInventory } = await import('../../../lib/database');
+    const inventoryResult = await getFlowtracInventory(Array.from(skus), 'Manteca');
+    
+    if (!inventoryResult.success) {
+      throw new Error(`Failed to get inventory from database: ${inventoryResult.error}`);
+    }
+    
+    // Convert database records to the expected format
+    const flowtracInventory: Record<string, { quantity: number, bins: string[] }> = {};
+    for (const record of inventoryResult.data) {
+      flowtracInventory[record.sku] = {
+        quantity: record.quantity,
+        bins: record.bins || []
+      };
+    }
+    
+    console.log('Fetched inventory from database', { 
+      recordsFound: inventoryResult.data.length,
+      totalSkus: Array.from(skus).length 
+    });
 
     // 4. Build shopifyInventory map (simple and bundle SKUs)
     const shopifyInventory: Record<string, number> = {};
