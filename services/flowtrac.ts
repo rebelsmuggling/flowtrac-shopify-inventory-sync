@@ -191,85 +191,81 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
     mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
   }
 
-  // 3. Fetch all Flowtrac products once (for self-healing)
-  const products = await fetchAllFlowtracProducts(flowAuthCookie);
-  const skuToProductId: Record<string, string> = {};
-  for (const p of products) {
-    if (p.product) skuToProductId[p.product] = p.product_id;
-    if (p.barcode) skuToProductId[p.barcode] = p.product_id;
-  }
-
-  let mappingUpdated = false;
-  // 4. Ensure all SKUs have product_id, self-heal if missing
+  // 3. Get product IDs from mapping (skip products fetch to reduce API calls)
   const skuToPidForQuery: Record<string, string> = {};
   const missingSkus: string[] = [];
+  
   for (const sku of skus) {
-    let pid = getProductIdForSku(sku, mapping);
-    if (!pid) {
-      pid = skuToProductId[sku];
-      if (pid) {
-        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
-      } else {
-        console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
-        missingSkus.push(sku);
-        continue; // Skip this SKU instead of throwing an error
-      }
+    const pid = getProductIdForSku(sku, mapping);
+    if (pid) {
+      skuToPidForQuery[sku] = pid;
+    } else {
+      console.warn(`SKU '${sku}' not found in mapping or missing product_id. Skipping.`);
+      missingSkus.push(sku);
     }
-    skuToPidForQuery[sku] = pid;
   }
   
   if (missingSkus.length > 0) {
-    console.log(`Skipped ${missingSkus.length} SKUs not found in Flowtrac:`, missingSkus);
-  }
-  if (mappingUpdated) {
-    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
+    console.log(`Skipped ${missingSkus.length} SKUs missing product_id:`, missingSkus);
   }
 
-  // 5. Query Flowtrac using product_id for each SKU
+  // 4. Query Flowtrac using product_id for each SKU with delays
   const inventory: Record<string, { quantity: number, bins: string[], binBreakdown: Record<string, number> }> = {};
   const today = new Date();
+  
   for (const [sku, product_id] of Object.entries(skuToPidForQuery)) {
-    // Query all bins for the product_id
-    const params = { product_id };
-    const binsRes = await axios.get(`${FLOWTRAC_API_URL}/product-warehouse-bins`, {
-      headers: { Cookie: flowAuthCookie },
-      params,
-      withCredentials: true,
-    });
-    const bins = binsRes.data;
-    // Use the same filter as fetchFlowtracInventory
-    const validBins = bins.filter((b: any) => {
-      if (b.include_in_available !== 'Yes') return false;
-      if (b.warehouse !== 'Manteca') return false;
-      if (b.expiration_date) {
-        const exp = new Date(b.expiration_date);
-        if (exp < today) return false;
+    try {
+      // Query all bins for the product_id
+      const params = { product_id };
+      const binsRes = await axios.get(`${FLOWTRAC_API_URL}/product-warehouse-bins`, {
+        headers: { Cookie: flowAuthCookie },
+        params,
+        withCredentials: true,
+        timeout: 10000, // 10 second timeout
+      });
+      
+      const bins = binsRes.data;
+      
+      // Use the same filter as fetchFlowtracInventory
+      const validBins = bins.filter((b: any) => {
+        if (b.include_in_available !== 'Yes') return false;
+        if (b.warehouse !== 'Manteca') return false;
+        if (b.expiration_date) {
+          const exp = new Date(b.expiration_date);
+          if (exp < today) return false;
+        }
+        return true;
+      });
+      
+      // Sum total quantity and also sum by bin
+      const binQuantities: Record<string, number> = {};
+      for (const b of validBins) {
+        const binName = b.bin || 'UNKNOWN';
+        binQuantities[binName] = (binQuantities[binName] || 0) + (Number(b.quantity) || 0);
       }
-      return true;
-    });
-    if (sku === 'IC-KOOL-0045') {
-      console.log(`Breakdown for IC-KOOL-0045:`, validBins.map((b: any) => ({ bin: b.bin, quantity: b.quantity })));
-    }
-    // Sum total quantity and also sum by bin
-    const binQuantities: Record<string, number> = {};
-    for (const b of validBins) {
-      const binName = b.bin || 'UNKNOWN';
-      binQuantities[binName] = (binQuantities[binName] || 0) + (Number(b.quantity) || 0);
-    }
-    // Remove bins with 0 quantity after summing
-    const filteredBinQuantities: Record<string, number> = {};
-    for (const [bin, qty] of Object.entries(binQuantities)) {
-      if (qty !== 0) filteredBinQuantities[bin] = qty;
-    }
-    inventory[sku] = {
-      quantity: Object.values(filteredBinQuantities).reduce((sum, q) => sum + q, 0),
-      bins: Object.keys(filteredBinQuantities),
-      binBreakdown: filteredBinQuantities,
-    };
-    if (sku === 'IC-KOOL-0045') {
-      console.log('Final binBreakdown for IC-KOOL-0045:', filteredBinQuantities);
+      
+      // Remove bins with 0 quantity after summing
+      const filteredBinQuantities: Record<string, number> = {};
+      for (const [bin, qty] of Object.entries(binQuantities)) {
+        if (qty !== 0) filteredBinQuantities[bin] = qty;
+      }
+      
+      inventory[sku] = {
+        quantity: Object.values(filteredBinQuantities).reduce((sum, q) => sum + q, 0),
+        bins: Object.keys(filteredBinQuantities),
+        binBreakdown: filteredBinQuantities,
+      };
+      
+      // Add delay between requests to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+    } catch (error) {
+      console.error(`Error fetching inventory for SKU ${sku}:`, (error as Error).message);
+      // Don't throw error, just skip this SKU
+      continue;
     }
   }
+  
   return inventory;
 }
 
