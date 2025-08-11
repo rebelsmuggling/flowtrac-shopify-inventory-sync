@@ -143,7 +143,15 @@
           "quantity": 1
         },
         {
-          "flowtrac_sku": "DX-ZIGE-1030",
+          "flowtrac_sku": "DX-ZIGE-1034",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1033",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "DX-ZIGE-1032",
           "quantity": 1
         }
       ]
@@ -3659,5 +3667,5 @@
       "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-11T21:25:17.582Z"
+  "lastUpdated": "2025-08-11T21:34:30.232Z"
 }
