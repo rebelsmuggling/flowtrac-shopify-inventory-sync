@@ -130,7 +130,7 @@ export default function Home() {
       
       if (data.success) {
         setBatchProcessorSession(data);
-        setBatchProcessorStatus(`Batch ${data.batch_number} of ${data.session?.total_batches} completed. Ready for next batch.`);
+        setBatchProcessorStatus(`Batch ${data.batch_number} completed. Ready for next batch.`);
         setResult("✅ Database batch processor started!");
       } else {
         setResult("❌ Batch processor failed: " + data.error);
@@ -169,7 +169,7 @@ export default function Home() {
           setResult("❌ Batch failed: " + (data.results?.failed_skus?.join(', ') || 'Unknown error'));
           setBatchProcessorStatus("Batch failed - cannot continue");
         } else {
-          setBatchProcessorStatus(`Batch ${data.batch_number} of ${data.session?.total_batches} completed. Ready for next batch.`);
+          setBatchProcessorStatus(`Batch ${data.batch_number} completed. Ready for next batch.`);
         }
       } else {
         setResult("❌ Continue batch processor failed: " + data.error);
@@ -704,7 +704,7 @@ export default function Home() {
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <span>Progress:</span>
-                    <span>{batchProcessorSession.session?.processed_skus || 0} / {batchProcessorSession.session?.total_skus || 0} SKUs</span>
+                    <span>{batchProcessorSession.results?.skus_processed || 0} SKUs processed</span>
                   </div>
                   <div style={{ 
                     width: "100%", 
@@ -714,7 +714,7 @@ export default function Home() {
                     overflow: "hidden"
                   }}>
                     <div style={{ 
-                      width: `${((batchProcessorSession.session?.processed_skus || 0) / (batchProcessorSession.session?.total_skus || 1)) * 100}%`,
+                      width: `${((batchProcessorSession.results?.skus_processed || 0) / 120) * 100}%`,
                       height: "100%",
                       backgroundColor: "#6f42c1",
                       transition: "width 0.3s ease"
@@ -723,10 +723,10 @@ export default function Home() {
                 </div>
                 
                 <div style={{ marginBottom: 12 }}>
-                  <strong>Batch {batchProcessorSession.batch_number || 0} of {batchProcessorSession.session?.total_batches || 0}</strong>
+                  <strong>Batch {batchProcessorSession.batch_number || 0} completed</strong>
                   <br />
                   <span style={{ fontSize: "0.9rem", color: "#6c757d" }}>
-                    {batchProcessorSession.session?.remaining_skus || 0} SKUs remaining
+                    {batchProcessorSession.results?.successful || 0} successful, {batchProcessorSession.results?.failed || 0} failed
                   </span>
                 </div>
                 
@@ -743,8 +743,7 @@ export default function Home() {
                 )}
                 
                 <div style={{ display: "flex", gap: 8 }}>
-                  {batchProcessorSession.session?.status === 'in_progress' && 
-                   batchProcessorSession.batch_number < batchProcessorSession.session?.total_batches && (
+                  {batchProcessorSession.next_batch_available && (
                     <button
                       onClick={handleContinueBatchProcessor}
                       style={{
