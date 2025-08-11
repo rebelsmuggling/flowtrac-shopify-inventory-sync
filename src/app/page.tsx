@@ -155,7 +155,7 @@ export default function Home() {
           // Auto-continue to next batch after a short delay
           setTimeout(() => {
             console.log('Auto-continuation timeout fired, calling handleContinueBatchProcessor');
-            handleContinueBatchProcessor();
+            handleContinueBatchProcessor(data.session_id);
           }, 2000);
         } else {
           setBatchProcessorStatus("Batch completed. Ready for next batch.");
@@ -174,11 +174,14 @@ export default function Home() {
     }
   };
 
-  const handleContinueBatchProcessor = async () => {
+  const handleContinueBatchProcessor = async (sessionId?: string) => {
     console.log('handleContinueBatchProcessor called');
     console.log('Current session:', batchProcessorSession);
+    console.log('Passed sessionId:', sessionId);
     
-    if (!batchProcessorSession?.session_id) {
+    const targetSessionId = sessionId || batchProcessorSession?.session_id;
+    
+    if (!targetSessionId) {
       console.log('No session ID found, returning');
       return;
     }
@@ -186,14 +189,14 @@ export default function Home() {
     setBatchProcessorStatus("Continuing batch processor...");
     
     try {
-      console.log('Making continue API call with sessionId:', batchProcessorSession.session_id);
+      console.log('Making continue API call with sessionId:', targetSessionId);
       
       const res = await fetch("/api/flowtrac-batch-processor", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'continue',
-          sessionId: batchProcessorSession.session_id
+          sessionId: targetSessionId
         })
       });
       
@@ -221,7 +224,7 @@ export default function Home() {
           // Auto-continue to next batch after a short delay
           setTimeout(() => {
             console.log('Auto-continuation timeout fired, calling handleContinueBatchProcessor');
-            handleContinueBatchProcessor();
+            handleContinueBatchProcessor(data.session_id);
           }, 2000);
         } else {
           setBatchProcessorStatus("Batch completed. Ready for next batch.");
@@ -888,7 +891,7 @@ export default function Home() {
                 <div style={{ display: "flex", gap: 8 }}>
                   {batchProcessorSession.next_batch_available && (
                     <button
-                      onClick={handleContinueBatchProcessor}
+                      onClick={() => handleContinueBatchProcessor()}
                       style={{
                         padding: "0.5rem 1rem",
                         fontSize: "0.9rem",
