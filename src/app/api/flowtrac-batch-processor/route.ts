@@ -340,18 +340,62 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
         last_updated: new Date()
       };
       
+      // Check if this batch failed completely
+      if (failedSkus === batchSkus.length) {
+        sessionUpdates.status = 'failed';
+        sessionUpdates.error_message = 'Batch failed - all SKUs failed';
+        console.log('Batch failed, stopping');
+        await updateSyncSession(sessionId, sessionUpdates);
+        
+        return NextResponse.json({
+          success: false,
+          error: 'Batch failed - all SKUs failed',
+          session_id: sessionId,
+          batch_number: batchNumber,
+          session_failed: true,
+          results: {
+            skus_processed: batchSkus.length,
+            successful: successfulSkus,
+            failed: failedSkus,
+            failed_skus: failedSkuList,
+            records_saved: inventoryRecords.length
+          }
+        });
+      }
+      
       // Check if all batches are complete
       if (batchNumber === session.total_batches) {
         sessionUpdates.status = 'completed';
         sessionUpdates.completed_at = new Date();
         console.log('All batches completed');
-      } else if (failedSkus === batchSkus.length) {
-        sessionUpdates.status = 'failed';
-        sessionUpdates.error_message = 'Batch failed - all SKUs failed';
-        console.log('Batch failed, stopping');
+        await updateSyncSession(sessionId, sessionUpdates);
+        
+        return NextResponse.json({
+          success: true,
+          session_id: sessionId,
+          batch_number: batchNumber,
+          batch_completed: true,
+          session_completed: true,
+          processing_time_ms: duration,
+          results: {
+            skus_processed: batchSkus.length,
+            successful: successfulSkus,
+            failed: failedSkus,
+            failed_skus: failedSkuList,
+            records_saved: inventoryRecords.length
+          }
+        });
       }
       
+      // Continue to next batch automatically
+      console.log(`Batch ${batchNumber} completed, automatically starting batch ${batchNumber + 1}`);
       await updateSyncSession(sessionId, sessionUpdates);
+      
+      // Add a small delay before starting next batch
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Recursively process next batch
+      return await processBatch(sessionId, batchNumber + 1, allSkus);
     }
     
     return NextResponse.json({
@@ -359,9 +403,6 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
       session_id: sessionId,
       batch_number: batchNumber,
       batch_completed: true,
-      session_completed: batchNumber === sessionResult.data?.total_batches,
-      session_failed: failedSkus === batchSkus.length,
-      next_batch_available: batchNumber < (sessionResult.data?.total_batches || 0) && failedSkus < batchSkus.length,
       processing_time_ms: duration,
       results: {
         skus_processed: batchSkus.length,

@@ -138,8 +138,17 @@ export default function Home() {
       
       if (data.success) {
         setBatchProcessorSession(data);
-        setBatchProcessorStatus(`Batch ${data.batch_number} completed. Ready for next batch.`);
-        setResult("✅ Database batch processor started!");
+        
+        if (data.session_completed) {
+          setBatchProcessorStatus("All batches completed successfully!");
+          setResult("✅ Database update completed! All batches processed.");
+        } else if (data.session_failed) {
+          setBatchProcessorStatus("Session failed");
+          setResult("❌ Database update failed: " + data.error);
+        } else {
+          setBatchProcessorStatus("Processing batches automatically...");
+          setResult("🔄 Database update started! Processing all batches automatically.");
+        }
       } else {
         setResult("❌ Batch processor failed: " + data.error);
         setBatchProcessorStatus("Failed to start batch processor");
@@ -153,44 +162,7 @@ export default function Home() {
     }
   };
 
-  const handleContinueBatchProcessor = async () => {
-    if (!batchProcessorSession?.session_id) return;
-    
-    setBatchProcessorStatus("Continuing batch processor...");
-    
-    try {
-      const res = await fetch("/api/flowtrac-batch-processor", { 
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'continue',
-          sessionId: batchProcessorSession.session_id
-        })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setBatchProcessorSession(data);
-        
-        if (data.session_completed) {
-          setResult("✅ All batches completed! Database updated with latest inventory.");
-          setBatchProcessorStatus(null);
-          setBatchProcessorSession(null);
-        } else if (data.session_failed) {
-          setResult("❌ Batch failed: " + (data.results?.failed_skus?.join(', ') || 'Unknown error'));
-          setBatchProcessorStatus("Batch failed - cannot continue");
-        } else {
-          setBatchProcessorStatus(`Batch ${data.batch_number} completed. Ready for next batch.`);
-        }
-      } else {
-        setResult("❌ Continue batch processor failed: " + data.error);
-        setBatchProcessorStatus("Failed to continue batch processor");
-      }
-    } catch (err) {
-      setResult("❌ Continue batch processor failed: " + (err as Error).message);
-      setBatchProcessorStatus("Error continuing batch processor");
-    }
-  };
+
 
   const handleLoadDatabaseStats = async () => {
     try {
@@ -701,7 +673,7 @@ export default function Home() {
               </div>
             )}
             
-            {/* Batch Processor Session Controls */}
+                        {/* Batch Processor Session Controls */}
             {batchProcessorSession && (
               <div style={{ 
                 marginTop: 16, 
@@ -743,9 +715,9 @@ export default function Home() {
                 
                 {batchProcessorStatus && (
                   <div style={{ 
-                    marginBottom: 12, 
-                    padding: "8px 12px", 
-                    backgroundColor: "#e3f2fd", 
+                    marginBottom: 12,
+                    padding: "8px 12px",
+                    backgroundColor: "#e3f2fd",
                     borderRadius: "4px",
                     fontSize: "0.9rem"
                   }}>
@@ -753,23 +725,33 @@ export default function Home() {
                   </div>
                 )}
                 
+                {batchProcessorSession.session_completed && (
+                  <div style={{ 
+                    marginBottom: 12,
+                    padding: "8px 12px",
+                    backgroundColor: "#d4edda",
+                    borderRadius: "4px",
+                    fontSize: "0.9rem",
+                    color: "#155724"
+                  }}>
+                    ✅ All batches completed successfully!
+                  </div>
+                )}
+                
+                {batchProcessorSession.session_failed && (
+                  <div style={{ 
+                    marginBottom: 12,
+                    padding: "8px 12px",
+                    backgroundColor: "#f8d7da",
+                    borderRadius: "4px",
+                    fontSize: "0.9rem",
+                    color: "#721c24"
+                  }}>
+                    ❌ Session failed: {batchProcessorSession.error || 'Unknown error'}
+                  </div>
+                )}
+                
                 <div style={{ display: "flex", gap: 8 }}>
-                  {batchProcessorSession.next_batch_available && (
-                    <button
-                      onClick={handleContinueBatchProcessor}
-                      style={{
-                        padding: "0.5rem 1rem",
-                        fontSize: "0.9rem",
-                        borderRadius: "4px",
-                        background: "#28a745",
-                        color: "#fff",
-                        border: "none",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Continue Next Batch
-                    </button>
-                  )}
                   <button
                     onClick={() => {
                       setBatchProcessorSession(null);
