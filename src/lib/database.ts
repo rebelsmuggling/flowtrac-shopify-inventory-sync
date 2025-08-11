@@ -113,9 +113,14 @@ export async function initializeDatabase() {
 // Flowtrac Inventory Operations
 export async function upsertFlowtracInventory(records: FlowtracInventoryRecord[]) {
   try {
-    const values = records.map(record => 
-      `('${record.sku}', ${record.quantity}, '${record.warehouse}', '${JSON.stringify(record.bins || [])}', '${record.source}', '${record.batch_id || ''}', NOW())`
-    ).join(', ');
+    const values = records.map(record => {
+      // Convert bins array to PostgreSQL array format
+      const binsArray = record.bins && record.bins.length > 0 
+        ? `ARRAY[${record.bins.map(bin => `'${bin}'`).join(', ')}]`
+        : 'ARRAY[]::text[]';
+      
+      return `('${record.sku}', ${record.quantity}, '${record.warehouse}', ${binsArray}, '${record.source}', '${record.batch_id || ''}', NOW())`;
+    }).join(', ');
 
     const query = `
       INSERT INTO flowtrac_inventory (sku, quantity, warehouse, bins, source, batch_id, last_updated)
