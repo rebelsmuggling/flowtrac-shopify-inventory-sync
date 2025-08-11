@@ -219,23 +219,33 @@ export default function Home() {
       clearInterval(pollingInterval);
     }
     
+    console.log(`Starting polling for session: ${sessionId}`);
+    
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/flowtrac-batch-processor?action=status&sessionId=${sessionId}`);
         const data = await res.json();
         
+        console.log('Polling response:', data);
+        
         if (data.success && data.session) {
           setBatchProcessorSession(data.session);
           
           if (data.session.status === 'completed') {
+            console.log('Session completed, stopping polling');
             setBatchProcessorStatus("All batches completed successfully!");
             setResult("✅ Database update completed! All batches processed.");
             stopPolling();
           } else if (data.session.status === 'failed') {
+            console.log('Session failed, stopping polling');
             setBatchProcessorStatus("Session failed");
             setResult("❌ Database update failed: " + data.session.error_message);
             stopPolling();
+          } else {
+            console.log(`Session status: ${data.session.status}, continuing to poll`);
           }
+        } else {
+          console.log('Polling response format unexpected:', data);
         }
       } catch (error) {
         console.error('Polling error:', error);
@@ -247,10 +257,20 @@ export default function Home() {
 
   const stopPolling = () => {
     if (pollingInterval) {
+      console.log('Stopping polling');
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
   };
+
+  // Cleanup polling on component unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
 
 
 
@@ -860,6 +880,7 @@ export default function Home() {
                   )}
                   <button
                     onClick={() => {
+                      stopPolling();
                       setBatchProcessorSession(null);
                       setBatchProcessorStatus(null);
                     }}
