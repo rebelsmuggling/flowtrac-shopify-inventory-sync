@@ -211,14 +211,19 @@ export async function createSyncSession(session: Omit<SyncSession, 'id'>) {
 
 export async function updateSyncSession(sessionId: string, updates: Partial<SyncSession>) {
   try {
-    const setClause = Object.keys(updates)
-      .filter(key => key !== 'id' && key !== 'session_id')
+    // Filter out id, session_id, and last_updated from the updates
+    const filteredUpdates = Object.keys(updates)
+      .filter(key => key !== 'id' && key !== 'session_id' && key !== 'last_updated')
+      .reduce((obj, key) => {
+        (obj as any)[key] = (updates as any)[key];
+        return obj;
+      }, {} as Partial<SyncSession>);
+
+    const setClause = Object.keys(filteredUpdates)
       .map((key, index) => `${key} = $${index + 2}`)
       .join(', ');
 
-    const values = Object.values(updates).filter((_, index) => 
-      Object.keys(updates)[index] !== 'id' && Object.keys(updates)[index] !== 'session_id'
-    );
+    const values = Object.values(filteredUpdates);
 
     const query = `
       UPDATE sync_sessions 
