@@ -14,6 +14,7 @@ export default function Home() {
   const [batchProcessorStatus, setBatchProcessorStatus] = useState<string | null>(null);
   const [databaseStats, setDatabaseStats] = useState<any>(null);
   const [batchProcessorLoading, setBatchProcessorLoading] = useState<boolean>(false);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [bulkData, setBulkData] = useState('');
@@ -145,6 +146,12 @@ export default function Home() {
         } else if (data.session_failed) {
           setBatchProcessorStatus("Session failed");
           setResult("❌ Database update failed: " + data.error);
+        } else if (data.auto_triggered) {
+          setBatchProcessorStatus("Batch completed. Auto-triggering next batch...");
+          setResult("✅ Batch completed! Next batch starting automatically...");
+          
+          // Start polling for updates
+          startPollingForUpdates(data.session_id);
         } else {
           setBatchProcessorStatus("Batch completed. Ready for next batch.");
           setResult("✅ First batch completed! Click 'Continue Next Batch' to continue.");
@@ -184,9 +191,14 @@ export default function Home() {
         if (data.session_completed) {
           setBatchProcessorStatus("All batches completed successfully!");
           setResult("✅ Database update completed! All batches processed.");
+          stopPolling();
         } else if (data.session_failed) {
           setBatchProcessorStatus("Session failed");
           setResult("❌ Database update failed: " + data.error);
+          stopPolling();
+        } else if (data.auto_triggered) {
+          setBatchProcessorStatus("Batch completed. Auto-triggering next batch...");
+          setResult("✅ Batch completed! Next batch starting automatically...");
         } else {
           setBatchProcessorStatus("Batch completed. Ready for next batch.");
           setResult("✅ Batch completed! Click 'Continue Next Batch' to continue.");
@@ -198,6 +210,45 @@ export default function Home() {
     } catch (err) {
       setResult("❌ Continue failed: " + (err as Error).message);
       setBatchProcessorStatus("Error continuing batch processor");
+    }
+  };
+
+  const startPollingForUpdates = (sessionId: string) => {
+    // Clear any existing polling
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/flowtrac-batch-processor?action=status&sessionId=${sessionId}`);
+        const data = await res.json();
+        
+        if (data.success && data.session) {
+          setBatchProcessorSession(data.session);
+          
+          if (data.session.status === 'completed') {
+            setBatchProcessorStatus("All batches completed successfully!");
+            setResult("✅ Database update completed! All batches processed.");
+            stopPolling();
+          } else if (data.session.status === 'failed') {
+            setBatchProcessorStatus("Session failed");
+            setResult("❌ Database update failed: " + data.session.error_message);
+            stopPolling();
+          }
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 3000); // Poll every 3 seconds
+    
+    setPollingInterval(interval);
+  };
+
+  const stopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
     }
   };
 

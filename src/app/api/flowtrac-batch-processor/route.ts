@@ -18,12 +18,24 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'status';
+    const sessionId = url.searchParams.get('sessionId');
     
     switch (action) {
       case 'status':
-        const { getDatabaseStats } = await import('../../../lib/database');
-        const stats = await getDatabaseStats();
-        return NextResponse.json(stats);
+        if (sessionId) {
+          // Get specific session status
+          const { getSyncSession } = await import('../../../lib/database');
+          const sessionResult = await getSyncSession(sessionId);
+          return NextResponse.json({
+            success: true,
+            session: sessionResult.data
+          });
+        } else {
+          // Get general database stats
+          const { getDatabaseStats } = await import('../../../lib/database');
+          const stats = await getDatabaseStats();
+          return NextResponse.json(stats);
+        }
         
       case 'sessions':
         const { getActiveSyncSessions } = await import('../../../lib/database');
@@ -387,15 +399,54 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
         });
       }
       
-      // Update session and return (no automatic continuation)
+      // Update session
       await updateSyncSession(sessionId, sessionUpdates);
+      
+      // Auto-trigger next batch if available
+      if (batchNumber < session.total_batches) {
+        console.log(`Auto-triggering next batch ${batchNumber + 1} for session ${sessionId}`);
+        
+        // Trigger next batch asynchronously (don't wait for it)
+        setTimeout(async () => {
+          try {
+            const nextBatchUrl = `${process.env.VERCEL_URL || 'http://localhost:3000'}/api/flowtrac-batch-processor`;
+            await fetch(nextBatchUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'continue',
+                sessionId: sessionId
+              })
+            });
+          } catch (error) {
+            console.error('Failed to auto-trigger next batch:', error);
+          }
+        }, 2000); // 2 second delay before triggering next batch
+        
+        return NextResponse.json({
+          success: true,
+          session_id: sessionId,
+          batch_number: batchNumber,
+          batch_completed: true,
+          next_batch_available: true,
+          auto_triggered: true,
+          processing_time_ms: duration,
+          results: {
+            skus_processed: batchSkus.length,
+            successful: successfulSkus,
+            failed: failedSkus,
+            failed_skus: failedSkuList,
+            records_saved: inventoryRecords.length
+          }
+        });
+      }
       
       return NextResponse.json({
         success: true,
         session_id: sessionId,
         batch_number: batchNumber,
         batch_completed: true,
-        next_batch_available: batchNumber < (sessionResult.data?.total_batches || 0),
+        next_batch_available: false,
         processing_time_ms: duration,
         results: {
           skus_processed: batchSkus.length,
