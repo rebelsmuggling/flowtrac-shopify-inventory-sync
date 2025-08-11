@@ -13,6 +13,7 @@ export default function Home() {
   const [batchProcessorSession, setBatchProcessorSession] = useState<any>(null);
   const [batchProcessorStatus, setBatchProcessorStatus] = useState<string | null>(null);
   const [databaseStats, setDatabaseStats] = useState<any>(null);
+  const [batchProcessorLoading, setBatchProcessorLoading] = useState<boolean>(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [bulkData, setBulkData] = useState('');
@@ -118,15 +119,22 @@ export default function Home() {
 
   // Database-powered batch processor functions
   const handleStartBatchProcessor = async () => {
+    console.log('Start batch processor clicked!'); // Debug log
+    setBatchProcessorLoading(true);
     setBatchProcessorStatus("Starting batch processor...");
+    setResult("🔄 Starting database update...");
     
     try {
+      console.log('Making API call to /api/flowtrac-batch-processor');
       const res = await fetch("/api/flowtrac-batch-processor", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'start' })
       });
+      
+      console.log('API response received:', res.status);
       const data = await res.json();
+      console.log('API data:', data);
       
       if (data.success) {
         setBatchProcessorSession(data);
@@ -137,8 +145,11 @@ export default function Home() {
         setBatchProcessorStatus("Failed to start batch processor");
       }
     } catch (err) {
+      console.error('Error in handleStartBatchProcessor:', err);
       setResult("❌ Batch processor failed: " + (err as Error).message);
       setBatchProcessorStatus("Error starting batch processor");
+    } finally {
+      setBatchProcessorLoading(false);
     }
   };
 
@@ -640,19 +651,19 @@ export default function Home() {
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               <button
                 onClick={handleStartBatchProcessor}
-                disabled={batchProcessorSession}
+                disabled={batchProcessorSession || batchProcessorLoading}
                 style={{
                   padding: "0.75rem 1.5rem",
                   fontSize: "1rem",
                   borderRadius: "6px",
-                  background: batchProcessorSession ? "#ccc" : "#6f42c1",
+                  background: batchProcessorSession || batchProcessorLoading ? "#ccc" : "#6f42c1",
                   color: "#fff",
-              border: "none",
-                  cursor: batchProcessorSession ? "not-allowed" : "pointer",
+                  border: "none",
+                  cursor: batchProcessorSession || batchProcessorLoading ? "not-allowed" : "pointer",
                   flex: 2,
                 }}
               >
-                🚀 Start Database Update
+                {batchProcessorLoading ? "🔄 Starting..." : "🚀 Start Database Update"}
               </button>
               <button
                 onClick={handleLoadDatabaseStats}
