@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
         return await continueBatchProcessing(sessionId);
         
       case 'initialize':
+        console.log('Manual database initialization requested');
         const initResult = await initializeDatabase();
+        console.log('Database initialization result:', initResult);
         return NextResponse.json(initResult);
         
       default:
@@ -101,7 +103,13 @@ export async function POST(request: NextRequest) {
 async function startBatchProcessing() {
   try {
     // Initialize database if needed
-    await initializeDatabase();
+    console.log('Initializing database...');
+    const initResult = await initializeDatabase();
+    if (!initResult.success) {
+      console.error('Database initialization failed:', initResult.error);
+      throw new Error(`Database initialization failed: ${initResult.error}`);
+    }
+    console.log('Database initialized successfully');
     
     // Load mapping
     let mapping;
@@ -134,10 +142,13 @@ async function startBatchProcessing() {
       last_updated: new Date()
     };
     
+    console.log('Creating sync session...');
     const sessionResult = await createSyncSession(session);
     if (!sessionResult.success) {
+      console.error('Failed to create session:', sessionResult.error);
       throw new Error(`Failed to create session: ${sessionResult.error}`);
     }
+    console.log('Sync session created successfully:', sessionResult.data);
     
     console.log(`Started batch processing: ${totalSkus} SKUs in ${totalBatches} batches`);
     

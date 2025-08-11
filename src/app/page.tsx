@@ -314,6 +314,29 @@ export default function Home() {
     }
   };
 
+  const handleInitializeDatabase = async () => {
+    try {
+      console.log('Initializing database...');
+      const res = await fetch("/api/flowtrac-batch-processor", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'initialize' })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setResult("✅ Database initialized successfully!");
+        console.log('Database initialization result:', data);
+      } else {
+        setResult("❌ Database initialization failed: " + data.error);
+        console.error('Database initialization failed:', data.error);
+      }
+    } catch (err) {
+      setResult("❌ Database initialization failed: " + (err as Error).message);
+      console.error("Failed to initialize database:", err);
+    }
+  };
+
   const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -788,6 +811,21 @@ export default function Home() {
                 }}
               >
                 📊 Database Stats
+              </button>
+              <button
+                onClick={handleInitializeDatabase}
+                style={{
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.9rem",
+                  borderRadius: "6px",
+                  background: "#28a745",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  flex: 1,
+                }}
+              >
+                🔧 Initialize DB
               </button>
             </div>
             
