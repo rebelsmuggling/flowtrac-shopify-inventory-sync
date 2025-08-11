@@ -198,7 +198,7 @@ export async function createSyncSession(session: Omit<SyncSession, 'id'>) {
       ) VALUES (
         ${session.session_id}, ${session.status}, ${session.total_skus}, 
         ${session.current_batch}, ${session.total_batches}, ${session.processed_skus}, 
-        ${session.remaining_skus}, ${session.batch_size}, ${session.started_at}, ${session.last_updated}
+        ${session.remaining_skus}, ${session.batch_size}, ${session.started_at.toISOString()}, ${session.last_updated.toISOString()}
       ) RETURNING *
     `;
 
@@ -266,17 +266,28 @@ export async function getActiveSyncSessions() {
 // Batch Result Operations
 export async function createBatchResult(result: Omit<BatchResult, 'id'>) {
   try {
-    const dbResult = await sql`
+    const query = `
       INSERT INTO batch_results (
         session_id, batch_number, skus_processed, successful, failed, 
         failed_skus, processing_time_ms, completed_at, error_message
       ) VALUES (
-        ${result.session_id}, ${result.batch_number}, ${result.skus_processed}, 
-        ${result.successful}, ${result.failed}, ${result.failed_skus}, 
-        ${result.processing_time_ms}, ${result.completed_at}, ${result.error_message}
+        $1, $2, $3, $4, $5, $6, $7, $8, $9
       ) RETURNING *
     `;
+    
+    const values = [
+      result.session_id,
+      result.batch_number,
+      result.skus_processed,
+      result.successful,
+      result.failed,
+      result.failed_skus,
+      result.processing_time_ms,
+      result.completed_at.toISOString(),
+      result.error_message || null
+    ];
 
+    const dbResult = await sql.query(query, values);
     return { success: true, data: dbResult.rows[0] };
   } catch (error) {
     console.error('Error creating batch result:', error);
