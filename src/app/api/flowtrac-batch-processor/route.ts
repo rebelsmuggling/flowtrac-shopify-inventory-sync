@@ -12,7 +12,7 @@ import {
 } from '../../../lib/database';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 
-const BATCH_SIZE = 120; // Conservative batch size based on testing
+const BATCH_SIZE = 50; // Reduced batch size to avoid Flowtrac API timeouts
 
 export async function GET(request: NextRequest) {
   try {
@@ -226,7 +226,9 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
     
     try {
       // Process batch
+      console.log(`Attempting batch request for ${batchSkus.length} SKUs:`, batchSkus.slice(0, 5).join(', ') + (batchSkus.length > 5 ? '...' : ''));
       const batchInventory = await fetchFlowtracInventoryWithBins(batchSkus);
+      console.log(`Batch request successful, got data for ${Object.keys(batchInventory).length} SKUs`);
       
       // Convert to database records
       for (const sku of batchSkus) {
@@ -250,7 +252,13 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
       console.log(`Batch ${batchNumber} completed: ${successfulSkus} successful, ${failedSkus} failed`);
       
     } catch (batchError) {
-      console.error(`Batch ${batchNumber} failed, trying individual SKUs:`, (batchError as Error).message);
+      console.error(`Batch ${batchNumber} failed with error:`, {
+        message: (batchError as Error).message,
+        stack: (batchError as Error).stack,
+        batchSize: batchSkus.length,
+        firstFewSkus: batchSkus.slice(0, 3)
+      });
+      console.log(`Trying individual SKUs as fallback...`);
       
       // Try individual SKUs as fallback
       for (const sku of batchSkus) {
@@ -283,6 +291,10 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
           failedSkus++;
           failedSkuList.push(sku);
           console.log(`✗ SKU ${sku} failed - error: ${(skuError as Error).message}`);
+          console.error(`Individual SKU error details for ${sku}:`, {
+            message: (skuError as Error).message,
+            stack: (skuError as Error).stack
+          });
         }
       }
       
