@@ -481,8 +481,8 @@ export default function Home() {
     setExportingInventory(true);
     setMissingSkusInfo(null);
     try {
-      // Use the enhanced endpoint with missing SKU information
-      const res = await fetch("/api/export-inventory-csv?includeMissingSkus=true");
+      // Use database for CSV export (much faster and shows what will be synced)
+      const res = await fetch("/api/export-inventory-csv?includeMissingSkus=true&useDatabase=true");
       if (res.ok) {
         const data = await res.json();
         
@@ -492,7 +492,7 @@ export default function Home() {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = data.filename || `inventory-sync-preview-${new Date().toISOString().split('T')[0]}.csv`;
+          a.download = data.filename || `inventory-database-preview-${new Date().toISOString().split('T')[0]}.csv`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -501,13 +501,13 @@ export default function Home() {
           // Store missing SKU information for display
           setMissingSkusInfo(data.missingSkus);
         } else {
-          console.error('Inventory export failed:', data.error);
+          console.error('Database inventory export failed:', data.error);
         }
       } else {
-        console.error('Inventory export failed');
+        console.error('Database inventory export failed');
       }
     } catch (err) {
-      console.error('Inventory export failed:', err);
+      console.error('Database inventory export failed:', err);
     }
     setExportingInventory(false);
   };
@@ -601,7 +601,7 @@ export default function Home() {
                 flex: 1,
               }}
             >
-              {exportingInventory ? "Exporting..." : "📊 Preview CSV"}
+              {exportingInventory ? "Exporting..." : "📊 Database Preview CSV"}
             </button>
           </div>
           
