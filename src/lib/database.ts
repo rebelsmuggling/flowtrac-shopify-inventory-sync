@@ -114,7 +114,7 @@ export async function initializeDatabase() {
 export async function upsertFlowtracInventory(records: FlowtracInventoryRecord[]) {
   try {
     const values = records.map(record => 
-      `('${record.sku}', ${record.quantity}, '${record.warehouse}', '${JSON.stringify(record.bins || [])}', '${record.source}', '${record.batch_id || ''}')`
+      `('${record.sku}', ${record.quantity}, '${record.warehouse}', '${JSON.stringify(record.bins || [])}', '${record.source}', '${record.batch_id || ''}', NOW())`
     ).join(', ');
 
     const query = `
