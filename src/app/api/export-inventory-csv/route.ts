@@ -258,9 +258,18 @@ export async function GET(request: NextRequest) {
         row.shopify_quantity = bundleQuantity;
         row.amazon_quantity = bundleQuantity;
         row.bundle_components = componentDetails.join('; ');
-        row.flowtrac_bins = product.bundle_components.map((comp: any) => 
-          flowtracInventory[comp.flowtrac_sku]?.bins || []
-        ).flat().join(', ');
+        // For bundle products, include bin information with quantities for each component
+        const bundleBinDetails = product.bundle_components.map((comp: any) => {
+          const bins = flowtracInventory[comp.flowtrac_sku]?.bins || [];
+          const binBreakdown = flowtracInventory[comp.flowtrac_sku]?.binBreakdown || {};
+          if (bins.length > 0) {
+            const binWithQuantities = bins.map(bin => `${bin}:${binBreakdown[bin] || 0}`).join(',');
+            return `${comp.flowtrac_sku}(${binWithQuantities})`;
+          } else {
+            return `${comp.flowtrac_sku}(no bins)`;
+          }
+        });
+        row.flowtrac_bins = bundleBinDetails.join('; ');
         
         // For bundle products, check if ALL components were successfully processed
         const allComponentsSuccess = product.bundle_components.every((comp: any) => 
@@ -457,6 +466,17 @@ async function generateDatabaseCSV(includeMissingSkus: boolean) {
         row.flowtrac_available = bundleQuantity;
         row.shopify_quantity = bundleQuantity;
         row.amazon_quantity = bundleQuantity;
+
+        // For bundle products, include bin information with quantities for each component
+        const bundleBinDetails = product.bundle_components.map((comp: any) => {
+          const bins = flowtracInventory[comp.flowtrac_sku]?.bins || [];
+          if (bins.length > 0) {
+            return `${comp.flowtrac_sku}(${bins.join(',')})`;
+          } else {
+            return `${comp.flowtrac_sku}(no bins)`;
+          }
+        });
+        row.flowtrac_bins = bundleBinDetails.join('; ');
 
         // Check if all bundle components are valid
         const allComponentsValid = product.bundle_components.every((comp: any) =>
