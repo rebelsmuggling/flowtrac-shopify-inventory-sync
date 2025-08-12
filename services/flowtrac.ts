@@ -191,22 +191,40 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
     mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
   }
 
-  // 3. Get product IDs from mapping (skip products fetch to reduce API calls)
+  // 3. Fetch all Flowtrac products once (for self-healing)
+  const products = await fetchAllFlowtracProducts(flowAuthCookie);
+  const skuToProductId: Record<string, string> = {};
+  for (const p of products) {
+    if (p.product) skuToProductId[p.product] = p.product_id;
+    if (p.barcode) skuToProductId[p.barcode] = p.product_id;
+  }
+
+  let mappingUpdated = false;
+  // 4. Ensure all SKUs have product_id, self-heal if missing
   const skuToPidForQuery: Record<string, string> = {};
   const missingSkus: string[] = [];
   
   for (const sku of skus) {
-    const pid = getProductIdForSku(sku, mapping);
-    if (pid) {
-      skuToPidForQuery[sku] = pid;
-    } else {
-      console.warn(`SKU '${sku}' not found in mapping or missing product_id. Skipping.`);
-      missingSkus.push(sku);
+    let pid = getProductIdForSku(sku, mapping);
+    if (!pid) {
+      pid = skuToProductId[sku];
+      if (pid) {
+        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+      } else {
+        console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
+        missingSkus.push(sku);
+        continue;
+      }
     }
+    skuToPidForQuery[sku] = pid;
+  }
+  
+  if (mappingUpdated) {
+    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
   }
   
   if (missingSkus.length > 0) {
-    console.log(`Skipped ${missingSkus.length} SKUs missing product_id:`, missingSkus);
+    console.log(`Skipped ${missingSkus.length} SKUs not found in Flowtrac:`, missingSkus);
   }
 
   // 4. Query Flowtrac using product_id for each SKU with delays
