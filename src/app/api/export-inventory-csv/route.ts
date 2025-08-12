@@ -404,11 +404,12 @@ async function generateDatabaseCSV(includeMissingSkus: boolean) {
     }
 
     // Convert database records to the expected format
-    const flowtracInventory: Record<string, { quantity: number, bins: string[] }> = {};
+    const flowtracInventory: Record<string, { quantity: number, bins: string[], binBreakdown: Record<string, number> }> = {};
     for (const record of inventoryResult.data || []) {
       flowtracInventory[record.sku] = {
         quantity: record.quantity,
-        bins: record.bins || []
+        bins: record.bins || [],
+        binBreakdown: record.bin_breakdown || {}
       };
     }
 
@@ -470,10 +471,13 @@ async function generateDatabaseCSV(includeMissingSkus: boolean) {
         // For bundle products, include bin information with quantities for each component
         const bundleBinDetails = product.bundle_components.map((comp: any) => {
           const bins = flowtracInventory[comp.flowtrac_sku]?.bins || [];
+          const binBreakdown = flowtracInventory[comp.flowtrac_sku]?.binBreakdown || {};
+          const totalQuantity = flowtracInventory[comp.flowtrac_sku]?.quantity || 0;
           if (bins.length > 0) {
-            return `${comp.flowtrac_sku}(${bins.join(',')})`;
+            const binWithQuantities = bins.map(bin => `${bin}:${binBreakdown[bin] || 0}`).join(',');
+            return `${comp.flowtrac_sku}:${totalQuantity}@${binWithQuantities}`;
           } else {
-            return `${comp.flowtrac_sku}(no bins)`;
+            return `${comp.flowtrac_sku}:${totalQuantity}@no bins`;
           }
         });
         row.flowtrac_bins = bundleBinDetails.join('; ');
@@ -494,7 +498,14 @@ async function generateDatabaseCSV(includeMissingSkus: boolean) {
         row.flowtrac_available = available;
         row.shopify_quantity = available;
         row.amazon_quantity = available;
-        row.flowtrac_bins = bins.join(', ');
+        // For simple products, include bin information with quantities
+        const binBreakdown = flowtracInventory[product.flowtrac_sku]?.binBreakdown || {};
+        if (bins.length > 0) {
+          const binWithQuantities = bins.map(bin => `${bin}:${binBreakdown[bin] || 0}`).join(',');
+          row.flowtrac_bins = `${available}@${binWithQuantities}`;
+        } else {
+          row.flowtrac_bins = `${available}@no bins`;
+        }
         row.valid_flowtrac_connection = skuValid ? 'True' : 'False';
 
         if (skuValid) validSkus.push(product.flowtrac_sku);

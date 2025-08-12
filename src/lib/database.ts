@@ -7,6 +7,7 @@ export interface FlowtracInventoryRecord {
   quantity: number;
   warehouse: string;
   bins?: string[];
+  bin_breakdown?: Record<string, number>;
   last_updated: Date;
   source: 'flowtrac_api' | 'manual_override';
   batch_id?: string;
@@ -52,6 +53,7 @@ export async function initializeDatabase() {
         quantity INTEGER NOT NULL DEFAULT 0,
         warehouse VARCHAR(100) NOT NULL DEFAULT 'Manteca',
         bins TEXT[],
+        bin_breakdown JSONB,
         last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         source VARCHAR(50) NOT NULL DEFAULT 'flowtrac_api',
         batch_id VARCHAR(100),
@@ -119,16 +121,20 @@ export async function upsertFlowtracInventory(records: FlowtracInventoryRecord[]
         ? `ARRAY[${record.bins.map(bin => `'${bin}'`).join(', ')}]`
         : 'ARRAY[]::text[]';
       
-      return `('${record.sku}', ${record.quantity}, '${record.warehouse}', ${binsArray}, '${record.source}', '${record.batch_id || ''}', NOW())`;
+      // Convert bin_breakdown to JSON string
+      const binBreakdownJson = record.bin_breakdown ? `'${JSON.stringify(record.bin_breakdown)}'` : 'NULL';
+      
+      return `('${record.sku}', ${record.quantity}, '${record.warehouse}', ${binsArray}, ${binBreakdownJson}, '${record.source}', '${record.batch_id || ''}', NOW())`;
     }).join(', ');
 
     const query = `
-      INSERT INTO flowtrac_inventory (sku, quantity, warehouse, bins, source, batch_id, last_updated)
+      INSERT INTO flowtrac_inventory (sku, quantity, warehouse, bins, bin_breakdown, source, batch_id, last_updated)
       VALUES ${values}
       ON CONFLICT (sku, warehouse) 
       DO UPDATE SET 
         quantity = EXCLUDED.quantity,
         bins = EXCLUDED.bins,
+        bin_breakdown = EXCLUDED.bin_breakdown,
         last_updated = NOW(),
         source = EXCLUDED.source,
         batch_id = EXCLUDED.batch_id

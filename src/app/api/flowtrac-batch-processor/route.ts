@@ -261,6 +261,7 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
             quantity: batchInventory[sku].quantity,
             warehouse: 'Manteca', // Focus on Manteca warehouse
             bins: batchInventory[sku].bins || [],
+            bin_breakdown: batchInventory[sku].binBreakdown || {},
             last_updated: new Date(),
             source: 'flowtrac_api' as const,
             batch_id: sessionId
@@ -295,6 +296,7 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
               quantity: singleSkuInventory[sku].quantity,
               warehouse: 'Manteca',
               bins: singleSkuInventory[sku].bins || [],
+              bin_breakdown: singleSkuInventory[sku].binBreakdown || {},
               last_updated: new Date(),
               source: 'flowtrac_api' as const,
               batch_id: sessionId
