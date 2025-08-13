@@ -146,7 +146,8 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
     // Try to update GitHub mapping if token is available
     if (process.env.GITHUB_TOKEN) {
       try {
-        const githubResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+        const githubResponse = await fetch(`${baseUrl}/api/github-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mapping })
@@ -314,7 +315,8 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
     // Try to update GitHub mapping if token is available
     if (process.env.GITHUB_TOKEN) {
       try {
-        const githubResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+        const githubResponse = await fetch(`${baseUrl}/api/github-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mapping })
@@ -447,7 +449,8 @@ export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> 
     // Try to update GitHub mapping if token is available
     if (process.env.GITHUB_TOKEN) {
       try {
-        const githubResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+        const githubResponse = await fetch(`${baseUrl}/api/github-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mapping })

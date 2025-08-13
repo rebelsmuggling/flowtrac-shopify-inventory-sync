@@ -116,6 +116,15 @@ export async function initializeDatabase() {
     await sql`CREATE INDEX IF NOT EXISTS idx_batch_results_session_id ON batch_results(session_id)`;
 
     console.log('Database initialized successfully');
+    
+    // Ensure bin_breakdown column exists (for existing tables)
+    try {
+      await sql`ALTER TABLE flowtrac_inventory ADD COLUMN IF NOT EXISTS bin_breakdown JSONB`;
+      console.log('Ensured bin_breakdown column exists');
+    } catch (error) {
+      console.log('bin_breakdown column already exists or error adding it:', error);
+    }
+    
     return { success: true };
   } catch (error) {
     console.error('Database initialization error:', error);
