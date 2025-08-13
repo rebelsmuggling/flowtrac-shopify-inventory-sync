@@ -157,10 +157,12 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
           const result = await githubResponse.json();
           console.log('Successfully updated GitHub mapping with product IDs:', result.message);
         } else {
-          console.warn('Failed to update GitHub mapping, but continuing with current session');
+          const errorText = await githubResponse.text();
+          console.warn('Failed to update GitHub mapping. Status:', githubResponse.status, 'Response:', errorText);
         }
       } catch (error) {
         console.warn('Error updating GitHub mapping:', error);
+        console.warn('Error details:', (error as Error).message);
       }
     } else {
       console.log('GitHub token not available, mapping changes will not be persisted');
@@ -326,10 +328,12 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
           const result = await githubResponse.json();
           console.log('Successfully updated GitHub mapping with product IDs:', result.message);
         } else {
-          console.warn('Failed to update GitHub mapping, but continuing with current session');
+          const errorText = await githubResponse.text();
+          console.warn('Failed to update GitHub mapping. Status:', githubResponse.status, 'Response:', errorText);
         }
       } catch (error) {
         console.warn('Error updating GitHub mapping:', error);
+        console.warn('Error details:', (error as Error).message);
       }
     } else {
       console.log('GitHub token not available, mapping changes will not be persisted');
@@ -460,10 +464,12 @@ export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> 
           const result = await githubResponse.json();
           console.log('Successfully updated GitHub mapping with product IDs:', result.message);
         } else {
-          console.warn('Failed to update GitHub mapping, but continuing with current session');
+          const errorText = await githubResponse.text();
+          console.warn('Failed to update GitHub mapping. Status:', githubResponse.status, 'Response:', errorText);
         }
       } catch (error) {
         console.warn('Error updating GitHub mapping:', error);
+        console.warn('Error details:', (error as Error).message);
       }
     } else {
       console.log('GitHub token not available, mapping changes will not be persisted');
