@@ -126,10 +126,19 @@ async function startBatchProcessing() {
       mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
     }
     
-    // Get all SKUs
+    // Get all SKUs from current mapping
     const allSkus = getAllSkus(mapping);
     const totalSkus = allSkus.length;
     const totalBatches = Math.ceil(totalSkus / BATCH_SIZE);
+    
+    // Clear old inventory records that are no longer in the mapping
+    console.log('Clearing old inventory records...');
+    const clearResult = await clearOldInventoryRecords(allSkus);
+    if (clearResult.success) {
+      console.log(`Cleared ${clearResult.deletedCount} old inventory records`);
+    } else {
+      console.error('Failed to clear old inventory records:', clearResult.error);
+    }
     
     // Create session
     const sessionId = `flowtrac-batch-${new Date().toISOString().replace(/[:.]/g, '-')}`;
