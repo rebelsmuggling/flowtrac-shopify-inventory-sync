@@ -1914,11 +1914,61 @@
     },
     {
       "shopify_sku": "IC-THEA-0012",
-      "flowtrac_sku": "IC-THEA-0012",
+      "flowtrac_sku": "",
       "product_name": "",
       "amazon_sku": "RS-THEA-0012",
       "shopify_variant_id": "",
-      "shopify_inventory_item_id": ""
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "WE-SLEI-34ED",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "WE-3LED-34IO",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "ES-DCFG-FFJJ",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "WL-SDLE-34JK",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-EW94-1009",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "QW-EW94-1008",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "TY-DCVB-NVBC",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "EW-DLEI-34ED",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "BN-EDIO-3452",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "WP-ED34-VVBB",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "LC-3423-KCLF",
+          "quantity": 1
+        },
+        {
+          "flowtrac_sku": "CK-EDLO-34EL",
+          "quantity": 1
+        }
+      ]
     },
     {
       "shopify_sku": "IC-LOWR-012",
@@ -9189,5 +9239,5 @@
       "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-13T17:07:14.564Z"
+  "lastUpdated": "2025-08-13T17:51:36.954Z"
 }
