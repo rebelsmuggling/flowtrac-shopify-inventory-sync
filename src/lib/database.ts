@@ -97,6 +97,17 @@ export async function initializeDatabase() {
       )
     `;
 
+    // Create flowtrac_product_ids table for persistent storage of product IDs
+    await sql`
+      CREATE TABLE IF NOT EXISTS flowtrac_product_ids (
+        id SERIAL PRIMARY KEY,
+        sku VARCHAR(100) UNIQUE NOT NULL,
+        product_id VARCHAR(100) NOT NULL,
+        last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        source VARCHAR(50) NOT NULL DEFAULT 'flowtrac_api'
+      )
+    `;
+
     // Create indexes for better performance
     await sql`CREATE INDEX IF NOT EXISTS idx_flowtrac_inventory_sku ON flowtrac_inventory(sku)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_flowtrac_inventory_warehouse ON flowtrac_inventory(warehouse)`;
@@ -361,6 +372,58 @@ export async function clearOldSessions(daysOld: number = 7) {
     return { success: true, deletedCount: result.rowCount };
   } catch (error) {
     console.error('Error clearing old sessions:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getFlowtracProductId(sku: string) {
+  try {
+    const result = await sql`
+      SELECT product_id FROM flowtrac_product_ids WHERE sku = ${sku}
+    `;
+    return { success: true, data: result.rows[0]?.product_id || null };
+  } catch (error) {
+    console.error('Error getting Flowtrac product ID:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function setFlowtracProductId(sku: string, productId: string) {
+  try {
+    const result = await sql`
+      INSERT INTO flowtrac_product_ids (sku, product_id)
+      VALUES (${sku}, ${productId})
+      ON CONFLICT (sku) 
+      DO UPDATE SET 
+        product_id = EXCLUDED.product_id,
+        last_updated = NOW()
+      RETURNING product_id
+    `;
+    return { success: true, data: result.rows[0]?.product_id };
+  } catch (error) {
+    console.error('Error setting Flowtrac product ID:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getFlowtracProductIds(skus: string[]) {
+  try {
+    if (skus.length === 0) {
+      return { success: true, data: {} };
+    }
+    
+    const placeholders = skus.map((_, index) => `$${index + 1}`).join(',');
+    const query = `SELECT sku, product_id FROM flowtrac_product_ids WHERE sku IN (${placeholders})`;
+    const result = await sql.query(query, skus);
+    
+    const productIds: Record<string, string> = {};
+    for (const row of result.rows) {
+      productIds[row.sku] = row.product_id;
+    }
+    
+    return { success: true, data: productIds };
+  } catch (error) {
+    console.error('Error getting Flowtrac product IDs:', error);
     return { success: false, error: (error as Error).message };
   }
 }

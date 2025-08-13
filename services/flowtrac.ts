@@ -129,7 +129,7 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
   // 4. Ensure all SKUs have product_id, self-heal if missing
   const skuToPidForQuery: Record<string, string> = {};
   for (const sku of skus) {
-    let pid = getProductIdForSku(sku, mapping);
+    let pid = await getProductIdForSku(sku, mapping);
     if (!pid) {
       pid = skuToProductId[sku];
       if (pid) {
@@ -141,7 +141,29 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
     skuToPidForQuery[sku] = pid;
   }
   if (mappingUpdated) {
-    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
+    console.log('Mapping updated with missing Flowtrac product_ids, attempting to persist to GitHub...');
+    
+    // Try to update GitHub mapping if token is available
+    if (process.env.GITHUB_TOKEN) {
+      try {
+        const githubResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mapping })
+        });
+        
+        if (githubResponse.ok) {
+          const result = await githubResponse.json();
+          console.log('Successfully updated GitHub mapping with product IDs:', result.message);
+        } else {
+          console.warn('Failed to update GitHub mapping, but continuing with current session');
+        }
+      } catch (error) {
+        console.warn('Error updating GitHub mapping:', error);
+      }
+    } else {
+      console.log('GitHub token not available, mapping changes will not be persisted');
+    }
   }
 
   // 5. Query Flowtrac using product_id for each SKU
@@ -287,7 +309,29 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   }
   
   if (mappingUpdated) {
-    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
+    console.log('Mapping updated with missing Flowtrac product_ids, attempting to persist to GitHub...');
+    
+    // Try to update GitHub mapping if token is available
+    if (process.env.GITHUB_TOKEN) {
+      try {
+        const githubResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mapping })
+        });
+        
+        if (githubResponse.ok) {
+          const result = await githubResponse.json();
+          console.log('Successfully updated GitHub mapping with product IDs:', result.message);
+        } else {
+          console.warn('Failed to update GitHub mapping, but continuing with current session');
+        }
+      } catch (error) {
+        console.warn('Error updating GitHub mapping:', error);
+      }
+    } else {
+      console.log('GitHub token not available, mapping changes will not be persisted');
+    }
   }
   
   if (missingSkus.length > 0) {
@@ -398,7 +442,29 @@ export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> 
     skuToPidForQuery[sku] = pid;
   }
   if (mappingUpdated) {
-    console.log('Mapping would be updated with missing Flowtrac product_ids, but file system is read-only in Vercel environment.');
+    console.log('Mapping updated with missing Flowtrac product_ids, attempting to persist to GitHub...');
+    
+    // Try to update GitHub mapping if token is available
+    if (process.env.GITHUB_TOKEN) {
+      try {
+        const githubResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mapping })
+        });
+        
+        if (githubResponse.ok) {
+          const result = await githubResponse.json();
+          console.log('Successfully updated GitHub mapping with product IDs:', result.message);
+        } else {
+          console.warn('Failed to update GitHub mapping, but continuing with current session');
+        }
+      } catch (error) {
+        console.warn('Error updating GitHub mapping:', error);
+      }
+    } else {
+      console.log('GitHub token not available, mapping changes will not be persisted');
+    }
   }
   const allBins: any[] = [];
   for (const [sku, product_id] of Object.entries(skuToPidForQuery)) {
