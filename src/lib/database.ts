@@ -251,15 +251,38 @@ export async function updateSyncSession(sessionId: string, updates: Partial<Sync
   }
 }
 
-export async function getSyncSession(sessionId: string) {
+export async function getSyncSession(sessionId?: string) {
   try {
-    const result = await sql`
-      SELECT * FROM sync_sessions WHERE session_id = ${sessionId}
-    `;
-
-    return { success: true, data: result.rows[0] || null };
+    if (sessionId) {
+      // Get specific session
+      const result = await sql`
+        SELECT * FROM sync_sessions WHERE session_id = ${sessionId}
+      `;
+      return { success: true, data: result.rows[0] || null };
+    } else {
+      // Get the most recent active session
+      const result = await sql`
+        SELECT * FROM sync_sessions 
+        WHERE status IN ('pending', 'in_progress')
+        ORDER BY started_at DESC 
+        LIMIT 1
+      `;
+      return { success: true, data: result.rows[0] || null };
+    }
   } catch (error) {
     console.error('Error getting sync session:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function deleteSyncSession(sessionId: string) {
+  try {
+    const result = await sql`
+      DELETE FROM sync_sessions WHERE session_id = ${sessionId}
+    `;
+    return { success: true, deletedCount: result.rowCount };
+  } catch (error) {
+    console.error('Error deleting sync session:', error);
     return { success: false, error: (error as Error).message };
   }
 }

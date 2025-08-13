@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getImportedMapping } from '../../../utils/imported-mapping-store';
-import path from 'path';
-import fs from 'fs';
+import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession } from '../../../lib/database';
 
 const BATCH_SIZE = 120; // Conservative batch size based on testing (150 failed, 120 should be safe)
-const SESSION_FILE = 'sync-session.json';
 
 interface SyncSession {
   session_id: string;
@@ -27,16 +25,11 @@ interface SyncSession {
   }>;
 }
 
-function getSessionFilePath(): string {
-  return path.join(process.cwd(), SESSION_FILE);
-}
-
-function loadSession(): SyncSession | null {
+async function loadSession(): Promise<SyncSession | null> {
   try {
-    const sessionPath = getSessionFilePath();
-    if (fs.existsSync(sessionPath)) {
-      const sessionData = fs.readFileSync(sessionPath, 'utf-8');
-      return JSON.parse(sessionData);
+    const result = await getSyncSession();
+    if (result.success && result.data) {
+      return result.data as SyncSession;
     }
   } catch (error) {
     console.error('Error loading session:', error);
@@ -44,20 +37,24 @@ function loadSession(): SyncSession | null {
   return null;
 }
 
-function saveSession(session: SyncSession): void {
+async function saveSession(session: SyncSession): Promise<void> {
   try {
-    const sessionPath = getSessionFilePath();
-    fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2));
+    if (session.session_id) {
+      const result = await updateSyncSession(session.session_id, session);
+      if (!result.success) {
+        console.error('Error updating session:', result.error);
+      }
+    }
   } catch (error) {
     console.error('Error saving session:', error);
   }
 }
 
-function clearSession(): void {
+async function clearSession(): Promise<void> {
   try {
-    const sessionPath = getSessionFilePath();
-    if (fs.existsSync(sessionPath)) {
-      fs.unlinkSync(sessionPath);
+    const session = await loadSession();
+    if (session?.session_id) {
+      await deleteSyncSession(session.session_id);
     }
   } catch (error) {
     console.error('Error clearing session:', error);
@@ -92,7 +89,7 @@ export async function GET(request: NextRequest) {
     
     switch (action) {
       case 'status':
-        const session = loadSession();
+        const session = await loadSession();
         return NextResponse.json({
           success: true,
           session: session,
@@ -100,7 +97,7 @@ export async function GET(request: NextRequest) {
         });
         
       case 'clear':
-        clearSession();
+        await clearSession();
         return NextResponse.json({
           success: true,
           message: 'Session cleared'
@@ -137,7 +134,7 @@ export async function POST(request: NextRequest) {
         return await continueSession();
         
       case 'clear':
-        clearSession();
+        await clearSession();
         return NextResponse.json({
           success: true,
           message: 'Session cleared'
@@ -167,8 +164,8 @@ async function startNewSession() {
   if (importedMapping) {
     mapping = importedMapping;
   } else {
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
-    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    // For now, we'll require imported mapping in session mode
+    throw new Error('Session mode requires imported mapping data');
   }
   
   // Get all SKUs
@@ -202,15 +199,30 @@ async function startNewSession() {
     };
   }
   
-  // Save session
-  saveSession(session);
+  // Save session to database
+  const createResult = await createSyncSession({
+    session_id: session.session_id,
+    status: 'in_progress',
+    total_skus: session.total_skus,
+    current_batch: session.current_session,
+    total_batches: session.total_sessions,
+    processed_skus: session.processed_skus,
+    remaining_skus: session.remaining_skus,
+    batch_size: session.batch_size,
+    started_at: new Date(session.started_at),
+    last_updated: new Date(session.last_updated)
+  });
+  
+  if (!createResult.success) {
+    throw new Error(`Failed to create session: ${createResult.error}`);
+  }
   
   // Process first session
   return await processSession(session, 1);
 }
 
 async function continueSession() {
-  const session = loadSession();
+  const session = await loadSession();
   
   if (!session) {
     return NextResponse.json({
@@ -247,7 +259,7 @@ async function processSession(session: SyncSession, sessionNumber: number) {
     session.current_session = sessionNumber;
     session.last_updated = new Date().toISOString();
     session.session_results[`session_${sessionNumber}`].status = 'in_progress';
-    saveSession(session);
+    await saveSession(session);
     
     // Load mapping
     let mapping;
@@ -256,8 +268,8 @@ async function processSession(session: SyncSession, sessionNumber: number) {
     if (importedMapping) {
       mapping = importedMapping;
     } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+      // For now, we'll require imported mapping in session mode
+      throw new Error('Session mode requires imported mapping data');
     }
     
     // Get SKUs for this session
@@ -361,7 +373,7 @@ async function processSession(session: SyncSession, sessionNumber: number) {
     }
     
     session.last_updated = new Date().toISOString();
-    saveSession(session);
+    await saveSession(session);
     
     return NextResponse.json({
       success: true,
@@ -395,7 +407,7 @@ async function processSession(session: SyncSession, sessionNumber: number) {
     
     session.status = 'failed';
     session.last_updated = new Date().toISOString();
-    saveSession(session);
+    await saveSession(session);
     
     return NextResponse.json({
       success: false,
