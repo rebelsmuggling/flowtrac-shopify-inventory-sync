@@ -365,6 +365,26 @@ export async function clearOldSessions(daysOld: number = 7) {
   }
 }
 
+export async function clearOldInventoryRecords(skusToKeep: string[]) {
+  try {
+    if (skusToKeep.length === 0) {
+      // If no SKUs to keep, clear all records
+      const result = await sql`DELETE FROM flowtrac_inventory`;
+      return { success: true, deletedCount: result.rowCount };
+    }
+
+    // Delete records for SKUs not in the keep list
+    const placeholders = skusToKeep.map((_, index) => `$${index + 1}`).join(',');
+    const query = `DELETE FROM flowtrac_inventory WHERE sku NOT IN (${placeholders})`;
+    const result = await sql.query(query, skusToKeep);
+
+    return { success: true, deletedCount: result.rowCount };
+  } catch (error) {
+    console.error('Error clearing old inventory records:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
 export async function getDatabaseStats() {
   try {
     const inventoryStats = await sql`

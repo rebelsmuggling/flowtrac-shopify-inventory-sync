@@ -8,7 +8,8 @@ import {
   upsertFlowtracInventory,
   getSyncSession,
   getBatchResults,
-  FlowtracInventoryRecord
+  FlowtracInventoryRecord,
+  clearOldInventoryRecords
 } from '../../../lib/database';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 
@@ -77,6 +78,9 @@ export async function POST(request: NextRequest) {
           });
         }
         return await continueBatchProcessing(sessionId);
+        
+      case 'refresh':
+        return await refreshDatabase();
         
       case 'initialize':
         console.log('Manual database initialization requested');
@@ -485,6 +489,83 @@ async function processBatch(sessionId: string, batchNumber: number, allSkus: str
       session_id: sessionId,
       batch_number: batchNumber
     });
+  }
+}
+
+async function refreshDatabase() {
+  try {
+    console.log('Refreshing database...');
+    const initResult = await initializeDatabase();
+    if (!initResult.success) {
+      console.error('Database refresh failed:', initResult.error);
+      return NextResponse.json({
+        success: false,
+        error: `Database refresh failed: ${initResult.error}`
+      }, { status: 500 });
+    }
+    console.log('Database refreshed successfully');
+
+    // Reload mapping
+    let mapping;
+    const importedMapping = getImportedMapping();
+    if (importedMapping) {
+      mapping = importedMapping;
+    } else {
+      const mappingPath = require('path').join(process.cwd(), 'mapping.json');
+      mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
+    }
+
+    // Get all SKUs from mapping
+    const allSkus = getAllSkus(mapping);
+    const totalSkus = allSkus.length;
+    const totalBatches = Math.ceil(totalSkus / BATCH_SIZE);
+
+    // Clear old inventory records that are no longer in the mapping
+    console.log('Clearing old inventory records...');
+    const clearResult = await clearOldInventoryRecords(allSkus);
+    if (clearResult.success) {
+      console.log(`Cleared ${clearResult.deletedCount} old inventory records`);
+    } else {
+      console.error('Failed to clear old inventory records:', clearResult.error);
+    }
+
+    // Create a new session for the refresh process
+    const sessionId = `flowtrac-refresh-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    const session = {
+      session_id: sessionId,
+      status: 'in_progress' as const,
+      total_skus: totalSkus,
+      current_batch: 1,
+      total_batches: totalBatches,
+      processed_skus: 0,
+      remaining_skus: totalSkus,
+      batch_size: BATCH_SIZE,
+      started_at: new Date(),
+      last_updated: new Date()
+    };
+
+    console.log('Creating refresh session...');
+    const sessionResult = await createSyncSession(session);
+    if (!sessionResult.success) {
+      console.error('Failed to create refresh session:', sessionResult.error);
+      return NextResponse.json({
+        success: false,
+        error: `Failed to create refresh session: ${sessionResult.error}`
+      }, { status: 500 });
+    }
+    console.log('Refresh session created successfully:', sessionResult.data);
+
+    console.log(`Started refresh process: ${totalSkus} SKUs in ${totalBatches} batches`);
+
+    // Process first batch only and return immediately
+    return await processBatch(sessionId, 1, allSkus);
+
+  } catch (error) {
+    console.error('Error during database refresh:', error);
+    return NextResponse.json({
+      success: false,
+      error: (error as Error).message
+    }, { status: 500 });
   }
 }
 
