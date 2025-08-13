@@ -33,6 +33,39 @@ async function fetchAllFlowtracProducts(flowAuthCookie: string) {
   return productsRes.data;
 }
 
+async function searchFlowtracProductBySku(sku: string, flowAuthCookie: string) {
+  try {
+    // Try searching by product name (SKU)
+    const params = { product: sku };
+    const searchRes = await axios.get(`${FLOWTRAC_API_URL}/products`, {
+      headers: { Cookie: flowAuthCookie },
+      params,
+      withCredentials: true,
+    });
+    
+    if (searchRes.data && searchRes.data.length > 0) {
+      return searchRes.data[0];
+    }
+    
+    // Try searching by barcode
+    const barcodeParams = { barcode: sku };
+    const barcodeRes = await axios.get(`${FLOWTRAC_API_URL}/products`, {
+      headers: { Cookie: flowAuthCookie },
+      params: barcodeParams,
+      withCredentials: true,
+    });
+    
+    if (barcodeRes.data && barcodeRes.data.length > 0) {
+      return barcodeRes.data[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error searching for SKU ${sku}:`, (error as Error).message);
+    return null;
+  }
+}
+
 function getProductIdForSku(sku: string, mapping: any): string | undefined {
   for (const product of mapping.products) {
     if (product.flowtrac_sku === sku && product.flowtrac_product_id) return product.flowtrac_product_id;
@@ -207,16 +240,50 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   for (const sku of skus) {
     let pid = getProductIdForSku(sku, mapping);
     if (!pid) {
+      // Try to find in the products list first
       pid = skuToProductId[sku];
-      if (pid) {
-        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+      if (!pid) {
+        // If still not found, try direct search by SKU
+        console.log(`SKU '${sku}' not found in products list, trying direct search...`);
+        const product = await searchFlowtracProductBySku(sku, flowAuthCookie);
+        if (product && product.product_id) {
+          pid = product.product_id;
+          if (pid && setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+          console.log(`Found SKU '${sku}' with product_id '${pid}' via direct search`);
+        } else {
+          console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
+          missingSkus.push(sku);
+          continue;
+        }
       } else {
-        console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
-        missingSkus.push(sku);
-        continue;
+        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
       }
     }
-    skuToPidForQuery[sku] = pid;
+    
+    // Always verify the product_id is valid by checking if it exists in Flowtrac
+    if (pid && !skuToProductId[sku]) {
+      // Double-check that this product_id actually exists in Flowtrac
+      const product = await searchFlowtracProductBySku(sku, flowAuthCookie);
+      if (product && product.product_id === pid) {
+        console.log(`Verified SKU '${sku}' with product_id '${pid}'`);
+      } else {
+        console.warn(`Product ID '${pid}' for SKU '${sku}' not found in Flowtrac, trying direct search...`);
+        const directProduct = await searchFlowtracProductBySku(sku, flowAuthCookie);
+        if (directProduct && directProduct.product_id) {
+          pid = directProduct.product_id;
+          if (pid && setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+          console.log(`Updated SKU '${sku}' with correct product_id '${pid}'`);
+        } else {
+          console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
+          missingSkus.push(sku);
+          continue;
+        }
+      }
+    }
+    
+    if (pid) {
+      skuToPidForQuery[sku] = pid;
+    }
   }
   
   if (mappingUpdated) {
@@ -233,6 +300,8 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   
   for (const [sku, product_id] of Object.entries(skuToPidForQuery)) {
     try {
+      console.log(`Fetching inventory for SKU ${sku} with product_id ${product_id}...`);
+      
       // Query all bins for the product_id
       const params = { product_id };
       const binsRes = await axios.get(`${FLOWTRAC_API_URL}/product-warehouse-bins`, {
@@ -243,6 +312,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
       });
       
       const bins = binsRes.data;
+      console.log(`SKU ${sku}: Found ${bins.length} total bin records`);
       
       // Use the same filter as fetchFlowtracInventory
       const validBins = bins.filter((b: any) => {
@@ -255,11 +325,15 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
         return true;
       });
       
+      console.log(`SKU ${sku}: ${validBins.length} valid bin records after filtering`);
+      
       // Sum total quantity and also sum by bin
       const binQuantities: Record<string, number> = {};
       for (const b of validBins) {
         const binName = b.bin || 'UNKNOWN';
-        binQuantities[binName] = (binQuantities[binName] || 0) + (Number(b.quantity) || 0);
+        const quantity = Number(b.quantity) || 0;
+        binQuantities[binName] = (binQuantities[binName] || 0) + quantity;
+        console.log(`SKU ${sku}: Bin ${binName} has ${quantity} units`);
       }
       
       // Remove bins with 0 quantity after summing
@@ -268,8 +342,11 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
         if (qty !== 0) filteredBinQuantities[bin] = qty;
       }
       
+      const totalQuantity = Object.values(filteredBinQuantities).reduce((sum, q) => sum + q, 0);
+      console.log(`SKU ${sku}: Total quantity = ${totalQuantity}, Bins: ${Object.keys(filteredBinQuantities).join(', ')}`);
+      
       inventory[sku] = {
-        quantity: Object.values(filteredBinQuantities).reduce((sum, q) => sum + q, 0),
+        quantity: totalQuantity,
         bins: Object.keys(filteredBinQuantities),
         binBreakdown: filteredBinQuantities,
       };
@@ -279,6 +356,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
       
     } catch (error) {
       console.error(`Error fetching inventory for SKU ${sku}:`, (error as Error).message);
+      console.error(`Full error details:`, error);
       // Don't throw error, just skip this SKU
       continue;
     }
