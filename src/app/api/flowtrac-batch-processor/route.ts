@@ -82,6 +82,9 @@ export async function POST(request: NextRequest) {
       case 'refresh':
         return await refreshDatabase();
         
+      case 'refresh-mapping':
+        return await refreshMappingFromRepository();
+        
       case 'initialize':
         console.log('Manual database initialization requested');
         const initResult = await initializeDatabase();
@@ -115,15 +118,22 @@ async function startBatchProcessing() {
     }
     console.log('Database initialized successfully');
     
-    // Load mapping
+    // Load mapping - Always use the latest mapping.json from the repository
     let mapping;
     const importedMapping = getImportedMapping();
     
     if (importedMapping) {
+      console.log('Using imported mapping data');
       mapping = importedMapping;
     } else {
+      console.log('Loading mapping.json from repository');
       const mappingPath = require('path').join(process.cwd(), 'mapping.json');
       mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
+      
+      // Store the mapping in the imported mapping store for future use
+      const { setImportedMapping } = require('../../../utils/imported-mapping-store');
+      setImportedMapping(mapping);
+      console.log('Mapping loaded and stored in imported mapping store');
     }
     
     // Get all SKUs from current mapping
@@ -205,15 +215,22 @@ async function continueBatchProcessing(sessionId: string) {
       });
     }
     
-    // Load mapping for SKU list
+    // Load mapping for SKU list - Always use the latest mapping.json from the repository
     let mapping;
     const importedMapping = getImportedMapping();
     
     if (importedMapping) {
+      console.log('Using imported mapping data for continue operation');
       mapping = importedMapping;
     } else {
+      console.log('Loading mapping.json from repository for continue operation');
       const mappingPath = require('path').join(process.cwd(), 'mapping.json');
       mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
+      
+      // Store the mapping in the imported mapping store for future use
+      const { setImportedMapping } = require('../../../utils/imported-mapping-store');
+      setImportedMapping(mapping);
+      console.log('Mapping loaded and stored in imported mapping store for continue operation');
     }
     
     const allSkus = getAllSkus(mapping);
@@ -571,6 +588,35 @@ async function refreshDatabase() {
 
   } catch (error) {
     console.error('Error during database refresh:', error);
+    return NextResponse.json({
+      success: false,
+      error: (error as Error).message
+    }, { status: 500 });
+  }
+}
+
+async function refreshMappingFromRepository() {
+  try {
+    console.log('Refreshing mapping from repository...');
+    
+    // Load the latest mapping.json from the repository
+    const mappingPath = require('path').join(process.cwd(), 'mapping.json');
+    const mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
+    
+    // Store in the imported mapping store
+    const { setImportedMapping } = require('../../../utils/imported-mapping-store');
+    setImportedMapping(mapping);
+    
+    console.log(`Mapping refreshed: ${mapping.products?.length || 0} products loaded`);
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Mapping refreshed from repository',
+      productCount: mapping.products?.length || 0
+    });
+    
+  } catch (error) {
+    console.error('Error refreshing mapping:', error);
     return NextResponse.json({
       success: false,
       error: (error as Error).message
