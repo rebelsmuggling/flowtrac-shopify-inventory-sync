@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
-import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory } from '../../../../services/shopify';
+import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory, updateShopifyInventoryBulk } from '../../../../services/shopify';
 import { updateAmazonInventory } from '../../../../services/amazon';
 import { updateShipStationWarehouseLocation } from '../../../../services/shipstation';
 import { getImportedMapping } from '../../../utils/imported-mapping-store';
@@ -129,33 +129,65 @@ export async function POST(request: NextRequest) {
     // 6. Update inventory in Shopify and Amazon for each SKU
     const updateResults: Record<string, any> = {};
     
-    // Process all products that have Shopify SKUs (for Shopify sync)
+    // Prepare Shopify bulk updates
+    const shopifyUpdates: Array<{ inventoryItemId: string; quantity: number; sku: string }> = [];
+    const shopifyUpdateMap: Record<string, { inventoryItemId: string; quantity: number }> = {};
+    
+    // Collect all Shopify updates
     for (const [sku, quantity] of Object.entries(shopifyInventory)) {
       const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
       const inventoryItemId = product?.shopify_inventory_item_id;
       updateResults[sku] = { shopify: null, amazon: null };
       
-      // Shopify sync
       if (!inventoryItemId) {
         updateResults[sku].shopify = { success: false, error: 'No shopify_inventory_item_id in mapping.json' };
         console.error(`No shopify_inventory_item_id for SKU ${sku}`);
       } else {
-        if (dryRun) {
-          updateResults[sku].shopify = { success: true, dryRun: true, message: `Would update Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}` };
-          console.log(`DRY RUN: Would update Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
-        } else {
-          try {
-            await updateShopifyInventory(inventoryItemId, quantity);
-            updateResults[sku].shopify = { success: true };
-            console.log(`Updated Shopify inventory for SKU ${sku} (inventory item ${inventoryItemId}) to ${quantity}`);
-          } catch (err: any) {
-            updateResults[sku].shopify = { success: false, error: err.message };
-            console.error(`Failed to update Shopify inventory for SKU ${sku}: ${err.message}`);
+        shopifyUpdates.push({ inventoryItemId, quantity, sku });
+        shopifyUpdateMap[sku] = { inventoryItemId, quantity };
+      }
+    }
+    
+    // Bulk Shopify sync
+    if (shopifyUpdates.length > 0) {
+      if (dryRun) {
+        console.log(`DRY RUN: Would bulk update ${shopifyUpdates.length} Shopify inventory items`);
+        for (const update of shopifyUpdates) {
+          updateResults[update.sku].shopify = { 
+            success: true, 
+            dryRun: true, 
+            message: `Would update Shopify inventory for SKU ${update.sku} (inventory item ${update.inventoryItemId}) to ${update.quantity}` 
+          };
+        }
+      } else {
+        try {
+          console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
+          const bulkResult = await updateShopifyInventoryBulk(shopifyUpdates);
+          console.log(`Bulk Shopify update completed: ${bulkResult.success} successful, ${bulkResult.failed} failed`);
+          
+          // Mark all as successful initially (we'll handle individual failures if needed)
+          for (const update of shopifyUpdates) {
+            updateResults[update.sku].shopify = { success: true };
+          }
+          
+          // Log any errors
+          if (bulkResult.errors.length > 0) {
+            console.error('Shopify bulk update errors:', bulkResult.errors);
+          }
+        } catch (err: any) {
+          console.error('Bulk Shopify update failed:', err.message);
+          // Mark all as failed
+          for (const update of shopifyUpdates) {
+            updateResults[update.sku].shopify = { success: false, error: err.message };
           }
         }
       }
+    }
+    
+    // Amazon sync for products in shopifyInventory
+    for (const [sku, quantity] of Object.entries(shopifyInventory)) {
+      const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
       
-      // Amazon sync for products in shopifyInventory
       if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
         if (dryRun) {
           updateResults[sku].amazon = { success: true, dryRun: true, message: `Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}` };
