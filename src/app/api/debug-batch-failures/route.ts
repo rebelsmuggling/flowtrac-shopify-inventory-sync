@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
     
     // Get recent active sessions
     const sessionsResult = await getActiveSyncSessions();
-    const recentSessions = sessionsResult.success ? sessionsResult.data.slice(0, limit) : [];
+    const recentSessions = sessionsResult.success && sessionsResult.data ? sessionsResult.data.slice(0, limit) : [];
     
     let currentSession = null;
-    let batchResults = [];
+    let batchResults: any[] = [];
     
     if (sessionId) {
       // Get specific session details
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         
         // Get batch results for this session
         const batchResultsResult = await getBatchResults(sessionId);
-        if (batchResultsResult.success) {
+        if (batchResultsResult.success && batchResultsResult.data) {
           batchResults = batchResultsResult.data;
         }
       }
@@ -33,11 +33,11 @@ export async function GET(request: NextRequest) {
       const latestSession = recentSessions[0];
       currentSession = latestSession;
       
-      // Get batch results for the latest session
-      const batchResultsResult = await getBatchResults(latestSession.session_id);
-      if (batchResultsResult.success) {
-        batchResults = batchResultsResult.data;
-      }
+              // Get batch results for the latest session
+        const batchResultsResult = await getBatchResults(latestSession.session_id);
+        if (batchResultsResult.success && batchResultsResult.data) {
+          batchResults = batchResultsResult.data;
+        }
     }
     
     // Analyze batch results for patterns
