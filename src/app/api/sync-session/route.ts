@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getImportedMapping } from '../../../utils/imported-mapping-store';
-import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession } from '../../../lib/database';
+import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession, SyncSession } from '../../../lib/database';
 
 const BATCH_SIZE = 120; // Conservative batch size based on testing (150 failed, 120 should be safe)
 
-interface SyncSession {
-  session_id: string;
-  status: 'not_started' | 'in_progress' | 'completed' | 'failed';
-  total_skus: number;
-  current_session: number;
-  total_sessions: number;
-  processed_skus: number;
-  remaining_skus: number;
-  batch_size: number;
-  started_at: string;
-  last_updated: string;
+// Extended interface for session results that aren't in the database
+interface ExtendedSyncSession extends SyncSession {
   session_results: Record<string, {
     status: 'pending' | 'in_progress' | 'completed' | 'failed';
     skus_processed: number;
@@ -25,11 +16,16 @@ interface SyncSession {
   }>;
 }
 
-async function loadSession(): Promise<SyncSession | null> {
+async function loadSession(): Promise<ExtendedSyncSession | null> {
   try {
     const result = await getSyncSession();
     if (result.success && result.data) {
-      return result.data as SyncSession;
+      // Convert database session to extended session
+      const dbSession = result.data as SyncSession;
+      return {
+        ...dbSession,
+        session_results: {} // Initialize empty session results
+      } as ExtendedSyncSession;
     }
   } catch (error) {
     console.error('Error loading session:', error);
@@ -37,10 +33,12 @@ async function loadSession(): Promise<SyncSession | null> {
   return null;
 }
 
-async function saveSession(session: SyncSession): Promise<void> {
+async function saveSession(session: ExtendedSyncSession): Promise<void> {
   try {
     if (session.session_id) {
-      const result = await updateSyncSession(session.session_id, session);
+      // Convert to database session format (exclude session_results)
+      const { session_results, ...dbSession } = session;
+      const result = await updateSyncSession(session.session_id, dbSession);
       if (!result.success) {
         console.error('Error updating session:', result.error);
       }
@@ -174,17 +172,17 @@ async function startNewSession() {
   const totalSessions = Math.ceil(totalSkus / BATCH_SIZE);
   
   // Create new session
-  const session: SyncSession = {
+  const session: ExtendedSyncSession = {
     session_id: `sync-${new Date().toISOString().replace(/[:.]/g, '-')}`,
     status: 'in_progress',
     total_skus: totalSkus,
-    current_session: 1,
-    total_sessions: totalSessions,
+    current_batch: 1,
+    total_batches: totalSessions,
     processed_skus: 0,
     remaining_skus: totalSkus,
     batch_size: BATCH_SIZE,
-    started_at: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
+    started_at: new Date(),
+    last_updated: new Date(),
     session_results: {}
   };
   
@@ -204,13 +202,13 @@ async function startNewSession() {
     session_id: session.session_id,
     status: 'in_progress',
     total_skus: session.total_skus,
-    current_batch: session.current_session,
-    total_batches: session.total_sessions,
+    current_batch: session.current_batch,
+    total_batches: session.total_batches,
     processed_skus: session.processed_skus,
     remaining_skus: session.remaining_skus,
     batch_size: session.batch_size,
-    started_at: new Date(session.started_at),
-    last_updated: new Date(session.last_updated)
+    started_at: session.started_at,
+    last_updated: session.last_updated
   });
   
   if (!createResult.success) {
@@ -247,17 +245,17 @@ async function continueSession() {
   }
   
   // Process next session
-  const nextSession = session.current_session + 1;
+  const nextSession = session.current_batch + 1;
   return await processSession(session, nextSession);
 }
 
-async function processSession(session: SyncSession, sessionNumber: number) {
+async function processSession(session: ExtendedSyncSession, sessionNumber: number) {
   try {
-    console.log(`Processing session ${sessionNumber} of ${session.total_sessions}`);
+    console.log(`Processing session ${sessionNumber} of ${session.total_batches}`);
     
     // Update session status
-    session.current_session = sessionNumber;
-    session.last_updated = new Date().toISOString();
+    session.current_batch = sessionNumber;
+    session.last_updated = new Date();
     session.session_results[`session_${sessionNumber}`].status = 'in_progress';
     await saveSession(session);
     
@@ -364,7 +362,7 @@ async function processSession(session: SyncSession, sessionNumber: number) {
     session.remaining_skus = session.total_skus - session.processed_skus;
     
     // Check if all sessions are complete
-    if (sessionNumber === session.total_sessions) {
+    if (sessionNumber === session.total_batches) {
       session.status = 'completed';
       console.log('All sessions completed');
     } else if (session.session_results[`session_${sessionNumber}`].status === 'failed') {
@@ -372,16 +370,16 @@ async function processSession(session: SyncSession, sessionNumber: number) {
       console.log('Session failed, stopping');
     }
     
-    session.last_updated = new Date().toISOString();
+    session.last_updated = new Date();
     await saveSession(session);
     
     return NextResponse.json({
       success: true,
       session: session,
       current_session: sessionNumber,
-      session_completed: sessionNumber === session.total_sessions,
+      session_completed: sessionNumber === session.total_batches,
       session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
-      next_session_available: sessionNumber < session.total_sessions && 
+      next_session_available: sessionNumber < session.total_batches && 
                               session.session_results[`session_${sessionNumber}`].status !== 'failed',
       processing_time_ms: duration,
       results: {
@@ -406,7 +404,7 @@ async function processSession(session: SyncSession, sessionNumber: number) {
     };
     
     session.status = 'failed';
-    session.last_updated = new Date().toISOString();
+    session.last_updated = new Date();
     await saveSession(session);
     
     return NextResponse.json({
