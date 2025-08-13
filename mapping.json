@@ -6,7 +6,69 @@
       "product_name": "",
       "amazon_sku": "IC-KOOL-0045",
       "shopify_variant_id": "gid://shopify/ProductVariant/51107621470517",
-      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317"
+      "shopify_inventory_item_id": "gid://shopify/InventoryItem/53137749803317",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "QW-ELKW-2390",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "QW-WK23-34JK",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "EQ-KSDF-3LKO",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "BN-SDLO-23KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "JK-JKLO-LOL1",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "JK-WEQ1-23KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "WC-DLKE-34KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "LF-EWER-23KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "EC-SDWE-34KJ",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "MN-WEJK-4455",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "TP-WEKL-34KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "KO-WELK-34KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "SK-WEKL-34RJ",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "LN-VDER-23KL",
+          "quantity": 3
+        },
+        {
+          "flowtrac_sku": "UE-34JK-33LL",
+          "quantity": 3
+        }
+      ]
     },
     {
       "shopify_sku": "IC-HCPK-0096",
@@ -3238,6 +3300,34 @@
         },
         {
           "flowtrac_sku": "LF-EWER-23KL",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "EC-SDWE-34KJ",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "MN-WEJK-4455",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "TP-WEKL-34KL",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "KO-WELK-34KL",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "SK-WEKL-34RJ",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "LN-VDER-23KL",
+          "quantity": 6
+        },
+        {
+          "flowtrac_sku": "UE-34JK-33LL",
           "quantity": 6
         }
       ]
@@ -9245,5 +9335,5 @@
       "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-13T18:27:40.620Z"
+  "lastUpdated": "2025-08-13T20:19:58.340Z"
 }
