@@ -7916,7 +7916,13 @@
       "product_name": "Pez Holiday Dispenser Pack of 36 Dispensers",
       "amazon_sku": "",
       "shopify_variant_id": "",
-      "shopify_inventory_item_id": ""
+      "shopify_inventory_item_id": "",
+      "bundle_components": [
+        {
+          "flowtrac_sku": "9C-4KZV-M7OH",
+          "quantity": 36
+        }
+      ]
     },
     {
       "shopify_sku": "IC-CCPK-0003",
@@ -9239,5 +9245,5 @@
       "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-13T17:51:36.954Z"
+  "lastUpdated": "2025-08-13T18:27:40.620Z"
 }
