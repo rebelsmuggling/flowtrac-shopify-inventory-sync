@@ -27,8 +27,16 @@ export async function POST(request: NextRequest) {
     
     if (useSessionMode) {
       console.log('SESSION MODE: Using session-based batch processing');
+      
+      // Get the base URL for the current request
+      const protocol = request.headers.get('x-forwarded-proto') || 'http';
+      const host = request.headers.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      
+      console.log('Using base URL for session request:', baseUrl);
+      
       // Redirect to session-based sync
-      const sessionResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/sync-session`, {
+      const sessionResponse = await fetch(`${baseUrl}/api/sync-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'start' })
