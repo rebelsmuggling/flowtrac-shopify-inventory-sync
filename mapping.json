@@ -3015,7 +3015,7 @@
       "shopify_inventory_item_id": "",
       "bundle_components": [
         {
-          "flowtrac_sku": "IC-POPR-0009",
+          "flowtrac_sku": "IC-POPR-009",
           "quantity": 4
         }
       ]
@@ -9189,5 +9189,5 @@
       "shopify_inventory_item_id": ""
     }
   ],
-  "lastUpdated": "2025-08-13T16:47:30.567Z"
+  "lastUpdated": "2025-08-13T17:07:14.564Z"
 }
