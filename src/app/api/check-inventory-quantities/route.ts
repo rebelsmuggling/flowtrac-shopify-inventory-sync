@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFlowtracInventory } from '../../../lib/database';
+import { sql } from '@vercel/postgres';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +9,23 @@ export async function GET(request: NextRequest) {
     
     console.log('Checking inventory quantities in database...');
     
-    // Get all inventory from database (no SKU filter)
-    const inventoryResult = await getFlowtracInventory(undefined, 'Manteca');
+    // First, let's check what database we're connecting to
+    const dbInfo = await sql`
+      SELECT 
+        current_database() as database_name,
+        current_user as current_user,
+        inet_server_addr() as server_address
+    `;
+    
+    // Check for IC-HCPK-0096 specifically
+    const specificSku = await sql`
+      SELECT * FROM flowtrac_inventory 
+      WHERE sku = 'IC-HCPK-0096'
+      ORDER BY last_updated DESC
+    `;
+    
+    // Get all inventory from database (no SKU filter, no warehouse filter)
+    const inventoryResult = await getFlowtracInventory(undefined, undefined);
     
     if (!inventoryResult.success) {
       return NextResponse.json({
@@ -87,6 +103,12 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
+      databaseInfo: dbInfo.rows[0],
+      specificSkuCheck: {
+        sku: 'IC-HCPK-0096',
+        found: specificSku.rows.length > 0,
+        records: specificSku.rows
+      },
       analysis,
       sampleRecords,
       positiveQuantityRecords,

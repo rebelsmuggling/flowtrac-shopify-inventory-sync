@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateAmazonInventory } from '../../../../services/amazon';
 import { mappingService } from '../../../services/mapping';
+import { getFlowtracInventory } from '../../../lib/database';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sku, quantity } = body;
+    const { sku } = body;
 
-    if (!sku || quantity === undefined) {
+    if (!sku) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required parameters: sku and quantity'
+        error: 'Missing required parameter: sku'
       });
     }
 
-    console.log(`Testing Amazon JSON API for SKU: ${sku}, Quantity: ${quantity}`);
+    console.log(`Testing Amazon JSON API for SKU: ${sku}`);
 
     // Get the mapping to find the correct Amazon SKU
     const { mapping } = await mappingService.getMapping();
@@ -50,6 +51,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`Found product: ${sku} -> Amazon SKU: ${amazonSku}`);
 
+    // Get quantity from database instead of using manually provided quantity
+    const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
+    
+    if (!inventoryResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: `Failed to get inventory from database: ${inventoryResult.error}`
+      });
+    }
+
+    let quantity = 0;
+    if (inventoryResult.data && inventoryResult.data.length > 0) {
+      quantity = inventoryResult.data[0].quantity;
+    }
+
+    console.log(`Database quantity for ${sku}: ${quantity}`);
+
     const result = await updateAmazonInventory(amazonSku, quantity);
 
     return NextResponse.json({
@@ -57,7 +75,7 @@ export async function POST(request: NextRequest) {
       test: {
         originalSku: sku,
         amazonSku: amazonSku,
-        quantity,
+        databaseQuantity: quantity,
         result
       }
     });
@@ -75,24 +93,15 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const sku = url.searchParams.get('sku');
-    const quantity = url.searchParams.get('quantity');
 
-    if (!sku || !quantity) {
+    if (!sku) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required parameters: sku and quantity'
+        error: 'Missing required parameter: sku'
       });
     }
 
-    const quantityNum = parseInt(quantity, 10);
-    if (isNaN(quantityNum)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid quantity parameter'
-      });
-    }
-
-    console.log(`Testing Amazon JSON API for SKU: ${sku}, Quantity: ${quantityNum}`);
+    console.log(`Testing Amazon JSON API for SKU: ${sku}`);
 
     // Get the mapping to find the correct Amazon SKU
     const { mapping } = await mappingService.getMapping();
@@ -128,14 +137,31 @@ export async function GET(request: NextRequest) {
 
     console.log(`Found product: ${sku} -> Amazon SKU: ${amazonSku}`);
 
-    const result = await updateAmazonInventory(amazonSku, quantityNum);
+    // Get quantity from database instead of using manually provided quantity
+    const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
+    
+    if (!inventoryResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: `Failed to get inventory from database: ${inventoryResult.error}`
+      });
+    }
+
+    let quantity = 0;
+    if (inventoryResult.data && inventoryResult.data.length > 0) {
+      quantity = inventoryResult.data[0].quantity;
+    }
+
+    console.log(`Database quantity for ${sku}: ${quantity}`);
+
+    const result = await updateAmazonInventory(amazonSku, quantity);
 
     return NextResponse.json({
       success: true,
       test: {
         originalSku: sku,
         amazonSku: amazonSku,
-        quantity: quantityNum,
+        databaseQuantity: quantity,
         result
       }
     });
