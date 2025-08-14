@@ -84,6 +84,14 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
           value: {
             quantity: quantity
           }
+        },
+        {
+          op: 'replace',
+          path: '/attributes/fulfillment_availability',
+          value: {
+            fulfillment_channel_code: 'DEFAULT',
+            handling_time: 2
+          }
         }
       ],
       endpoint: 'listings'
