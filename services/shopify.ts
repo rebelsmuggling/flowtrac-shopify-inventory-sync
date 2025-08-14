@@ -209,8 +209,8 @@ export async function updateShopifyInventory(inventoryItemId: string, available:
 }
 
 export async function enrichMappingWithShopifyVariantAndInventoryIds(): Promise<void> {
-  // Get current mapping using the mapping service
-  const { mapping, source } = await mappingService.getMapping();
+  // Get current mapping using the mapping service (fresh data, no cache)
+  const { mapping, source } = await mappingService.getMappingFresh();
   console.log(`Enriching ${source} mapping data with Shopify IDs`);
 
   let updated = false;

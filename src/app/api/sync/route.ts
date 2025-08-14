@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. Load mapping using the mapping service
-    const { mapping, source } = await mappingService.getMapping();
+    // 1. Load mapping using the mapping service (fresh data, no cache)
+    const { mapping, source } = await mappingService.getMappingFresh();
     console.log(`Using ${source} mapping data`);
 
     // 2. Collect all SKUs (simple and bundle components)
@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
     } else {
       await enrichMappingWithShopifyVariantAndInventoryIds();
       
-      // Reload mapping after enrichment using the mapping service
-      const { mapping: updatedMappingData } = await mappingService.getMapping();
+      // Reload mapping after enrichment using the mapping service (fresh data, no cache)
+      const { mapping: updatedMappingData } = await mappingService.getMappingFresh();
       updatedMapping = updatedMappingData;
     }
 

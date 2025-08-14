@@ -155,8 +155,8 @@ export async function POST(request: NextRequest) {
 }
 
 async function startNewSession() {
-  // Load mapping using the mapping service
-  const { mapping, source } = await mappingService.getMapping();
+  // Load mapping using the mapping service (fresh data, no cache)
+  const { mapping, source } = await mappingService.getMappingFresh();
   console.log(`Using ${source} mapping data for sync session`);
   
   // Get all SKUs
