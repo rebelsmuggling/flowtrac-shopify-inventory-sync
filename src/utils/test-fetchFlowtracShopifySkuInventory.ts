@@ -2,12 +2,12 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import { fetchFlowtracInventory } from '../../services/flowtrac';
+import { mappingService } from '../services/mapping';
 
 async function test() {
-  // 1. Load mapping.json
-  const mappingPath = path.resolve(__dirname, '../../../mapping.json');
+  // 1. Load mapping using the mapping service
   const { mapping, source } = await mappingService.getMapping();
-    console.log(`Using ${source} mapping data`);
+  console.log(`Using ${source} mapping data`);
 
   // 2. Collect all SKUs (simple and bundle components)
   const skus = new Set<string>();
