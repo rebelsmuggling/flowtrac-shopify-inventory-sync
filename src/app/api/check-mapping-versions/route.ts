@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     
     // Get mapping history
     const historyResult = await getMappingHistory(10);
-    const versions = historyResult.success ? historyResult.data : [];
+    const versions = historyResult.success && historyResult.data ? historyResult.data : [];
     
     // Get current mapping from service (with cache)
     const { mapping: cachedMapping, source: cacheSource } = await mappingService.getMapping();
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     
     // Compare versions
     const analysis = {
-      versions: versions.map(v => ({
+      versions: versions?.map(v => ({
         id: v.id,
         version: v.version,
         last_updated: v.last_updated,
