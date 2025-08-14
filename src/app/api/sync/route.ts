@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       
       console.log('Using base URL for session request:', baseUrl);
       
-      // Redirect to session-based sync
+      // Start the session-based sync
       const sessionResponse = await fetch(`${baseUrl}/api/sync-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,12 +41,63 @@ export async function POST(request: NextRequest) {
       });
       
       const sessionData = await sessionResponse.json();
+      
+      if (!sessionData.success) {
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to start session-based sync',
+          details: sessionData.error
+        });
+      }
+      
+      // Process additional sessions in sequence (up to a reasonable limit to avoid timeout)
+      const maxSessionsToProcess = 5; // Process first 5 sessions in this request
+      let sessionsProcessed = 1;
+      
+      while (sessionsProcessed < maxSessionsToProcess) {
+        try {
+          // Check if there are more sessions to process
+          const statusResponse = await fetch(`${baseUrl}/api/sync-session?action=status`);
+          const statusData = await statusResponse.json();
+          
+          if (!statusData.success || !statusData.session || !statusData.session.next_session_available) {
+            console.log('No more sessions to process or session completed');
+            break;
+          }
+          
+          // Process next session
+          console.log(`Processing session ${sessionsProcessed + 1} of ${maxSessionsToProcess}`);
+          const continueResponse = await fetch(`${baseUrl}/api/sync-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'continue' })
+          });
+          
+          const continueData = await continueResponse.json();
+          
+          if (!continueData.success) {
+            console.error(`Failed to continue session: ${continueData.error}`);
+            break;
+          }
+          
+          sessionsProcessed++;
+          
+          // Add a small delay between sessions
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+        } catch (error) {
+          console.error(`Error processing session ${sessionsProcessed + 1}:`, error);
+          break;
+        }
+      }
+      
       return NextResponse.json({
-        success: sessionData.success,
-        message: 'Session-based sync started with auto-continuation',
+        success: true,
+        message: `Session-based sync started with auto-continuation. Processed ${sessionsProcessed} sessions.`,
         session: sessionData.session,
         useSessionMode: true,
-        note: 'All sessions will be processed automatically in sequence'
+        sessionsProcessed: sessionsProcessed,
+        note: `Remaining sessions can be processed by calling the continue action manually or using an external scheduler`
       });
     }
 

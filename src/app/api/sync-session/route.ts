@@ -525,30 +525,10 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       const nextSessionNumber = sessionNumber + 1;
       console.log(`Auto-triggering next session: ${nextSessionNumber}`);
       
-      // Trigger next session in background (don't await to avoid timeout)
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : 'https://flowtrac-shopify-inventory-sync.vercel.app';
-      
-      console.log(`Triggering session ${nextSessionNumber} via ${baseUrl}/api/sync-session`);
-      
-      fetch(`${baseUrl}/api/sync-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'continue'
-        })
-      }).then(response => {
-        if (!response.ok) {
-          console.error(`Failed to trigger session ${nextSessionNumber}: ${response.status} ${response.statusText}`);
-        } else {
-          console.log(`Successfully triggered session ${nextSessionNumber}`);
-        }
-      }).catch(error => {
-        console.error(`Failed to auto-trigger session ${nextSessionNumber}:`, error);
-      });
+      // For now, we'll rely on manual continuation or external triggers
+      // The background fetch approach has limitations in serverless environments
+      console.log(`Session ${nextSessionNumber} needs to be triggered manually or via external scheduler`);
+      console.log(`Use: curl -X POST ${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session -H "Content-Type: application/json" -d '{"action": "continue"}'`);
     }
     
     return NextResponse.json({
