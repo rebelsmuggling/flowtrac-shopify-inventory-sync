@@ -2,36 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { getMapping } from '../../../lib/database';
 
 export async function GET(request: NextRequest) {
   try {
-    // Priority order: 1. Imported mapping, 2. GitHub, 3. Local file
+    // Priority order: 1. Database, 2. Imported mapping, 3. Local file
     let mapping;
     let source = 'file';
     
-    const importedMapping = getImportedMapping();
-    if (importedMapping) {
-      console.log('Using imported mapping data for mapping API');
-      mapping = importedMapping;
-      source = 'imported';
-    } else if (process.env.GITHUB_TOKEN) {
-      // Try GitHub if token is available
-      try {
-        const githubRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/github-mapping`);
-        if (githubRes.ok) {
-          const githubData = await githubRes.json();
-          if (githubData.success) {
-            console.log('Using GitHub mapping data for mapping API');
-            mapping = githubData.mapping;
-            source = 'github';
-          }
-        }
-      } catch (githubError) {
-        console.log('GitHub mapping not available, falling back to file');
+    // 1. Try database first
+    const dbResult = await getMapping();
+    if (dbResult.success) {
+      console.log('Using database mapping data for mapping API');
+      mapping = dbResult.data;
+      source = 'database';
+    } else {
+      console.log('Database mapping not available, trying imported mapping');
+    }
+    
+    // 2. Try imported mapping
+    if (!mapping) {
+      const importedMapping = getImportedMapping();
+      if (importedMapping) {
+        console.log('Using imported mapping data for mapping API');
+        mapping = importedMapping;
+        source = 'imported';
       }
     }
     
-    // Fallback to file system
+    // 3. Fallback to file system
     if (!mapping) {
       const mappingPath = path.join(process.cwd(), 'mapping.json');
       console.log('Using file mapping data for mapping API');

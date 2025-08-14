@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { getMapping } from '../../../lib/database';
 
 export async function GET(request: NextRequest) {
   try {
-    // Load mapping.json (try imported mapping first, then fallback to file)
-    let mapping;
-    const importedMapping = getImportedMapping();
+    // Load mapping from database
+    const mappingResult = await getMapping();
     
-    if (importedMapping) {
-      console.log('Using imported mapping data for export');
-      mapping = importedMapping;
-    } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      console.log('Using file mapping data for export');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    if (!mappingResult.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: mappingResult.error 
+      }, { status: 404 });
     }
+    
+    const mapping = mappingResult.data;
+    console.log('Using database mapping data for export');
 
     // Convert to CSV format for Google Sheets
     const csvRows = [];

@@ -108,6 +108,17 @@ export async function initializeDatabase() {
       )
     `;
 
+    // Create mapping table for storing the mapping.json data
+    await sql`
+      CREATE TABLE IF NOT EXISTS mapping (
+        id SERIAL PRIMARY KEY,
+        version INTEGER NOT NULL DEFAULT 1,
+        products JSONB NOT NULL,
+        last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_by VARCHAR(100) DEFAULT 'system'
+      )
+    `;
+
     // Create indexes for better performance
     await sql`CREATE INDEX IF NOT EXISTS idx_flowtrac_inventory_sku ON flowtrac_inventory(sku)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_flowtrac_inventory_warehouse ON flowtrac_inventory(warehouse)`;
@@ -433,6 +444,116 @@ export async function getFlowtracProductIds(skus: string[]) {
     return { success: true, data: productIds };
   } catch (error) {
     console.error('Error getting Flowtrac product IDs:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+// Mapping Operations
+export async function getMapping() {
+  try {
+    const result = await sql`
+      SELECT products FROM mapping 
+      ORDER BY version DESC, last_updated DESC 
+      LIMIT 1
+    `;
+    
+    if (result.rows.length === 0) {
+      return { success: false, error: 'No mapping found in database' };
+    }
+    
+    return { success: true, data: { products: result.rows[0].products } };
+  } catch (error) {
+    console.error('Error getting mapping from database:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function updateMapping(mapping: any, updatedBy: string = 'system') {
+  try {
+    // Get current version
+    const versionResult = await sql`
+      SELECT COALESCE(MAX(version), 0) + 1 as next_version FROM mapping
+    `;
+    const nextVersion = versionResult.rows[0].next_version;
+    
+    const result = await sql`
+      INSERT INTO mapping (version, products, updated_by)
+      VALUES (${nextVersion}, ${JSON.stringify(mapping.products)}, ${updatedBy})
+      RETURNING id, version, last_updated
+    `;
+    
+    return { success: true, data: result.rows[0] };
+  } catch (error) {
+    console.error('Error updating mapping in database:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getMappingHistory(limit: number = 10) {
+  try {
+    const result = await sql`
+      SELECT id, version, products, last_updated, updated_by 
+      FROM mapping 
+      ORDER BY version DESC, last_updated DESC 
+      LIMIT ${limit}
+    `;
+    
+    return { success: true, data: result.rows };
+  } catch (error) {
+    console.error('Error getting mapping history:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function migrateMappingFromGitHub() {
+  try {
+    // Check if mapping already exists in database
+    const existingResult = await sql`SELECT COUNT(*) as count FROM mapping`;
+    if (existingResult.rows[0].count > 0) {
+      return { success: false, error: 'Mapping already exists in database' };
+    }
+    
+    // Try to get mapping from GitHub first
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'rebelsmuggling/flowtrac-shopify-inventory-sync';
+    
+    if (!GITHUB_TOKEN) {
+      return { success: false, error: 'GitHub token not available for migration' };
+    }
+    
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/mapping.json`,
+      {
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      return { success: false, error: `GitHub API error: ${response.status}` };
+    }
+    
+    const data = await response.json();
+    const content = Buffer.from(data.content, 'base64').toString('utf-8');
+    const mapping = JSON.parse(content);
+    
+    // Store in database
+    const result = await updateMapping(mapping, 'migration');
+    
+    if (result.success) {
+      return { 
+        success: true, 
+        message: `Successfully migrated mapping from GitHub with ${mapping.products?.length || 0} products`,
+        data: result.data
+      };
+    } else {
+      return result;
+    }
+    
+  } catch (error) {
+    console.error('Error migrating mapping from GitHub:', error);
     return { success: false, error: (error as Error).message };
   }
 }

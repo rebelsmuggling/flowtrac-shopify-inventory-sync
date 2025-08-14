@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
+import { updateMapping } from '../../../lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -112,18 +111,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return the parsed data instead of writing to file system
-    // (Vercel has read-only file system in serverless environment)
-    const updatedMapping = {
-      products,
-      lastUpdated: new Date().toISOString()
-    };
+    // Save to database
+    const mapping = { products };
+    const result = await updateMapping(mapping, 'sheets-import');
+    
+    if (!result.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: result.error 
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: `Successfully parsed ${products.length} products from Google Sheets. Download the updated mapping.json file.`,
+      message: `Successfully imported ${products.length} products from Google Sheets to database.`,
       productCount: products.length,
-      mapping: updatedMapping
+      version: result.data.version,
+      updatedAt: result.data.last_updated
     });
 
   } catch (error) {
