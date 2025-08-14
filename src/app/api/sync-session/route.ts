@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession, SyncSession } from '../../../lib/database';
 
 const BATCH_SIZE = 120; // Conservative batch size based on testing (150 failed, 120 should be safe)
@@ -155,16 +155,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function startNewSession() {
-  // Load mapping
-  let mapping;
-  const importedMapping = getImportedMapping();
-  
-  if (importedMapping) {
-    mapping = importedMapping;
-  } else {
-    // For now, we'll require imported mapping in session mode
-    throw new Error('Session mode requires imported mapping data');
-  }
+  // Load mapping using the mapping service
+  const { mapping, source } = await mappingService.getMapping();
+  console.log(`Using ${source} mapping data for sync session`);
   
   // Get all SKUs
   const allSkus = getAllSkus(mapping);
@@ -259,16 +252,9 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     session.session_results[`session_${sessionNumber}`].status = 'in_progress';
     await saveSession(session);
     
-    // Load mapping
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      mapping = importedMapping;
-    } else {
-      // For now, we'll require imported mapping in session mode
-      throw new Error('Session mode requires imported mapping data');
-    }
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for session processing`);
     
     // Get SKUs for this session
     const allSkus = getAllSkus(mapping);
