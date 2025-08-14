@@ -83,63 +83,111 @@ export async function POST(request: NextRequest) {
       }
     `;
 
-    const variables = {
-      input: {
-        quantities: [{
-          inventoryItemId: product.shopify_inventory_item_id,
-          locationId: `gid://shopify/Location/${locationId}`,
-          quantity: databaseQuantity
-        }],
-        reason: "correction",
-        name: "available",
-        ignoreCompareQuantity: true
-      }
-    };
-
-    console.log('GraphQL variables:', JSON.stringify(variables, null, 2));
-
-    const response = await axios.post(
-      shopifyGraphqlUrl,
-      { query: mutation, variables },
+    // Try different variations of the variables
+    const variableVariations = [
       {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
-        },
-      }
-    );
-
-    console.log('GraphQL response:', JSON.stringify(response.data, null, 2));
-
-    // Check for errors
-    if (response.data.errors) {
-      return NextResponse.json({
-        success: false,
-        error: 'GraphQL errors',
-        graphqlErrors: response.data.errors
-      });
-    }
-
-    const result = response.data.data?.inventorySetQuantities;
-    if (result?.userErrors?.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'User errors in GraphQL response',
-        userErrors: result.userErrors
-      });
-    }
-
-    // Wait a moment and check if the quantity actually changed
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const finalCheckResponse = await axios.get(checkUrl, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+        name: "Standard with ignoreCompareQuantity",
+        variables: {
+          input: {
+            quantities: [{
+              inventoryItemId: product.shopify_inventory_item_id,
+              locationId: `gid://shopify/Location/${locationId}`,
+              quantity: databaseQuantity
+            }],
+            reason: "correction",
+            name: "available",
+            ignoreCompareQuantity: true
+          }
+        }
       },
-    });
-    
-    const finalQuantity = finalCheckResponse.data.inventory_levels?.[0]?.available || 0;
+      {
+        name: "Without ignoreCompareQuantity",
+        variables: {
+          input: {
+            quantities: [{
+              inventoryItemId: product.shopify_inventory_item_id,
+              locationId: `gid://shopify/Location/${locationId}`,
+              quantity: databaseQuantity
+            }],
+            reason: "correction",
+            name: "available"
+          }
+        }
+      },
+      {
+        name: "With different reason",
+        variables: {
+          input: {
+            quantities: [{
+              inventoryItemId: product.shopify_inventory_item_id,
+              locationId: `gid://shopify/Location/${locationId}`,
+              quantity: databaseQuantity
+            }],
+            reason: "inventory_adjustment",
+            name: "available",
+            ignoreCompareQuantity: true
+          }
+        }
+      }
+    ];
+
+    let successfulVariation = null;
+    let finalQuantity = currentQuantity;
+
+    for (const variation of variableVariations) {
+      console.log(`Trying variation: ${variation.name}`);
+      console.log('GraphQL variables:', JSON.stringify(variation.variables, null, 2));
+
+      try {
+        const response = await axios.post(
+          shopifyGraphqlUrl,
+          { query: mutation, variables: variation.variables },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+            },
+          }
+        );
+
+        console.log('GraphQL response:', JSON.stringify(response.data, null, 2));
+
+        // Check for errors
+        if (response.data.errors) {
+          console.log(`Variation ${variation.name} failed with GraphQL errors:`, response.data.errors);
+          continue;
+        }
+
+        const result = response.data.data?.inventorySetQuantities;
+        if (result?.userErrors?.length > 0) {
+          console.log(`Variation ${variation.name} failed with user errors:`, result.userErrors);
+          continue;
+        }
+
+        // Wait a moment and check if the quantity actually changed
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const checkResponse = await axios.get(checkUrl, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+          },
+        });
+        
+        const newQuantity = checkResponse.data.inventory_levels?.[0]?.available || 0;
+        
+        if (newQuantity === databaseQuantity) {
+          console.log(`✅ Variation ${variation.name} SUCCESSFULLY updated quantity to ${newQuantity}`);
+          successfulVariation = variation;
+          finalQuantity = newQuantity;
+          break;
+        } else {
+          console.log(`❌ Variation ${variation.name} did not update quantity (got ${newQuantity}, expected ${databaseQuantity})`);
+        }
+      } catch (error: any) {
+        console.log(`Variation ${variation.name} failed with error:`, error.message);
+      }
+    }
     
     return NextResponse.json({
       success: true,
@@ -166,15 +214,16 @@ export async function POST(request: NextRequest) {
       },
       graphqlInfo: {
         mutation,
-        variables,
-        response: response.data,
-        success: true,
-        userErrors: result?.userErrors || []
+        successfulVariation: successfulVariation ? {
+          name: successfulVariation.name,
+          variables: successfulVariation.variables
+        } : null,
+        allVariationsTested: variableVariations.map(v => v.name)
       },
       analysis: {
         should_update: product.shopify_inventory_item_id,
         quantity_mismatch: currentQuantity !== databaseQuantity,
-        graphql_success: true,
+        graphql_success: successfulVariation !== null,
         using_correct_location: true,
         actual_update_successful: finalQuantity === databaseQuantity
       }
