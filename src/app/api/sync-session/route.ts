@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
 import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession, SyncSession } from '../../../lib/database';
 
-const BATCH_SIZE = 120; // Conservative batch size based on testing (150 failed, 120 should be safe)
+const BATCH_SIZE = 60; // Reduced batch size to avoid Vercel timeout (300 seconds)
 
 // Extended interface for session results that aren't in the database
 interface ExtendedSyncSession extends SyncSession {
@@ -357,28 +357,46 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
           }
         }
         
-        // Bulk Shopify sync
+        // Bulk Shopify sync with timeout
         if (shopifyUpdates.length > 0) {
           console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
-          const bulkResult = await updateShopifyInventoryBulk(shopifyUpdates);
-          console.log(`Bulk Shopify update completed: ${bulkResult.success} successful, ${bulkResult.failed} failed`);
+          const shopifyTimeoutMs = 90000; // 90 second timeout for Shopify bulk update
+          
+          try {
+            const bulkResult = await Promise.race([
+              updateShopifyInventoryBulk(shopifyUpdates),
+              new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Shopify bulk update timeout')), shopifyTimeoutMs)
+              )
+            ]);
+            console.log(`Bulk Shopify update completed: ${bulkResult.success} successful, ${bulkResult.failed} failed`);
+          } catch (shopifyError) {
+            console.error(`Shopify bulk update failed: ${(shopifyError as Error).message}`);
+            // Continue with other platforms even if Shopify fails
+          }
         }
         
-        // Amazon sync for products in shopifyInventory
+        // Amazon sync for products in shopifyInventory (with timeout protection)
+        const amazonPromises = [];
         for (const [sku, quantity] of Object.entries(shopifyInventory)) {
           const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
           
           if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
-            try {
-              const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
-              console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
-            } catch (err: any) {
-              console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
-            }
+            const amazonPromise = updateAmazonInventory(product.amazon_sku, quantity)
+              .then(result => {
+                console.log(`Amazon sync for SKU ${product.amazon_sku}:`, result);
+                return { success: true, sku: product.amazon_sku, result };
+              })
+              .catch(err => {
+                console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+                return { success: false, sku: product.amazon_sku, error: err.message };
+              });
+            amazonPromises.push(amazonPromise);
           }
         }
         
-        // ShipStation sync for all unique flowtrac SKUs
+        // ShipStation sync for all unique flowtrac SKUs (with timeout protection)
+        const shipstationPromises = [];
         for (const sku of sessionSkus) {
           const bins = batchInventory[sku]?.bins || [];
           let warehouseLocation;
@@ -397,11 +415,30 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
             }
           }
           
-          try {
-            await updateShipStationWarehouseLocation(sku, warehouseLocation);
-          } catch (err: any) {
-            console.error(`Failed to update ShipStation for SKU ${sku}: ${err.message}`);
-          }
+          const shipstationPromise = updateShipStationWarehouseLocation(sku, warehouseLocation)
+            .then(() => {
+              return { success: true, sku };
+            })
+            .catch(err => {
+              console.error(`Failed to update ShipStation for SKU ${sku}: ${err.message}`);
+              return { success: false, sku, error: err.message };
+            });
+          shipstationPromises.push(shipstationPromise);
+        }
+        
+        // Wait for all Amazon and ShipStation updates with timeout
+        const timeoutMs = 60000; // 60 second timeout for platform syncs
+        const platformPromises = [...amazonPromises, ...shipstationPromises];
+        
+        if (platformPromises.length > 0) {
+          console.log(`Waiting for ${platformPromises.length} platform updates with ${timeoutMs}ms timeout...`);
+          const platformResults = await Promise.race([
+            Promise.all(platformPromises),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Platform sync timeout')), timeoutMs)
+            )
+          ]);
+          console.log(`Platform sync completed: ${platformResults.length} updates processed`);
         }
         
         console.log(`Platform sync completed for session ${sessionNumber}`);
@@ -453,32 +490,27 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     session.last_updated = new Date();
     await saveSession(session);
     
-    // Check if we should continue to the next session automatically
-    const shouldContinue = sessionNumber < session.total_batches && 
-                          session.session_results[`session_${sessionNumber}`].status !== 'failed';
+    // Return response for this session (no automatic continuation to avoid timeout)
+    const hasMoreSessions = sessionNumber < session.total_batches;
+    const nextSessionAvailable = hasMoreSessions && session.session_results[`session_${sessionNumber}`].status !== 'failed';
     
-    if (shouldContinue) {
-      console.log(`Session ${sessionNumber} completed successfully, continuing to session ${sessionNumber + 1}`);
-      // Continue to next session automatically
-      return await processSession(session, sessionNumber + 1);
-    } else {
-      console.log(`Session ${sessionNumber} completed. All sessions finished or session failed.`);
-      return NextResponse.json({
-        success: true,
-        session: session,
-        current_session: sessionNumber,
-        session_completed: sessionNumber === session.total_batches,
-        session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
-        next_session_available: false,
-        processing_time_ms: duration,
-        results: {
-          skus_processed: sessionSkus.length,
-          successful: successfulSkus,
-          failed: failedSkus,
-          failed_skus: failedSkuList
-        }
-      });
-    }
+    console.log(`Session ${sessionNumber} completed. Has more sessions: ${hasMoreSessions}, Next available: ${nextSessionAvailable}`);
+    
+    return NextResponse.json({
+      success: true,
+      session: session,
+      current_session: sessionNumber,
+      session_completed: sessionNumber === session.total_batches,
+      session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
+      next_session_available: nextSessionAvailable,
+      processing_time_ms: duration,
+      results: {
+        skus_processed: sessionSkus.length,
+        successful: successfulSkus,
+        failed: failedSkus,
+        failed_skus: failedSkuList
+      }
+    });
     
   } catch (error) {
     console.error(`Error processing session ${sessionNumber}:`, error);
