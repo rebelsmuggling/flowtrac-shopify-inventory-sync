@@ -61,11 +61,35 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get error report if feed failed
+    let errorReport = null;
+    if (feedStatus.processingStatus === 'FATAL' && feedStatus.resultFeedDocumentId) {
+      try {
+        const errorDoc = await sellingPartner.callAPI({
+          operation: 'getFeedDocument',
+          path: {
+            feedDocumentId: feedStatus.resultFeedDocumentId
+          },
+          endpoint: 'feeds'
+        });
+
+        if (errorDoc.url) {
+          const errorResponse = await fetch(errorDoc.url);
+          if (errorResponse.ok) {
+            errorReport = await errorResponse.text();
+          }
+        }
+      } catch (errorReportError) {
+        console.error('Error getting error report:', errorReportError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       feedId,
       feedStatus,
       processingReport,
+      errorReport,
       environment: {
         hasMarketplaceId: !!process.env.AMAZON_MARKETPLACE_ID,
         marketplaceId: process.env.AMAZON_MARKETPLACE_ID
