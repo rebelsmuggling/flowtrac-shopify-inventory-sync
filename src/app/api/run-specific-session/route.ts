@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Bulk Shopify sync
-    let shopifyResult = { success: 0, failed: 0, errors: [] };
+    let shopifyResult: { success: number; failed: number; errors: string[] } = { success: 0, failed: 0, errors: [] };
     if (shopifyUpdates.length > 0) {
       console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
       shopifyResult = await updateShopifyInventoryBulk(shopifyUpdates);
