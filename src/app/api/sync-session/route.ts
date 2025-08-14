@@ -526,7 +526,13 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       console.log(`Auto-triggering next session: ${nextSessionNumber}`);
       
       // Trigger next session in background (don't await to avoid timeout)
-      fetch(`${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session`, {
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'https://flowtrac-shopify-inventory-sync.vercel.app';
+      
+      console.log(`Triggering session ${nextSessionNumber} via ${baseUrl}/api/sync-session`);
+      
+      fetch(`${baseUrl}/api/sync-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -534,6 +540,12 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         body: JSON.stringify({
           action: 'continue'
         })
+      }).then(response => {
+        if (!response.ok) {
+          console.error(`Failed to trigger session ${nextSessionNumber}: ${response.status} ${response.statusText}`);
+        } else {
+          console.log(`Successfully triggered session ${nextSessionNumber}`);
+        }
       }).catch(error => {
         console.error(`Failed to auto-trigger session ${nextSessionNumber}:`, error);
       });
