@@ -66,6 +66,12 @@ async function getVariantAndInventoryItemIdBySku(sku: string): Promise<{ variant
 
 let mantecaLocationId: string | null = null;
 
+// Function to manually set the correct location ID
+export function setMantecaLocationId(locationId: string): void {
+  mantecaLocationId = locationId;
+  console.log(`[Shopify Debug] Manually set Manteca location ID to: ${locationId}`);
+}
+
 export async function getMantecaLocationId(): Promise<string> {
   if (mantecaLocationId) return mantecaLocationId;
   const url = `https://${SHOPIFY_STORE_URL}/admin/api/${SHOPIFY_API_VERSION}/locations.json`;
@@ -76,8 +82,23 @@ export async function getMantecaLocationId(): Promise<string> {
     },
   });
   const locations = response.data.locations;
-  const manteca = locations.find((loc: any) => loc.name.toLowerCase() === 'manteca');
-  if (!manteca) throw new Error('Manteca location not found in Shopify locations');
+  
+  // Try multiple possible names for the Manteca warehouse
+  const manteca = locations.find((loc: any) => 
+    loc.name.toLowerCase().includes('manteca') ||
+    loc.name.toLowerCase().includes('warehouse') ||
+    loc.name.toLowerCase().includes('main') ||
+    loc.name.toLowerCase().includes('primary') ||
+    (loc.name.toLowerCase().includes('location') && !loc.name.toLowerCase().includes('fba')) ||
+    (loc.name.toLowerCase().includes('store') && !loc.name.toLowerCase().includes('fba'))
+  );
+  
+  if (!manteca) {
+    console.error('Available locations:', locations.map((loc: any) => loc.name));
+    throw new Error('Manteca/warehouse location not found in Shopify locations. Available locations: ' + locations.map((loc: any) => loc.name).join(', '));
+  }
+  
+  console.log(`[Shopify Debug] Using location: ${manteca.name} (ID: ${manteca.id})`);
   mantecaLocationId = manteca.id.toString();
   return mantecaLocationId!;
 }
@@ -153,47 +174,51 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
     }
   };
 
-  try {
-    const response = await axios.post(
-      shopifyGraphqlUrl,
-      { query: mutation, variables },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
-        },
+  console.log('[Shopify Debug] GraphQL variables:', JSON.stringify(variables, null, 2));
+
+      try {
+      const response = await axios.post(
+        shopifyGraphqlUrl,
+        { query: mutation, variables },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+          },
+        }
+      );
+
+      console.log('[Shopify Debug] GraphQL response:', JSON.stringify(response.data, null, 2));
+
+      // Check for GraphQL errors
+      if (response.data.errors) {
+        console.error('[Shopify Debug] GraphQL errors:', response.data.errors);
+        return {
+          success: 0,
+          failed: updates.length,
+          errors: response.data.errors.map((error: any) => error.message)
+        };
       }
-    );
 
-    // Check for GraphQL errors
-    if (response.data.errors) {
-      console.error('[Shopify Debug] GraphQL errors:', response.data.errors);
+      // Check for user errors in the response
+      const result = response.data.data?.inventorySetQuantities;
+      if (result?.userErrors?.length > 0) {
+        const userErrors = result.userErrors;
+        console.error('[Shopify Debug] User errors:', userErrors);
+        return {
+          success: 0,
+          failed: updates.length,
+          errors: userErrors.map((error: any) => error.message)
+        };
+      }
+
+      // If no user errors, the batch was successful
+      console.log(`[Shopify Debug] Batch processed successfully: ${updates.length} items updated`);
       return {
-        success: 0,
-        failed: updates.length,
-        errors: response.data.errors.map((error: any) => error.message)
+        success: updates.length,
+        failed: 0,
+        errors: []
       };
-    }
-
-    // Check for user errors in the response
-    const result = response.data.data?.inventorySetQuantities;
-    if (result?.userErrors?.length > 0) {
-      const userErrors = result.userErrors;
-      console.error('[Shopify Debug] User errors:', userErrors);
-      return {
-        success: 0,
-        failed: updates.length,
-        errors: userErrors.map((error: any) => error.message)
-      };
-    }
-
-    // If no user errors, the batch was successful
-    console.log(`[Shopify Debug] Batch processed successfully: ${updates.length} items updated`);
-    return {
-      success: updates.length,
-      failed: 0,
-      errors: []
-    };
 
   } catch (error: any) {
     console.error('[Shopify Debug] GraphQL request failed:', error.response?.data || error.message);
