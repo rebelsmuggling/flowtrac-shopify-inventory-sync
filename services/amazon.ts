@@ -64,10 +64,10 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
   });
 
   try {
-    console.log(`[Amazon Sync] Updating inventory for SKU ${amazonSku} to quantity ${quantity} using POST_INVENTORY_AVAILABILITY_DATA feed`);
+    console.log(`[Amazon Sync] Updating inventory for SKU ${amazonSku} to quantity ${quantity} using POST_FLAT_FILE_INVLOADER_DATA feed`);
 
-    // Use POST_INVENTORY_AVAILABILITY_DATA feed for inventory updates
-    // This is the correct feed type for inventory updates
+    // Use POST_FLAT_FILE_INVLOADER_DATA feed for inventory updates
+    // This is the legacy but reliable feed type for inventory updates
     
     // 1. Create feed content - Tab-delimited format for POST_INVENTORY_AVAILABILITY_DATA
     // Required columns: sku, quantity, fulfillment-center-id, handling-time
@@ -101,7 +101,7 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
     const createFeedParams = {
       operation: 'createFeed',
       body: {
-        feedType: 'POST_INVENTORY_AVAILABILITY_DATA',
+        feedType: 'POST_FLAT_FILE_INVLOADER_DATA',
         marketplaceIds: [process.env.AMAZON_MARKETPLACE_ID],
         inputFeedDocumentId: feedDocumentId
       },
@@ -169,12 +169,12 @@ async function updateAmazonInventoryLegacy(sellingPartner: any, amazonSku: strin
       },
       endpoint: 'feeds'
     };
-    console.log('[Amazon Sync] Legacy createFeed params:', JSON.stringify(createFeedParams, null, 2));
+    console.log('[Amazon Sync] Legacy inventory feed params:', JSON.stringify(createFeedParams, null, 2));
     const submitFeedRes = await sellingPartner.callAPI(createFeedParams);
-    console.log('[Amazon Sync] Legacy createFeed response:', submitFeedRes);
+    console.log('[Amazon Sync] Legacy inventory feed response:', submitFeedRes);
     const { feedId } = submitFeedRes;
     console.log(`[Amazon Sync] Submitted legacy inventory feed for SKU ${amazonSku}, feedId: ${feedId}`);
-    return { success: true, feedId, method: 'legacy' };
+    return { success: true, feedId, method: 'legacy_inventory_feed' };
   } catch (error: any) {
     console.error('[Amazon Sync] Legacy method also failed:', error);
     if (error && error.response) {
