@@ -262,15 +262,13 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     
     console.log(`Session ${sessionNumber}: Processing ${sessionSkus.length} SKUs`);
     
-    // Check Flowtrac credentials
-    const hasFlowtracCredentials = process.env.FLOWTRAC_API_URL && process.env.FLOWTRAC_BADGE && process.env.FLOWTRAC_PIN;
-    
-    if (!hasFlowtracCredentials) {
-      throw new Error('Flowtrac credentials not configured');
+    // Check database connection (Flowtrac credentials not needed since we're using database)
+    if (!process.env.POSTGRES_URL) {
+      throw new Error('Database connection not configured');
     }
     
-    // Process SKUs
-    const { fetchFlowtracInventoryWithBins } = await import('../../../../services/flowtrac');
+    // Process SKUs using database instead of Flowtrac API
+    const { getFlowtracInventory } = await import('../../../lib/database');
     
     const startTime = Date.now();
     let successfulSkus = 0;
@@ -278,8 +276,28 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     let failedSkuList: string[] = [];
     
     try {
-      // Process batch
-      const batchInventory = await fetchFlowtracInventoryWithBins(sessionSkus);
+      // Get inventory from database
+      const inventoryResult = await getFlowtracInventory(sessionSkus, 'Manteca');
+      
+      if (!inventoryResult.success) {
+        throw new Error(`Failed to get inventory from database: ${inventoryResult.error}`);
+      }
+      
+      // Convert database records to expected format
+      const batchInventory: Record<string, { quantity: number, bins: string[] }> = {};
+      if (inventoryResult.data) {
+        for (const record of inventoryResult.data) {
+          batchInventory[record.sku] = {
+            quantity: record.quantity,
+            bins: record.bins || []
+          };
+        }
+      }
+      
+      console.log(`Fetched inventory from database for session ${sessionNumber}:`, { 
+        recordsFound: inventoryResult.data?.length || 0,
+        totalSkus: sessionSkus.length 
+      });
       
       // Count results
       for (const sku of sessionSkus) {
@@ -294,40 +312,16 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       console.log(`Session ${sessionNumber} completed: ${successfulSkus} successful, ${failedSkus} failed`);
       
     } catch (batchError) {
-      console.error(`Session ${sessionNumber} failed, trying individual SKUs:`, (batchError as Error).message);
+      console.error(`Session ${sessionNumber} failed:`, (batchError as Error).message);
       
-      // Try individual SKUs as fallback
-      const individualInventory: Record<string, any> = {};
+      // All SKUs failed if database query failed
+      failedSkus = sessionSkus.length;
+      failedSkuList = [...sessionSkus];
       
-      for (const sku of sessionSkus) {
-        try {
-          console.log(`Processing individual SKU: ${sku}`);
-          const singleSkuInventory = await fetchFlowtracInventoryWithBins([sku]);
-          
-          if (singleSkuInventory[sku] && singleSkuInventory[sku].quantity !== undefined) {
-            individualInventory[sku] = singleSkuInventory[sku];
-            successfulSkus++;
-            console.log(`✓ SKU ${sku} successful`);
-          } else {
-            failedSkus++;
-            failedSkuList.push(sku);
-            console.log(`✗ SKU ${sku} failed - not found`);
-          }
-          
-          // Small delay between individual SKUs
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-        } catch (skuError) {
-          failedSkus++;
-          failedSkuList.push(sku);
-          console.log(`✗ SKU ${sku} failed - error: ${(skuError as Error).message}`);
-        }
-      }
-      
-      console.log(`Session ${sessionNumber} individual fallback completed: ${successfulSkus} successful, ${failedSkus} failed`);
+      console.log(`Session ${sessionNumber} failed: ${successfulSkus} successful, ${failedSkus} failed`);
       
       // Update session with error
-      session.session_results[`session_${sessionNumber}`].error_message = `Batch failed, used individual fallback: ${(batchError as Error).message}`;
+      session.session_results[`session_${sessionNumber}`].error_message = `Database query failed: ${(batchError as Error).message}`;
     }
     
     const endTime = Date.now();
