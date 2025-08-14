@@ -55,6 +55,23 @@ export async function POST(request: NextRequest) {
           console.log(`Calculated bundle quantity for ${sku}: ${databaseQuantity} (from ${quantities.join(', ')})`);
         }
       }
+      
+      // Check if bundle has shopify_inventory_item_id
+      if (!product.shopify_inventory_item_id) {
+        return NextResponse.json({
+          success: true,
+          sku,
+          message: `Bundle SKU ${sku} has no shopify_inventory_item_id - cannot update in Shopify`,
+          bundleInfo: {
+            componentCount: product.bundle_components.length,
+            components: product.bundle_components,
+            calculatedQuantity: databaseQuantity,
+            hasShopifyId: false
+          },
+          databaseQuantity,
+          currentQuantity: 0
+        });
+      }
     }
     
     console.log(`Database quantity for ${sku}: ${databaseQuantity}`);
