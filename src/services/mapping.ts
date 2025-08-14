@@ -27,9 +27,6 @@ export interface MappingFile {
  */
 export class MappingService {
   private static instance: MappingService;
-  private cachedMapping: MappingFile | null = null;
-  private lastCacheTime: number = 0;
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   private constructor() {}
 
@@ -41,21 +38,13 @@ export class MappingService {
   }
 
   /**
-   * Get mapping data with priority: Database > Imported > File
+   * Get mapping data with priority: Database > Imported > File (always fresh, no cache)
    */
   public async getMapping(): Promise<{ mapping: MappingFile; source: string }> {
-    // Check cache first
-    const now = Date.now();
-    if (this.cachedMapping && (now - this.lastCacheTime) < this.CACHE_DURATION) {
-      return { mapping: this.cachedMapping, source: 'cache' };
-    }
-
-    // 1. Try database first
+    // 1. Try database first (always fresh)
     try {
       const dbResult = await getMapping();
       if (dbResult.success && dbResult.data) {
-        this.cachedMapping = dbResult.data;
-        this.lastCacheTime = now;
         return { mapping: dbResult.data, source: 'database' };
       }
     } catch (error) {
@@ -66,8 +55,6 @@ export class MappingService {
     try {
       const importedMapping = getImportedMapping();
       if (importedMapping) {
-        this.cachedMapping = importedMapping;
-        this.lastCacheTime = now;
         return { mapping: importedMapping, source: 'imported' };
       }
     } catch (error) {
@@ -79,8 +66,6 @@ export class MappingService {
       const mappingPath = path.join(process.cwd(), 'mapping.json');
       const fileContent = fs.readFileSync(mappingPath, 'utf-8');
       const mapping = JSON.parse(fileContent);
-      this.cachedMapping = mapping;
-      this.lastCacheTime = now;
       return { mapping, source: 'file' };
     } catch (error) {
       throw new Error(`Failed to load mapping from any source: ${error}`);
@@ -94,9 +79,6 @@ export class MappingService {
     try {
       const result = await updateMapping(mapping, updatedBy);
       if (result.success) {
-        // Clear cache to force refresh
-        this.cachedMapping = null;
-        this.lastCacheTime = 0;
         return { success: true, version: result.data?.version };
       } else {
         return { success: false, error: result.error };
@@ -210,9 +192,6 @@ export class MappingService {
     if (updated) {
       const result = await this.updateMapping(mapping, 'flowtrac_service');
       if (result.success) {
-        // Clear cache
-        this.cachedMapping = null;
-        this.lastCacheTime = 0;
         return true;
       }
     }
@@ -221,19 +200,10 @@ export class MappingService {
   }
 
   /**
-   * Clear the cache
-   */
-  public clearCache(): void {
-    this.cachedMapping = null;
-    this.lastCacheTime = 0;
-  }
-
-  /**
-   * Get mapping data with cache bypass (always fetch fresh data)
+   * Get mapping data (always fresh, no cache)
    */
   public async getMappingFresh(): Promise<{ mapping: MappingFile; source: string }> {
-    // Clear cache to force fresh fetch
-    this.clearCache();
+    // Always fetch fresh data (no cache)
     return this.getMapping();
   }
 }
