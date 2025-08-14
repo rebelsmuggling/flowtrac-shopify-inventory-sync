@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setMantecaLocationId } from '../../../services/shopify';
+import { setMantecaLocationId } from '../../../../services/shopify';
 
 export async function POST(request: NextRequest) {
   try {
