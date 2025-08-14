@@ -65,12 +65,6 @@ export async function GET(request: NextRequest) {
     const graphqlMutation = `
       mutation inventorySetQuantities($input: InventorySetQuantitiesInput!) {
         inventorySetQuantities(input: $input) {
-          inventoryLevels {
-            available
-            location {
-              id
-            }
-          }
           userErrors {
             field
             message
@@ -87,7 +81,10 @@ export async function GET(request: NextRequest) {
             locationId: `gid://shopify/Location/${shopifyLocationId}`,
             quantity: inventoryRecord.quantity
           }
-        ]
+        ],
+        reason: "correction",
+        name: "available",
+        ignoreCompareQuantity: true
       }
     };
     
