@@ -16,6 +16,14 @@ export async function GET(request: NextRequest) {
     const mapping = mappingResult.data;
     console.log('Using database mapping data for export');
 
+    // Ensure mapping has products
+    if (!mapping || !mapping.products || !Array.isArray(mapping.products)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid mapping data structure' 
+      }, { status: 500 });
+    }
+
     // Convert to CSV format for Google Sheets
     const csvRows = [];
     
