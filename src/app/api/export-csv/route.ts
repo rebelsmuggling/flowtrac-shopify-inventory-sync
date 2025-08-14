@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { mappingService } from '../../../services/mapping';
+
 export async function GET(request: NextRequest) {
   try {
-    // Load current mapping
-    const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    // Load current mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for CSV export`);
     
     // Convert to CSV format
     const headers = ['shopify_sku', 'flowtrac_sku', 'product_name', 'bundle_components'];

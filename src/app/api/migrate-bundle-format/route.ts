@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { mappingService } from '../../../services/mapping';
+
 export async function POST(request: NextRequest) {
   try {
-    // Load mapping.json
-    const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for bundle format migration`);
     
     let migratedCount = 0;
     
@@ -15,7 +18,7 @@ export async function POST(request: NextRequest) {
           .join('; ');
         
         // Store the simple format in a temporary field for reference
-        product.bundle_components_simple = simpleFormat;
+        (product as any).bundle_components_simple = simpleFormat;
         migratedCount++;
         
         console.log(`Migrated ${product.shopify_sku}: ${JSON.stringify(product.bundle_components)} → "${simpleFormat}"`);
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Add migration timestamp
-    mapping.lastMigration = new Date().toISOString();
+    (mapping as any).lastMigration = new Date().toISOString();
     
     // Write back to mapping.json
     const result = await mappingService.updateMapping(mapping, 'api_update');

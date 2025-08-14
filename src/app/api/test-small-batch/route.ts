@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 export async function GET(request: NextRequest) {
   try {
     console.log('Testing small batch processing...');
     
-    // Load mapping
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      mapping = importedMapping;
-    } else {
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for small batch test`);
     
     // Get just 3 SKUs for testing
     const testSkus = [];

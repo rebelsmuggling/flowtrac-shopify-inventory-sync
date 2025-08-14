@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { mappingService } from '../../../services/mapping';
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -27,8 +29,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Load existing mapping
-    const existingMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    // Load existing mapping using the mapping service
+    const { mapping: existingMapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for CSV import`);
     
     // Parse CSV data
     const newProducts = [];
@@ -56,8 +59,11 @@ export async function POST(request: NextRequest) {
     // Add new products to existing mapping
     existingMapping.products.push(...newProducts);
     
-    // Save updated mapping
-    fs.writeFileSync(mappingPath, JSON.stringify(existingMapping, null, 2));
+    // Save updated mapping using the mapping service
+    const result = await mappingService.updateMapping(existingMapping, 'csv_import');
+    if (!result.success) {
+      throw new Error(`Failed to update mapping: ${result.error}`);
+    }
     
     return NextResponse.json({ 
       success: true, 

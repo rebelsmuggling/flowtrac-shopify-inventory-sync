@@ -6,7 +6,8 @@ import { fetchFlowtracInventory } from '../../services/flowtrac';
 async function test() {
   // 1. Load mapping.json
   const mappingPath = path.resolve(__dirname, '../../../mapping.json');
-  const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data`);
 
   // 2. Collect all SKUs (simple and bundle components)
   const skus = new Set<string>();

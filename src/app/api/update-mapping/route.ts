@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 
 export async function POST(request: NextRequest) {
   try {

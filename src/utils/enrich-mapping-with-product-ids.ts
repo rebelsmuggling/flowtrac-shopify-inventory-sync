@@ -86,10 +86,6 @@ export async function enrichMappingWithShopifyVariantAndInventoryIds() {
       } else {
         console.error('Failed to update mapping:', result.error);
       }
-        } catch (fileError) {
-          console.log('Could not write to file system (expected in Vercel):', fileError);
-        }
-      }
     } else {
       console.log('No updates needed. All SKUs already have product_ids.');
     }
@@ -101,7 +97,8 @@ export async function enrichMappingWithShopifyVariantAndInventoryIds() {
 
 async function main() {
   // 1. Load mapping.json
-  const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data`);
 
   // 2. Authenticate and fetch all Flowtrac products
   const flowAuthCookie = await getFlowtracAuthCookie();
@@ -118,7 +115,7 @@ async function main() {
   const updated = updateMappingWithProductIds(mapping, skuToProductId);
 
   if (updated) {
-    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+    await mappingService.updateMapping(mapping, 'api_update');
     console.log('mapping.json updated with Flowtrac product_ids.');
   } else {
     console.log('No updates needed. All SKUs already have product_ids.');

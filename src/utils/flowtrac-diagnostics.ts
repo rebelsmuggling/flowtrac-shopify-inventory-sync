@@ -10,7 +10,7 @@ async function main() {
 
   // 1. Load mapping.json and extract all mapped SKUs
   const mappingPath = path.resolve(__dirname, '../../../mapping.json');
-  const mapping: MappingFile = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+  const mapping: MappingFile = (await mappingService.getMapping()).mapping;
   const mappedSkus = new Set<string>();
   for (const entry of mapping.products) {
     if ('flowtrac_sku' in entry) mappedSkus.add(entry.flowtrac_sku);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 import { 
   initializeDatabase, 
   createSyncSession, 
@@ -118,23 +118,9 @@ async function startBatchProcessing() {
     }
     console.log('Database initialized successfully');
     
-    // Load mapping - Always use the latest mapping.json from the repository
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Using imported mapping data');
-      mapping = importedMapping;
-    } else {
-      console.log('Loading mapping.json from repository');
-      const mappingPath = require('path').join(process.cwd(), 'mapping.json');
-      mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
-      
-      // Store the mapping in the imported mapping store for future use
-      const { setImportedMapping } = require('../../../utils/imported-mapping-store');
-      await mappingService.updateMapping(mapping, 'api_update');
-      console.log('Mapping loaded and stored in imported mapping store');
-    }
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for batch processing`);
     
     // Get all SKUs from current mapping
     const allSkus = getAllSkus(mapping);
@@ -215,23 +201,9 @@ async function continueBatchProcessing(sessionId: string) {
       });
     }
     
-    // Load mapping for SKU list - Always use the latest mapping.json from the repository
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Using imported mapping data for continue operation');
-      mapping = importedMapping;
-    } else {
-      console.log('Loading mapping.json from repository for continue operation');
-      const mappingPath = require('path').join(process.cwd(), 'mapping.json');
-      mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
-      
-      // Store the mapping in the imported mapping store for future use
-      const { setImportedMapping } = require('../../../utils/imported-mapping-store');
-      await mappingService.updateMapping(mapping, 'api_update');
-      console.log('Mapping loaded and stored in imported mapping store for continue operation');
-    }
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for continue operation`);
     
     const allSkus = getAllSkus(mapping);
     const nextBatch = session.current_batch + 1;
@@ -531,15 +503,9 @@ async function refreshDatabase() {
     }
     console.log('Database refreshed successfully');
 
-    // Reload mapping
-    let mapping;
-    const importedMapping = getImportedMapping();
-    if (importedMapping) {
-      mapping = importedMapping;
-    } else {
-      const mappingPath = require('path').join(process.cwd(), 'mapping.json');
-      mapping = JSON.parse(require('fs').readFileSync(mappingPath, 'utf-8'));
-    }
+    // Reload mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for database refresh`);
 
     // Get all SKUs from mapping
     const allSkus = getAllSkus(mapping);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -7,34 +7,9 @@ export async function GET(request: NextRequest) {
     
     console.log(`Testing batch performance with ${batchSize} SKUs...`);
     
-    // Load mapping (try imported mapping first, then fallback to file)
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Using imported mapping data for batch test');
-      mapping = importedMapping;
-    } else {
-      // Try to load from mapping API first
-      try {
-        const mappingRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/mapping`);
-        if (mappingRes.ok) {
-          const mappingData = await mappingRes.json();
-          if (mappingData.success) {
-            console.log('Using mapping API data for batch test');
-            mapping = mappingData.mapping;
-          }
-        }
-      } catch (apiError) {
-        console.log('Mapping API not available, falling back to file');
-      }
-      
-      // Fallback to file system
-      if (!mapping) {
-        console.log('Using file mapping data for batch test');
-        mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-      }
-    }
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for batch test`);
     
     if (!mapping) {
       return NextResponse.json({ error: 'No mapping data available' }, { status: 500 });

@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 export async function GET(request: NextRequest) {
   try {
     console.log('Testing mapping product IDs...');
     
-    // Load mapping
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      mapping = importedMapping;
-    } else {
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
+    // Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for product ID test`);
     
     // Analyze mapping for product IDs
     const analysis = {
