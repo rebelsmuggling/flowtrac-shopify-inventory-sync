@@ -68,7 +68,7 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
 
     // Use the new JSON-based Listings Items API to update inventory
     const updateInventoryParams = {
-      operation: 'patchListingsItem',
+      operation: 'patchCatalogItem',
       path: {
         sellerId: process.env.AMAZON_SELLER_ID,
         sku: amazonSku
@@ -94,7 +94,7 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
           }
         }
       ],
-      endpoint: 'listings'
+      endpoint: 'catalog'
     };
 
     console.log('[Amazon Sync] Update inventory params:', JSON.stringify(updateInventoryParams, null, 2));

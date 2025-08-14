@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Test the JSON API call with detailed error logging
     const updateInventoryParams = {
-      operation: 'patchListingsItem',
+      operation: 'patchCatalogItem',
       path: {
         sellerId: process.env.AMAZON_SELLER_ID,
         sku: sku
