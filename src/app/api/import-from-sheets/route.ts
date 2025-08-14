@@ -122,6 +122,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    // Ensure result.data exists
+    if (!result.data) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Database update succeeded but no data returned' 
+      }, { status: 500 });
+    }
+
     return NextResponse.json({ 
       success: true, 
       message: `Successfully imported ${products.length} products from Google Sheets to database.`,
