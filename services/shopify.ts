@@ -64,7 +64,7 @@ async function getVariantAndInventoryItemIdBySku(sku: string): Promise<{ variant
   return { variantId: null, inventoryItemId: null };
 }
 
-let mantecaLocationId: string | null = null;
+let mantecaLocationId: string | null = '101557567797'; // Set to correct Manteca location ID
 
 // Function to manually set the correct location ID
 export function setMantecaLocationId(locationId: string): void {
@@ -73,34 +73,10 @@ export function setMantecaLocationId(locationId: string): void {
 }
 
 export async function getMantecaLocationId(): Promise<string> {
-  if (mantecaLocationId) return mantecaLocationId;
-  const url = `https://${SHOPIFY_STORE_URL}/admin/api/${SHOPIFY_API_VERSION}/locations.json`;
-  const response = await axios.get(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
-    },
-  });
-  const locations = response.data.locations;
-  
-  // Try multiple possible names for the Manteca warehouse
-  const manteca = locations.find((loc: any) => 
-    loc.name.toLowerCase().includes('manteca') ||
-    loc.name.toLowerCase().includes('warehouse') ||
-    loc.name.toLowerCase().includes('main') ||
-    loc.name.toLowerCase().includes('primary') ||
-    (loc.name.toLowerCase().includes('location') && !loc.name.toLowerCase().includes('fba')) ||
-    (loc.name.toLowerCase().includes('store') && !loc.name.toLowerCase().includes('fba'))
-  );
-  
-  if (!manteca) {
-    console.error('Available locations:', locations.map((loc: any) => loc.name));
-    throw new Error('Manteca/warehouse location not found in Shopify locations. Available locations: ' + locations.map((loc: any) => loc.name).join(', '));
-  }
-  
-  console.log(`[Shopify Debug] Using location: ${manteca.name} (ID: ${manteca.id})`);
-  mantecaLocationId = manteca.id.toString();
-  return mantecaLocationId!;
+  // Return the correct Manteca location ID directly
+  const correctLocationId = '101557567797';
+  console.log(`[Shopify Debug] Using correct Manteca location ID: ${correctLocationId}`);
+  return correctLocationId;
 }
 
 function extractIdFromGid(gid: string): string {
