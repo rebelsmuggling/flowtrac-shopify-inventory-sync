@@ -311,6 +311,106 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       
       console.log(`Session ${sessionNumber} completed: ${successfulSkus} successful, ${failedSkus} failed`);
       
+      // Now perform the actual sync to Shopify/Amazon/ShipStation
+      console.log(`Starting sync to platforms for session ${sessionNumber}...`);
+      
+      try {
+        // Build shopifyInventory map (simple and bundle SKUs)
+        const shopifyInventory: Record<string, number> = {};
+        for (const product of mapping.products) {
+          if (Array.isArray(product.bundle_components) && product.shopify_sku) {
+            const quantities = product.bundle_components.map((comp: any) => {
+              const available = batchInventory[comp.flowtrac_sku]?.quantity || 0;
+              return Math.floor(available / comp.quantity);
+            });
+            shopifyInventory[product.shopify_sku] = quantities.length > 0 ? Math.min(...quantities) : 0;
+          } else if (product.shopify_sku && product.flowtrac_sku) {
+            shopifyInventory[product.shopify_sku] = batchInventory[product.flowtrac_sku]?.quantity || 0;
+          }
+        }
+        
+        console.log(`Built shopifyInventory map with ${Object.keys(shopifyInventory).length} SKUs`);
+        
+        // Import sync services
+        const { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventoryBulk } = await import('../../../../services/shopify');
+        const { updateAmazonInventory } = await import('../../../../services/amazon');
+        const { updateShipStationWarehouseLocation } = await import('../../../../services/shipstation');
+        
+        // Self-heal: Enrich mapping with missing Shopify variant and inventory item IDs
+        await enrichMappingWithShopifyVariantAndInventoryIds();
+        
+        // Reload mapping after enrichment
+        const { mapping: updatedMapping } = await mappingService.getMappingFresh();
+        
+        // Prepare Shopify bulk updates
+        const shopifyUpdates: Array<{ inventoryItemId: string; quantity: number; sku: string }> = [];
+        
+        // Collect all Shopify updates
+        for (const [sku, quantity] of Object.entries(shopifyInventory)) {
+          const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
+          const inventoryItemId = product?.shopify_inventory_item_id;
+          
+          if (!inventoryItemId) {
+            console.error(`No shopify_inventory_item_id for SKU ${sku}`);
+          } else {
+            shopifyUpdates.push({ inventoryItemId, quantity, sku });
+          }
+        }
+        
+        // Bulk Shopify sync
+        if (shopifyUpdates.length > 0) {
+          console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
+          const bulkResult = await updateShopifyInventoryBulk(shopifyUpdates);
+          console.log(`Bulk Shopify update completed: ${bulkResult.success} successful, ${bulkResult.failed} failed`);
+        }
+        
+        // Amazon sync for products in shopifyInventory
+        for (const [sku, quantity] of Object.entries(shopifyInventory)) {
+          const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
+          
+          if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
+            try {
+              const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
+              console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
+            } catch (err: any) {
+              console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+            }
+          }
+        }
+        
+        // ShipStation sync for all unique flowtrac SKUs
+        for (const sku of sessionSkus) {
+          const bins = batchInventory[sku]?.bins || [];
+          let warehouseLocation;
+          if (!bins.length) {
+            warehouseLocation = 'OutofStock';
+          } else {
+            warehouseLocation = bins.join(',');
+            if (warehouseLocation.length > 100) {
+              let truncated = '';
+              for (const bin of bins) {
+                if (truncated.length + bin.length + (truncated ? 1 : 0) > 100) break;
+                if (truncated) truncated += ',';
+                truncated += bin;
+              }
+              warehouseLocation = truncated;
+            }
+          }
+          
+          try {
+            await updateShipStationWarehouseLocation(sku, warehouseLocation);
+          } catch (err: any) {
+            console.error(`Failed to update ShipStation for SKU ${sku}: ${err.message}`);
+          }
+        }
+        
+        console.log(`Platform sync completed for session ${sessionNumber}`);
+        
+      } catch (syncError) {
+        console.error(`Platform sync failed for session ${sessionNumber}:`, (syncError as Error).message);
+        // Don't fail the session for sync errors, just log them
+      }
+      
     } catch (batchError) {
       console.error(`Session ${sessionNumber} failed:`, (batchError as Error).message);
       
