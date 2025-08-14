@@ -70,7 +70,8 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
     // This is the correct feed type for inventory updates
     
     // 1. Create feed content - Tab-delimited format for POST_INVENTORY_AVAILABILITY_DATA
-    const feedContent = `sku\tquantity\thandling-time\n${amazonSku}\t${quantity}\t2\n`;
+    // Required columns: sku, quantity, fulfillment-center-id, handling-time
+    const feedContent = `sku\tquantity\tfulfillment-center-id\thandling-time\n${amazonSku}\t${quantity}\tAMAZON_NA\t2\n`;
 
     console.log('[Amazon Sync] Inventory feed content:', feedContent);
 
