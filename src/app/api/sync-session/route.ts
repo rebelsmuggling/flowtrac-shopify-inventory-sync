@@ -252,8 +252,8 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     session.session_results[`session_${sessionNumber}`].status = 'in_progress';
     await saveSession(session);
     
-    // Load mapping using the mapping service
-    const { mapping, source } = await mappingService.getMapping();
+    // Load mapping using the mapping service (fresh data, no cache)
+    const { mapping, source } = await mappingService.getMappingFresh();
     console.log(`Using ${source} mapping data for session processing`);
     
     // Get SKUs for this session
@@ -353,22 +353,32 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     session.last_updated = new Date();
     await saveSession(session);
     
-    return NextResponse.json({
-      success: true,
-      session: session,
-      current_session: sessionNumber,
-      session_completed: sessionNumber === session.total_batches,
-      session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
-      next_session_available: sessionNumber < session.total_batches && 
-                              session.session_results[`session_${sessionNumber}`].status !== 'failed',
-      processing_time_ms: duration,
-      results: {
-        skus_processed: sessionSkus.length,
-        successful: successfulSkus,
-        failed: failedSkus,
-        failed_skus: failedSkuList
-      }
-    });
+    // Check if we should continue to the next session automatically
+    const shouldContinue = sessionNumber < session.total_batches && 
+                          session.session_results[`session_${sessionNumber}`].status !== 'failed';
+    
+    if (shouldContinue) {
+      console.log(`Session ${sessionNumber} completed successfully, continuing to session ${sessionNumber + 1}`);
+      // Continue to next session automatically
+      return await processSession(session, sessionNumber + 1);
+    } else {
+      console.log(`Session ${sessionNumber} completed. All sessions finished or session failed.`);
+      return NextResponse.json({
+        success: true,
+        session: session,
+        current_session: sessionNumber,
+        session_completed: sessionNumber === session.total_batches,
+        session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
+        next_session_available: false,
+        processing_time_ms: duration,
+        results: {
+          skus_processed: sessionSkus.length,
+          successful: successfulSkus,
+          failed: failedSkus,
+          failed_skus: failedSkuList
+        }
+      });
+    }
     
   } catch (error) {
     console.error(`Error processing session ${sessionNumber}:`, error);

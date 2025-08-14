@@ -227,6 +227,15 @@ export class MappingService {
     this.cachedMapping = null;
     this.lastCacheTime = 0;
   }
+
+  /**
+   * Get mapping data with cache bypass (always fetch fresh data)
+   */
+  public async getMappingFresh(): Promise<{ mapping: MappingFile; source: string }> {
+    // Clear cache to force fresh fetch
+    this.clearCache();
+    return this.getMapping();
+  }
 }
 
 // Export singleton instance
