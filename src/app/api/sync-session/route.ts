@@ -62,7 +62,13 @@ async function clearSession(): Promise<void> {
 function getAllSkus(mapping: any): string[] {
   const skus = new Set<string>();
   for (const product of mapping.products) {
+    // Add flowtrac_sku if it exists
     if (product.flowtrac_sku) skus.add(product.flowtrac_sku);
+    
+    // Add shopify_sku if it exists (for products without flowtrac_sku)
+    if (product.shopify_sku) skus.add(product.shopify_sku);
+    
+    // Add bundle component SKUs
     if (Array.isArray(product.bundle_components)) {
       for (const comp of product.bundle_components) {
         if (comp.flowtrac_sku) skus.add(comp.flowtrac_sku);
@@ -319,13 +325,21 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         const shopifyInventory: Record<string, number> = {};
         for (const product of mapping.products) {
           if (Array.isArray(product.bundle_components) && product.shopify_sku) {
+            // Bundle product - calculate based on component availability
             const quantities = product.bundle_components.map((comp: any) => {
               const available = batchInventory[comp.flowtrac_sku]?.quantity || 0;
               return Math.floor(available / comp.quantity);
             });
             shopifyInventory[product.shopify_sku] = quantities.length > 0 ? Math.min(...quantities) : 0;
-          } else if (product.shopify_sku && product.flowtrac_sku) {
-            shopifyInventory[product.shopify_sku] = batchInventory[product.flowtrac_sku]?.quantity || 0;
+          } else if (product.shopify_sku) {
+            // Simple product - check both flowtrac_sku and shopify_sku
+            let quantity = 0;
+            if (product.flowtrac_sku && batchInventory[product.flowtrac_sku]) {
+              quantity = batchInventory[product.flowtrac_sku].quantity;
+            } else if (batchInventory[product.shopify_sku]) {
+              quantity = batchInventory[product.shopify_sku].quantity;
+            }
+            shopifyInventory[product.shopify_sku] = quantity;
           }
         }
         
