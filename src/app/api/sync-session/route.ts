@@ -18,13 +18,23 @@ interface ExtendedSyncSession extends SyncSession {
 
 async function loadSession(): Promise<ExtendedSyncSession | null> {
   try {
-    const result = await getSyncSession();
-    if (result.success && result.data) {
-      // Convert database session to extended session
-      const dbSession = result.data as SyncSession;
+    const dbSession = await getSyncSession();
+    if (dbSession && dbSession.success && dbSession.data) {
+      // Initialize session results for all sessions
+      const sessionResults: Record<string, any> = {};
+      for (let i = 1; i <= dbSession.data.total_batches; i++) {
+        sessionResults[`session_${i}`] = {
+          status: 'pending',
+          skus_processed: 0,
+          successful: 0,
+          failed: 0,
+          failed_skus: []
+        };
+      }
+      
       return {
-        ...dbSession,
-        session_results: {} // Initialize empty session results
+        ...dbSession.data,
+        session_results: sessionResults
       } as ExtendedSyncSession;
     }
   } catch (error) {
