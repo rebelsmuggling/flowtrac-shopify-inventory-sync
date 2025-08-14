@@ -64,57 +64,80 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
   });
 
   try {
-    console.log(`[Amazon Sync] Updating inventory for SKU ${amazonSku} to quantity ${quantity} using JSON Listings Items API`);
+    console.log(`[Amazon Sync] Updating inventory for SKU ${amazonSku} to quantity ${quantity} using JSON_LISTINGS_FEED`);
 
-    // Use the new JSON-based Listings Items API to update inventory
-    const updateInventoryParams = {
-      operation: 'patchCatalogItem',
-      path: {
-        sellerId: process.env.AMAZON_SELLER_ID,
-        sku: amazonSku
-      },
-      query: {
-        marketplaceIds: [process.env.AMAZON_MARKETPLACE_ID],
-        issueLocale: 'en_US'
-      },
-      body: [
+    // Use JSON_LISTINGS_FEED instead of direct API calls
+    // This is the recommended approach for the new JSON-based feeds
+    
+    // 1. Create JSON feed content
+    const feedContent = JSON.stringify({
+      "listings": [
         {
-          op: 'replace',
-          path: '/attributes/inventory',
-          value: {
-            quantity: quantity
-          }
-        },
-        {
-          op: 'replace',
-          path: '/attributes/fulfillment_availability',
-          value: {
-            fulfillment_channel_code: 'DEFAULT',
-            handling_time: 2
+          "sku": amazonSku,
+          "attributes": {
+            "inventory": {
+              "quantity": quantity
+            },
+            "fulfillment_availability": {
+              "fulfillment_channel_code": "DEFAULT",
+              "handling_time": 2
+            }
           }
         }
-      ],
-      endpoint: 'catalog'
-    };
+      ]
+    });
 
-    console.log('[Amazon Sync] Update inventory params:', JSON.stringify(updateInventoryParams, null, 2));
-    
-    const response = await sellingPartner.callAPI(updateInventoryParams);
-    console.log('[Amazon Sync] Update inventory response:', JSON.stringify(response, null, 2));
-    
-    console.log(`[Amazon Sync] Successfully updated inventory for SKU ${amazonSku} to quantity ${quantity}`);
-    return { success: true, sku: amazonSku, quantity: quantity };
+    console.log('[Amazon Sync] JSON feed content:', feedContent);
+
+    // 2. Create a feed document
+    const createDocRes = await sellingPartner.callAPI({
+      operation: 'createFeedDocument',
+      body: {
+        contentType: 'application/json'
+      },
+      endpoint: 'feeds'
+    });
+    const { feedDocumentId, url } = createDocRes;
+
+    // 3. Upload the JSON feed file
+    const uploadRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: Buffer.from(feedContent, 'utf-8')
+    });
+    if (!uploadRes.ok) {
+      throw new Error(`Failed to upload JSON feed document: ${uploadRes.status} ${uploadRes.statusText}`);
+    }
+
+    // 4. Submit the JSON_LISTINGS_FEED
+    const createFeedParams = {
+      operation: 'createFeed',
+      body: {
+        feedType: 'JSON_LISTINGS_FEED',
+        marketplaceIds: [process.env.AMAZON_MARKETPLACE_ID],
+        inputFeedDocumentId: feedDocumentId
+      },
+      endpoint: 'feeds'
+    };
+    console.log('[Amazon Sync] JSON_LISTINGS_FEED params:', JSON.stringify(createFeedParams, null, 2));
+    const submitFeedRes = await sellingPartner.callAPI(createFeedParams);
+    console.log('[Amazon Sync] JSON_LISTINGS_FEED response:', submitFeedRes);
+    const { feedId } = submitFeedRes;
+    console.log(`[Amazon Sync] Submitted JSON_LISTINGS_FEED for SKU ${amazonSku}, feedId: ${feedId}`);
+    return { success: true, feedId, method: 'json_feed' };
     
   } catch (error: any) {
-    console.error('[Amazon Sync] Error updating inventory:', error);
+    console.error('[Amazon Sync] Error updating inventory with JSON feed:', error);
     if (error && error.response) {
       console.error('[Amazon Sync] Error response data:', error.response.data);
       console.error('[Amazon Sync] Error response status:', error.response.status);
       console.error('[Amazon Sync] Error response headers:', error.response.headers);
     }
     
-    // If the JSON API fails, try the legacy feed approach as fallback
-    console.log('[Amazon Sync] JSON API failed, trying legacy feed approach as fallback...');
+    // If the JSON feed fails, try the legacy feed approach as fallback
+    console.log('[Amazon Sync] JSON feed failed, trying legacy feed approach as fallback...');
     return await updateAmazonInventoryLegacy(sellingPartner, amazonSku, quantity);
   }
 }
