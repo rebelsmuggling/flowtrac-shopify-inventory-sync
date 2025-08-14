@@ -127,8 +127,8 @@ export async function updateShopifyInventoryBulk(updates: InventoryUpdate[]): Pr
 async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationId: string): Promise<{ success: number; failed: number; errors: string[] }> {
   // Use the correct GraphQL mutation for bulk inventory adjustment
   const mutation = `
-    mutation bulkInventoryAdjust($adjustments: [InventoryAdjustQuantityInput!]!) {
-      inventoryAdjustQuantity(input: $adjustments) {
+    mutation bulkInventoryAdjust($adjustments: [InventoryBulkAdjustQuantityAtLocationInput!]!) {
+      inventoryBulkAdjustQuantityAtLocation(input: $adjustments) {
         inventoryLevels {
           id
           available
@@ -143,7 +143,8 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
 
   // Prepare the adjustments array
   const adjustments = updates.map(update => ({
-    inventoryLevelId: `gid://shopify/InventoryLevel/${locationId}/${extractIdFromGid(update.inventoryItemId)}`,
+    inventoryItemId: update.inventoryItemId,
+    locationId: locationId,
     delta: update.quantity
   }));
 
@@ -172,8 +173,8 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
     }
 
     // Check for user errors in the response
-    if (response.data.data?.inventoryAdjustQuantity?.userErrors?.length > 0) {
-      const userErrors = response.data.data.inventoryAdjustQuantity.userErrors;
+    if (response.data.data?.inventoryBulkAdjustQuantityAtLocation?.userErrors?.length > 0) {
+      const userErrors = response.data.data.inventoryBulkAdjustQuantityAtLocation.userErrors;
       console.error('[Shopify Debug] User errors:', userErrors);
       return {
         success: 0,
@@ -183,7 +184,7 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
     }
 
     // Check if we have inventory levels in the response
-    const inventoryLevels = response.data.data?.inventoryAdjustQuantity?.inventoryLevels;
+    const inventoryLevels = response.data.data?.inventoryBulkAdjustQuantityAtLocation?.inventoryLevels;
     if (!inventoryLevels || inventoryLevels.length === 0) {
       console.error('[Shopify Debug] No inventory levels returned');
       return {
