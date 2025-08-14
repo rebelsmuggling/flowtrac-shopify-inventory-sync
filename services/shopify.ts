@@ -159,7 +159,45 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
       }
     );
 
+    // Debug logging
+    console.log('[Shopify Debug] Response status:', response.status);
+    console.log('[Shopify Debug] Response data keys:', Object.keys(response.data));
+    if (response.data.data) {
+      console.log('[Shopify Debug] Data keys:', Object.keys(response.data.data));
+    }
+
+    // Check for GraphQL errors first
+    if (response.data.errors) {
+      console.error('[Shopify Debug] GraphQL errors:', response.data.errors);
+      return {
+        success: 0,
+        failed: updates.length,
+        errors: response.data.errors.map((error: any) => error.message)
+      };
+    }
+
+    // Check if data exists
+    if (!response.data.data) {
+      console.error('[Shopify Debug] No data in response:', response.data);
+      return {
+        success: 0,
+        failed: updates.length,
+        errors: ['No data received from Shopify API']
+      };
+    }
+
     const data = response.data.data.inventoryBulkAdjustQuantityAtLocation;
+    
+    // Check if the specific field exists
+    if (!data) {
+      console.error('[Shopify Debug] No inventoryBulkAdjustQuantityAtLocation in response:', response.data.data);
+      return {
+        success: 0,
+        failed: updates.length,
+        errors: ['Invalid response format from Shopify API']
+      };
+    }
+
     const userErrors = data.userErrors || [];
     
     if (userErrors.length > 0) {
@@ -179,7 +217,11 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
 
   } catch (error: any) {
     console.error('[Shopify Debug] GraphQL bulk update error:', error.response?.data || error.message);
-    throw error;
+    return {
+      success: 0,
+      failed: updates.length,
+      errors: [error.response?.data?.message || error.message]
+    };
   }
 }
 
