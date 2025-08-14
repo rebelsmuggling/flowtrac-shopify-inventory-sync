@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       const inventoryRecord = batchInventory[sku];
       if (inventoryRecord && inventoryRecord.quantity > 0) {
         try {
-          const result = await updateShipStationWarehouseLocation(sku, inventoryRecord.quantity);
+          const result = await updateShipStationWarehouseLocation(sku, inventoryRecord.quantity.toString());
           shipstationResults.push({ sku, success: true, result });
         } catch (error) {
           shipstationResults.push({ sku, success: false, error: (error as Error).message });
