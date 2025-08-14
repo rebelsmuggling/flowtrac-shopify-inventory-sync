@@ -28,7 +28,34 @@ export async function POST(request: NextRequest) {
     
     const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
     const inventoryRecord = inventoryResult.data?.find((record: any) => record.sku === sku);
-    const databaseQuantity = inventoryRecord?.quantity || 0;
+    let databaseQuantity = inventoryRecord?.quantity || 0;
+    
+    // Handle bundle SKUs - calculate quantity based on component availability
+    if (Array.isArray(product.bundle_components) && product.bundle_components.length > 0) {
+      console.log(`Bundle SKU detected: ${sku} with ${product.bundle_components.length} components`);
+      
+      // Get all component SKUs
+      const componentSkus = product.bundle_components.map((comp: any) => comp.flowtrac_sku).filter(Boolean);
+      
+      if (componentSkus.length > 0) {
+        // Get inventory for all component SKUs
+        const componentInventoryResult = await getFlowtracInventory(componentSkus, 'Manteca');
+        
+        if (componentInventoryResult.success && componentInventoryResult.data) {
+          // Calculate bundle quantity based on component availability
+          const quantities = product.bundle_components.map((comp: any) => {
+            const componentRecord = componentInventoryResult.data?.find((record: any) => record.sku === comp.flowtrac_sku);
+            const available = componentRecord?.quantity || 0;
+            const possibleBundles = Math.floor(available / comp.quantity);
+            console.log(`Component ${comp.flowtrac_sku}: available=${available}, required=${comp.quantity}, possible=${possibleBundles}`);
+            return possibleBundles;
+          });
+          
+          databaseQuantity = quantities.length > 0 ? Math.min(...quantities) : 0;
+          console.log(`Calculated bundle quantity for ${sku}: ${databaseQuantity} (from ${quantities.join(', ')})`);
+        }
+      }
+    }
     
     console.log(`Database quantity for ${sku}: ${databaseQuantity}`);
     
