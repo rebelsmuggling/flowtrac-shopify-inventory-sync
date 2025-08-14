@@ -258,8 +258,8 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     session.session_results[`session_${sessionNumber}`].status = 'in_progress';
     await saveSession(session);
     
-    // Load mapping using the mapping service (fresh data, no cache)
-    const { mapping, source } = await mappingService.getMappingFresh();
+    // Load mapping using the mapping service (always fresh from database)
+    const { mapping, source } = await mappingService.getMapping();
     console.log(`Using ${source} mapping data for session processing`);
     
     // Get SKUs for this session
@@ -354,7 +354,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         await enrichMappingWithShopifyVariantAndInventoryIds();
         
         // Reload mapping after enrichment
-        const { mapping: updatedMapping } = await mappingService.getMappingFresh();
+        const { mapping: updatedMapping } = await mappingService.getMapping();
         
         // Prepare Shopify bulk updates
         const shopifyUpdates: Array<{ inventoryItemId: string; quantity: number; sku: string }> = [];
