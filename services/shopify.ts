@@ -98,8 +98,8 @@ export async function updateShopifyInventoryBulk(updates: InventoryUpdate[]): Pr
 
   console.log(`[Shopify Debug] Starting bulk update for ${updates.length} items using GraphQL`);
 
-  // Process in batches of 50 (Shopify GraphQL limit)
-  const BATCH_SIZE = 50;
+  // Process in batches of 250 (Shopify GraphQL limit from working app)
+  const BATCH_SIZE = 250;
   for (let i = 0; i < updates.length; i += BATCH_SIZE) {
     const batch = updates.slice(i, i + BATCH_SIZE);
     
@@ -109,9 +109,9 @@ export async function updateShopifyInventoryBulk(updates: InventoryUpdate[]): Pr
       results.failed += batchResult.failed;
       results.errors.push(...batchResult.errors);
       
-      // Rate limiting: wait between batches
+      // Rate limiting: wait between batches (from working app)
       if (i + BATCH_SIZE < updates.length) {
-        await new Promise(resolve => setTimeout(resolve, 250)); // 4 req/sec
+        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5 second delay between batches
       }
     } catch (error: any) {
       console.error(`[Shopify Debug] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error.message);
@@ -125,14 +125,10 @@ export async function updateShopifyInventoryBulk(updates: InventoryUpdate[]): Pr
 }
 
 async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationId: string): Promise<{ success: number; failed: number; errors: string[] }> {
-  // Use the correct GraphQL mutation for bulk inventory adjustment
+  // Use the correct GraphQL mutation for bulk inventory update (from working app)
   const mutation = `
-    mutation bulkInventoryAdjust($adjustments: [InventoryBulkAdjustQuantityAtLocationInput!]!) {
-      inventoryBulkAdjustQuantityAtLocation(input: $adjustments) {
-        inventoryLevels {
-          id
-          available
-        }
+    mutation inventorySetQuantities($input: InventorySetQuantitiesInput!) {
+      inventorySetQuantities(input: $input) {
         userErrors {
           field
           message
@@ -141,14 +137,21 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
     }
   `;
 
-  // Prepare the adjustments array
-  const adjustments = updates.map(update => ({
+  // Prepare the quantities array in the correct format
+  const quantities = updates.map(update => ({
     inventoryItemId: update.inventoryItemId,
-    locationId: locationId,
-    delta: update.quantity
+    locationId: `gid://shopify/Location/${locationId}`,
+    quantity: update.quantity
   }));
 
-  const variables = { adjustments };
+  const variables = {
+    input: {
+      quantities: quantities,
+      reason: "correction",
+      name: "available",
+      ignoreCompareQuantity: true
+    }
+  };
 
   try {
     const response = await axios.post(
@@ -173,8 +176,9 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
     }
 
     // Check for user errors in the response
-    if (response.data.data?.inventoryBulkAdjustQuantityAtLocation?.userErrors?.length > 0) {
-      const userErrors = response.data.data.inventoryBulkAdjustQuantityAtLocation.userErrors;
+    const result = response.data.data?.inventorySetQuantities;
+    if (result?.userErrors?.length > 0) {
+      const userErrors = result.userErrors;
       console.error('[Shopify Debug] User errors:', userErrors);
       return {
         success: 0,
@@ -183,20 +187,10 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
       };
     }
 
-    // Check if we have inventory levels in the response
-    const inventoryLevels = response.data.data?.inventoryBulkAdjustQuantityAtLocation?.inventoryLevels;
-    if (!inventoryLevels || inventoryLevels.length === 0) {
-      console.error('[Shopify Debug] No inventory levels returned');
-      return {
-        success: 0,
-        failed: updates.length,
-        errors: ['No inventory levels returned from GraphQL mutation']
-      };
-    }
-
-    console.log(`[Shopify Debug] Batch processed successfully: ${inventoryLevels.length} inventory levels updated`);
+    // If no user errors, the batch was successful
+    console.log(`[Shopify Debug] Batch processed successfully: ${updates.length} items updated`);
     return {
-      success: inventoryLevels.length,
+      success: updates.length,
       failed: 0,
       errors: []
     };
