@@ -55,13 +55,16 @@ export async function POST(request: NextRequest) {
           }
         }
       ],
-      endpoint: 'listings'
+      endpoint: 'catalog'  // Try 'catalog' instead of 'listings'
     };
 
     console.log('Amazon JSON API Debug - Full params:', JSON.stringify(updateInventoryParams, null, 2));
     console.log('Environment variables check:');
     console.log('- AMAZON_SELLER_ID:', process.env.AMAZON_SELLER_ID ? 'SET' : 'NOT SET');
     console.log('- AMAZON_MARKETPLACE_ID:', process.env.AMAZON_MARKETPLACE_ID ? 'SET' : 'NOT SET');
+
+    // Check available endpoints
+    console.log('Available endpoints in sellingPartner:', Object.keys(sellingPartner));
 
     try {
       const response = await sellingPartner.callAPI(updateInventoryParams);
