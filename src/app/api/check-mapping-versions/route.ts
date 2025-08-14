@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
     const { mapping: freshMapping, source: freshSource } = await mappingService.getMappingFresh();
     
     // Get latest version from database directly
-    const latestVersionResult = await mappingService['getMapping']();
-    const latestVersion = latestVersionResult.success ? latestVersionResult.data : null;
+    const { mapping: latestVersion, source: latestSource } = await mappingService.getMapping();
     
     // Compare versions
     const analysis = {
