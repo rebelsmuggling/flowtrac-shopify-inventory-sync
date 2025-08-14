@@ -520,6 +520,25 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     
     console.log(`Session ${sessionNumber} completed. Has more sessions: ${hasMoreSessions}, Next available: ${nextSessionAvailable}`);
     
+    // Automatically trigger next session if available (in background to avoid timeout)
+    if (nextSessionAvailable) {
+      const nextSessionNumber = sessionNumber + 1;
+      console.log(`Auto-triggering next session: ${nextSessionNumber}`);
+      
+      // Trigger next session in background (don't await to avoid timeout)
+      fetch(`${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'continue'
+        })
+      }).catch(error => {
+        console.error(`Failed to auto-trigger session ${nextSessionNumber}:`, error);
+      });
+    }
+    
     return NextResponse.json({
       success: true,
       session: session,
@@ -527,6 +546,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       session_completed: sessionNumber === session.total_batches,
       session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
       next_session_available: nextSessionAvailable,
+      auto_triggered_next: nextSessionAvailable,
       processing_time_ms: duration,
       results: {
         skus_processed: sessionSkus.length,

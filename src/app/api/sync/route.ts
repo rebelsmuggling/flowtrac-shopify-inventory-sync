@@ -17,14 +17,14 @@ export async function POST(request: NextRequest) {
     // Parse request body to check for dryRun parameter
     const body = await request.json().catch(() => ({}));
     const dryRun = body.dryRun === true;
-    const useSessionMode = body.useSessionMode === true;
+    const useSessionMode = body.useSessionMode !== false; // Default to true unless explicitly set to false
     
     if (dryRun) {
       console.log('DRY RUN MODE: Will calculate quantities but not post to Amazon/Shopify');
     }
     
     if (useSessionMode) {
-      console.log('SESSION MODE: Using session-based batch processing');
+      console.log('SESSION MODE: Using session-based batch processing with auto-continuation');
       
       // Get the base URL for the current request
       const protocol = request.headers.get('x-forwarded-proto') || 'http';
@@ -43,9 +43,10 @@ export async function POST(request: NextRequest) {
       const sessionData = await sessionResponse.json();
       return NextResponse.json({
         success: sessionData.success,
-        message: 'Session-based sync started',
+        message: 'Session-based sync started with auto-continuation',
         session: sessionData.session,
-        useSessionMode: true
+        useSessionMode: true,
+        note: 'All sessions will be processed automatically in sequence'
       });
     }
 
