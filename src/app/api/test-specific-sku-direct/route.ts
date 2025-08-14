@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
 import { getFlowtracInventory } from '../../../lib/database';
+import axios from 'axios';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const sku = body.sku || 'IC-FRSO-0002';
+    const { sku } = await request.json();
     
-    console.log(`Testing specific SKU directly: ${sku}`);
+    console.log(`Testing specific SKU: ${sku}`);
     
-    // Get fresh mapping data
-    const { mapping, source } = await mappingService.getMapping();
-    
-    // Find the product in mapping
-    const product = mapping.products.find(p => 
+    // Get mapping and inventory data
+    const { mapping } = await mappingService.getMapping();
+    const product = mapping.products.find((p: any) => 
       p.flowtrac_sku === sku || p.shopify_sku === sku
     );
     
@@ -24,47 +22,53 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // Get inventory from database
     const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
     const inventoryRecord = inventoryResult.data?.find((record: any) => record.sku === sku);
+    const databaseQuantity = inventoryRecord?.quantity || 0;
     
-    if (!inventoryRecord) {
+    console.log(`Database quantity for ${sku}: ${databaseQuantity}`);
+    
+    if (!product.shopify_inventory_item_id) {
       return NextResponse.json({
         success: false,
-        error: `Inventory not found in database for SKU: ${sku}`
+        error: `No shopify_inventory_item_id for SKU ${sku}`
       });
     }
     
-    // Check current Shopify inventory
+    // Check current Shopify inventory BEFORE update
     const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
     const SHOPIFY_API_PASSWORD = process.env.SHOPIFY_API_PASSWORD;
     const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL;
+    const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2024-01';
+    const shopifyGraphqlUrl = `https://${SHOPIFY_STORE_URL}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`;
+
+    const locationId = '101557567797'; // Hardcoded Manteca location
+    const checkUrl = `https://${SHOPIFY_STORE_URL}/admin/api/${SHOPIFY_API_VERSION}/inventory_levels.json?inventory_item_ids=${product.shopify_inventory_item_id.split('/').pop()}&location_ids=${locationId}`;
     
-    if (!SHOPIFY_API_KEY || !SHOPIFY_API_PASSWORD || !SHOPIFY_STORE_URL) {
+    const checkResponse = await axios.get(checkUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+      },
+    });
+    
+    const currentQuantity = checkResponse.data.inventory_levels?.[0]?.available || 0;
+    console.log(`Current Shopify quantity for ${sku}: ${currentQuantity}`);
+    
+    // Only update if quantities are different
+    if (currentQuantity === databaseQuantity) {
       return NextResponse.json({
-        success: false,
-        error: 'Shopify credentials not configured'
+        success: true,
+        sku,
+        message: `Quantities are already the same (${currentQuantity}), no update needed`,
+        databaseQuantity,
+        currentQuantity,
+        locationId
       });
     }
     
-    // Get current Shopify inventory
-    const shopifyInventoryUrl = `https://${SHOPIFY_STORE_URL}/admin/api/2024-01/inventory_levels.json?inventory_item_ids=${product.shopify_inventory_item_id?.split('/').pop()}`;
-    
-    const shopifyInventoryResponse = await fetch(shopifyInventoryUrl, {
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${SHOPIFY_API_KEY}:${SHOPIFY_API_PASSWORD}`).toString('base64')}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    const shopifyInventoryData = await shopifyInventoryResponse.json();
-    const currentShopifyQuantity = shopifyInventoryData.inventory_levels?.[0]?.available || 0;
-    
-    // Use the correct Manteca location ID
-    const correctLocationId = '101557567797';
-    
-    // Prepare the exact GraphQL mutation that would be sent
-    const graphqlMutation = `
+    // Try a more explicit GraphQL mutation
+    const mutation = `
       mutation inventorySetQuantities($input: InventorySetQuantitiesInput!) {
         inventorySetQuantities(input: $input) {
           userErrors {
@@ -74,50 +78,64 @@ export async function POST(request: NextRequest) {
         }
       }
     `;
-    
-    const graphqlVariables = {
+
+    const variables = {
       input: {
-        quantities: [
-          {
-            inventoryItemId: product.shopify_inventory_item_id,
-            locationId: `gid://shopify/Location/${correctLocationId}`,
-            quantity: inventoryRecord.quantity
-          }
-        ],
+        quantities: [{
+          inventoryItemId: product.shopify_inventory_item_id,
+          locationId: `gid://shopify/Location/${locationId}`,
+          quantity: databaseQuantity
+        }],
         reason: "correction",
         name: "available",
         ignoreCompareQuantity: true
       }
     };
-    
-    console.log(`[Direct Test] GraphQL variables for ${sku}:`, JSON.stringify(graphqlVariables, null, 2));
-    
-    // Perform the actual GraphQL update
-    const graphqlResponse = await fetch(`https://${SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${SHOPIFY_API_KEY}:${SHOPIFY_API_PASSWORD}`).toString('base64')}`,
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD
-      },
-      body: JSON.stringify({
-        query: graphqlMutation,
-        variables: graphqlVariables
-      })
-    });
-    
-    const graphqlResult = await graphqlResponse.json();
-    
-    // Check Shopify inventory again after update
-    const shopifyInventoryResponseAfter = await fetch(shopifyInventoryUrl, {
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${SHOPIFY_API_KEY}:${SHOPIFY_API_PASSWORD}`).toString('base64')}`,
-        'Content-Type': 'application/json'
+
+    console.log('GraphQL variables:', JSON.stringify(variables, null, 2));
+
+    const response = await axios.post(
+      shopifyGraphqlUrl,
+      { query: mutation, variables },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+        },
       }
+    );
+
+    console.log('GraphQL response:', JSON.stringify(response.data, null, 2));
+
+    // Check for errors
+    if (response.data.errors) {
+      return NextResponse.json({
+        success: false,
+        error: 'GraphQL errors',
+        graphqlErrors: response.data.errors
+      });
+    }
+
+    const result = response.data.data?.inventorySetQuantities;
+    if (result?.userErrors?.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'User errors in GraphQL response',
+        userErrors: result.userErrors
+      });
+    }
+
+    // Wait a moment and check if the quantity actually changed
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const finalCheckResponse = await axios.get(checkUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+      },
     });
     
-    const shopifyInventoryDataAfter = await shopifyInventoryResponseAfter.json();
-    const newShopifyQuantity = shopifyInventoryDataAfter.inventory_levels?.[0]?.available || 0;
+    const finalQuantity = finalCheckResponse.data.inventory_levels?.[0]?.available || 0;
     
     return NextResponse.json({
       success: true,
@@ -126,40 +144,44 @@ export async function POST(request: NextRequest) {
         flowtrac_sku: product.flowtrac_sku,
         shopify_sku: product.shopify_sku,
         shopify_inventory_item_id: product.shopify_inventory_item_id,
-        product_name: product.product_name
+        product_name: product.product_name || ''
       },
       inventoryInfo: {
-        database_quantity: inventoryRecord.quantity,
-        warehouse: inventoryRecord.warehouse,
-        last_updated: inventoryRecord.last_updated
+        database_quantity: databaseQuantity,
+        warehouse: 'Manteca',
+        last_updated: inventoryRecord?.last_updated
       },
       shopifyInfo: {
-        location_id: correctLocationId,
-        location_gid: `gid://shopify/Location/${correctLocationId}`,
-        current_quantity_before: currentShopifyQuantity,
-        current_quantity_after: newShopifyQuantity,
-        quantity_changed: newShopifyQuantity !== currentShopifyQuantity
+        location_id: locationId,
+        location_gid: `gid://shopify/Location/${locationId}`,
+        current_quantity_before: currentQuantity,
+        current_quantity_after: finalQuantity,
+        quantity_changed: finalQuantity !== currentQuantity,
+        expected_quantity: databaseQuantity,
+        update_successful: finalQuantity === databaseQuantity
       },
       graphqlInfo: {
-        mutation: graphqlMutation,
-        variables: graphqlVariables,
-        response: graphqlResult,
-        success: !graphqlResult.errors && !graphqlResult.data?.inventorySetQuantities?.userErrors?.length,
-        userErrors: graphqlResult.data?.inventorySetQuantities?.userErrors || []
+        mutation,
+        variables,
+        response: response.data,
+        success: true,
+        userErrors: result?.userErrors || []
       },
       analysis: {
-        should_update: inventoryRecord.quantity > 0 && product.shopify_inventory_item_id,
-        quantity_mismatch: newShopifyQuantity !== inventoryRecord.quantity,
-        graphql_success: !graphqlResult.errors && !graphqlResult.data?.inventorySetQuantities?.userErrors?.length,
-        using_correct_location: true
+        should_update: product.shopify_inventory_item_id,
+        quantity_mismatch: currentQuantity !== databaseQuantity,
+        graphql_success: true,
+        using_correct_location: true,
+        actual_update_successful: finalQuantity === databaseQuantity
       }
     });
-    
-  } catch (error) {
-    console.error('Error testing specific SKU directly:', error);
+
+  } catch (error: any) {
+    console.error('Error in test:', error);
     return NextResponse.json({
       success: false,
-      error: (error as Error).message
+      error: error.message,
+      stack: error.stack
     });
   }
 }

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Shopify Location</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Shopify Location Debug Tool</h1>
+    
+    <button onclick="checkLocation()">Check All Locations</button>
+    <button onclick="setLocation()">Set Location ID</button>
+    <button onclick="testSession2()">Test Session 2</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const BASE_URL = 'https://flowtrac-shopify-inventory-sync.vercel.app';
+        
+        async function checkLocation() {
+            try {
+                document.getElementById('result').innerHTML = 'Loading...';
+                const response = await fetch(`${BASE_URL}/api/debug-shopify-location`);
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function setLocation() {
+            const locationId = prompt('Enter the correct location ID:');
+            if (!locationId) return;
+            
+            try {
+                document.getElementById('result').innerHTML = 'Setting location ID...';
+                const response = await fetch(`${BASE_URL}/api/set-correct-location`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "locationId": locationId
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testSession2() {
+            try {
+                document.getElementById('result').innerHTML = 'Running Session 2...';
+                const response = await fetch(`${BASE_URL}/api/run-specific-session`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "sessionNumber": 2,
+                        "batchSize": 60
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Specific SKU</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Test API Connectivity</h1>
+    
+    <button onclick="testSimple()">Test Simple API</button>
+    <button onclick="testSku()">Test IC-FRSO-0002</button>
+    <button onclick="testOtherSku()">Test Other SKU</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const BASE_URL = 'https://flowtrac-shopify-inventory-sync.vercel.app';
+        
+        async function testSimple() {
+            try {
+                document.getElementById('result').innerHTML = 'Testing simple API...';
+                const response = await fetch(`${BASE_URL}/api/test-simple`);
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testSku() {
+            try {
+                document.getElementById('result').innerHTML = 'Testing IC-FRSO-0002...';
+                const response = await fetch(`${BASE_URL}/api/test-specific-sku-direct`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "sku": "IC-FRSO-0002"
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testOtherSku() {
+            const sku = prompt('Enter SKU to test:');
+            if (!sku) return;
+            
+            try {
+                document.getElementById('result').innerHTML = `Testing ${sku}...`;
+                const response = await fetch(`${BASE_URL}/api/test-specific-sku-direct`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "sku": sku
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

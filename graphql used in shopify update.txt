@@ -1,0 +1,110 @@
+def graphql_bulk_update_inventory(inventory_levels, max_retries=3):
+    """
+    Bulk update inventory using GraphQL inventorySetQuantities mutation
+    This is much faster than individual REST API calls
+    Processes in batches of 250 items (Shopify's limit)
+    """
+    url = f"https://{SHOPIFY_STORE}/admin/api/2023-07/graphql.json"
+    headers = {
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+        "Content-Type": "application/json"
+    }
+    
+    # GraphQL mutation
+    mutation = """
+    mutation inventorySetQuantities($input: InventorySetQuantitiesInput!) {
+        inventorySetQuantities(input: $input) {
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+    """
+    
+    print(f"  Using GraphQL bulk update for {len(inventory_levels)} items in batches of 250...")
+    
+    # Process in batches of 250 (Shopify's limit)
+    batch_size = 250
+    total_updated = 0
+    total_batches = (len(inventory_levels) + batch_size - 1) // batch_size
+    
+    for batch_num in range(total_batches):
+        start_idx = batch_num * batch_size
+        end_idx = min(start_idx + batch_size, len(inventory_levels))
+        batch_items = inventory_levels[start_idx:end_idx]
+        
+        print(f"    Processing batch {batch_num + 1}/{total_batches} ({len(batch_items)} items)...")
+        
+        # Convert batch to GraphQL format
+        quantities = []
+        for item in batch_items:
+            quantities.append({
+                "inventoryItemId": f"gid://shopify/InventoryItem/{item['inventory_item_id']}",
+                "locationId": f"gid://shopify/Location/{item['location_id']}",
+                "quantity": item['available']
+            })
+        
+        variables = {
+            "input": {
+                "quantities": quantities,
+                "reason": "correction",
+                "name": "available",
+                "ignoreCompareQuantity": True
+            }
+        }
+        
+        payload = {
+            "query": mutation,
+            "variables": variables
+        }
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(url, json=payload, headers=headers, timeout=60)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if 'errors' in data:
+                        print(f"      GraphQL errors: {data['errors']}")
+                        return total_updated
+                    
+                    result = data.get('data', {}).get('inventorySetQuantities', {})
+                    user_errors = result.get('userErrors', [])
+                    
+                    if user_errors:
+                        print(f"      User errors: {user_errors}")
+                        return total_updated
+                    
+                    # If no user errors, the batch was successful
+                    total_updated += len(batch_items)
+                    print(f"      ✅ Batch {batch_num + 1} successful: {len(batch_items)} items updated")
+                    break  # Move to next batch
+                    
+                elif response.status_code == 429:
+                    wait_time = (2 ** attempt) * 2
+                    print(f"      Rate limit hit, waiting {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"      GraphQL request failed: {response.status_code} {response.text}")
+                    return total_updated
+                    
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) * 1
+                    print(f"      Connection error (attempt {attempt + 1}/{max_retries}), retrying in {wait_time} seconds: {e}")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"      Failed GraphQL update after {max_retries} attempts: {e}")
+                    return total_updated
+        
+        # Small delay between batches to be respectful
+        if batch_num < total_batches - 1:
+            time.sleep(0.5)
+    
+    print(f"    ✅ Successfully updated {total_updated} items via GraphQL in {total_batches} batches!")
+    return total_updated
+
