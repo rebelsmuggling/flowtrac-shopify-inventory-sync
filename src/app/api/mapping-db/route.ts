@@ -44,13 +44,13 @@ export async function GET(request: NextRequest) {
         if (!migrateResult.success) {
           return NextResponse.json({ 
             success: false, 
-            error: migrateResult.error 
+            error: migrateResult.error || 'Migration failed'
           }, { status: 500 });
         }
         
         return NextResponse.json({ 
           success: true, 
-          message: migrateResult.message,
+          message: migrateResult.message || 'Migration successful',
           data: migrateResult.data
         });
         
