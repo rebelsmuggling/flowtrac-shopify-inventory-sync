@@ -42,16 +42,18 @@ export async function GET(request: NextRequest) {
         const migrateResult = await migrateMappingFromGitHub();
         
         if (!migrateResult.success) {
+          const errorMessage = 'error' in migrateResult ? migrateResult.error : 'Migration failed';
           return NextResponse.json({ 
             success: false, 
-            error: migrateResult.error || 'Migration failed'
+            error: errorMessage
           }, { status: 500 });
         }
         
+        const successMessage = 'message' in migrateResult ? migrateResult.message : 'Migration successful';
         return NextResponse.json({ 
           success: true, 
-          message: migrateResult.message || 'Migration successful',
-          data: migrateResult.data
+          message: successMessage,
+          data: 'data' in migrateResult ? migrateResult.data : undefined
         });
         
       default:
