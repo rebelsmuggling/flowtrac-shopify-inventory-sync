@@ -147,6 +147,9 @@ export async function POST(request: NextRequest) {
       case 'continue':
         return await continueSession();
         
+      case 'auto-continue':
+        return await autoContinueSession();
+        
       case 'clear':
         await clearSession();
         return NextResponse.json({
@@ -256,6 +259,105 @@ async function continueSession() {
   // Process next session
   const nextSession = session.current_batch + 1;
   return await processSession(session, nextSession);
+}
+
+async function autoContinueSession() {
+  const session = await loadSession();
+  
+  if (!session) {
+    return NextResponse.json({
+      success: false,
+      error: 'No active session found'
+    });
+  }
+  
+  if (session.status === 'completed') {
+    return NextResponse.json({
+      success: true,
+      message: 'Session already completed',
+      session: session
+    });
+  }
+  
+  if (session.status === 'failed') {
+    return NextResponse.json({
+      success: false,
+      error: 'Session failed and cannot be continued'
+    });
+  }
+  
+  console.log(`Auto-continuing session from batch ${session.current_batch} to completion`);
+  
+  let sessionsProcessed = 0;
+  const maxSessionsToProcess = 10; // Limit to prevent infinite loops
+  const startTime = Date.now();
+  
+  try {
+    while (session.status === 'in_progress' && sessionsProcessed < maxSessionsToProcess) {
+      const nextSession = session.current_batch + 1;
+      
+      if (nextSession > session.total_batches) {
+        console.log('All sessions completed');
+        break;
+      }
+      
+      console.log(`Auto-continuing to session ${nextSession} of ${session.total_batches}`);
+      
+      // Process the next session
+      const result = await processSession(session, nextSession);
+      
+      // Check if the result is a NextResponse and extract the JSON data
+      let resultData;
+      if (result instanceof NextResponse) {
+        try {
+          resultData = await result.json();
+        } catch (jsonError) {
+          console.error(`Failed to parse session ${nextSession} result:`, jsonError);
+          break;
+        }
+      } else {
+        resultData = result;
+      }
+      
+      if (!resultData || !resultData.success) {
+        console.error(`Session ${nextSession} failed during auto-continuation:`, resultData?.error || 'Unknown error');
+        break;
+      }
+      
+      sessionsProcessed++;
+      
+      // Reload session to get updated status
+      const updatedSession = await loadSession();
+      if (updatedSession) {
+        session.status = updatedSession.status;
+        session.current_batch = updatedSession.current_batch;
+      }
+      
+      // Add a small delay between sessions to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    const endTime = Date.now();
+    const totalDuration = endTime - startTime;
+    
+    return NextResponse.json({
+      success: true,
+      message: `Auto-continuation completed. Processed ${sessionsProcessed} sessions in ${totalDuration}ms`,
+      sessions_processed: sessionsProcessed,
+      total_duration_ms: totalDuration,
+      session: session,
+      final_status: session.status
+    });
+    
+  } catch (error) {
+    console.error('Auto-continuation failed:', error);
+    return NextResponse.json({
+      success: false,
+      error: (error as Error).message,
+      sessions_processed: sessionsProcessed,
+      session: session
+    });
+  }
 }
 
 async function processSession(session: ExtendedSyncSession, sessionNumber: number) {
@@ -514,21 +616,61 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     session.last_updated = new Date();
     await saveSession(session);
     
-    // Return response for this session (no automatic continuation to avoid timeout)
+    // Return response for this session
     const hasMoreSessions = sessionNumber < session.total_batches;
     const nextSessionAvailable = hasMoreSessions && session.session_results[`session_${sessionNumber}`].status !== 'failed';
     
     console.log(`Session ${sessionNumber} completed. Has more sessions: ${hasMoreSessions}, Next available: ${nextSessionAvailable}`);
     
-    // Automatically trigger next session if available (in background to avoid timeout)
+    // Improved automatic continuation mechanism
     if (nextSessionAvailable) {
       const nextSessionNumber = sessionNumber + 1;
       console.log(`Auto-triggering next session: ${nextSessionNumber}`);
       
-      // For now, we'll rely on manual continuation or external triggers
-      // The background fetch approach has limitations in serverless environments
-      console.log(`Session ${nextSessionNumber} needs to be triggered manually or via external scheduler`);
-      console.log(`Use: curl -X POST ${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session -H "Content-Type: application/json" -d '{"action": "continue"}'`);
+      // Use a more robust approach for serverless environments
+      try {
+        // Get the base URL for the current request
+        const baseUrl = process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}` 
+          : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        
+        console.log(`Using base URL for auto-continuation: ${baseUrl}`);
+        
+        // Trigger next session with a timeout
+        const continuationPromise = fetch(`${baseUrl}/api/sync-session`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Auto-Continuation': 'true' // Flag to indicate this is an auto-continuation
+          },
+          body: JSON.stringify({ 
+            action: 'continue',
+            auto_triggered: true,
+            source_session: sessionNumber
+          })
+        });
+        
+        // Set a reasonable timeout for the continuation
+        const continuationTimeout = 30000; // 30 seconds
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Auto-continuation timeout')), continuationTimeout)
+        );
+        
+        // Race between continuation and timeout
+        const continuationResult = await Promise.race([continuationPromise, timeoutPromise]);
+        
+        if (continuationResult.ok) {
+          const continuationData = await continuationResult.json();
+          console.log(`Auto-continuation successful for session ${nextSessionNumber}:`, continuationData.success);
+        } else {
+          console.warn(`Auto-continuation failed for session ${nextSessionNumber}, will need manual trigger`);
+        }
+        
+      } catch (continuationError) {
+        console.warn(`Auto-continuation error for session ${nextSessionNumber}:`, (continuationError as Error).message);
+        console.log(`Session ${nextSessionNumber} will need to be triggered manually or via external scheduler`);
+        console.log(`Use: curl -X POST ${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session -H "Content-Type: application/json" -d '{"action": "continue"}'`);
+      }
     }
     
     return NextResponse.json({

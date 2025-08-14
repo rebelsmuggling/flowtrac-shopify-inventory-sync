@@ -50,55 +50,62 @@ export async function POST(request: NextRequest) {
         });
       }
       
-      // Process additional sessions in sequence (up to a reasonable limit to avoid timeout)
-      const maxSessionsToProcess = 5; // Process first 5 sessions in this request
-      let sessionsProcessed = 1;
+      // Use the new auto-continue action for better session management
+      console.log('Starting auto-continuation for all remaining sessions...');
       
-      while (sessionsProcessed < maxSessionsToProcess) {
-        try {
-          // Check if there are more sessions to process
-          const statusResponse = await fetch(`${baseUrl}/api/sync-session?action=status`);
-          const statusData = await statusResponse.json();
+      try {
+        const autoContinueResponse = await fetch(`${baseUrl}/api/sync-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'auto-continue' })
+        });
+        
+        const autoContinueData = await autoContinueResponse.json();
+        
+        if (autoContinueData.success) {
+          console.log(`Auto-continuation completed successfully!`);
+          console.log(`Sessions processed: ${autoContinueData.sessions_processed}`);
+          console.log(`Total duration: ${autoContinueData.total_duration_ms}ms`);
+          console.log(`Final status: ${autoContinueData.final_status}`);
           
-          if (!statusData.success || !statusData.session || !statusData.session.next_session_available) {
-            console.log('No more sessions to process or session completed');
-            break;
-          }
-          
-          // Process next session
-          console.log(`Processing session ${sessionsProcessed + 1} of ${maxSessionsToProcess}`);
-          const continueResponse = await fetch(`${baseUrl}/api/sync-session`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'continue' })
+          return NextResponse.json({
+            success: true,
+            message: `Session-based sync completed successfully with auto-continuation.`,
+            session: sessionData.session,
+            useSessionMode: true,
+            auto_continuation: {
+              sessions_processed: autoContinueData.sessions_processed,
+              total_duration_ms: autoContinueData.total_duration_ms,
+              final_status: autoContinueData.final_status
+            },
+            note: `All sessions were processed automatically using the improved auto-continuation mechanism`
           });
+        } else {
+          console.error(`Auto-continuation failed: ${autoContinueData.error}`);
           
-          const continueData = await continueResponse.json();
-          
-          if (!continueData.success) {
-            console.error(`Failed to continue session: ${continueData.error}`);
-            break;
-          }
-          
-          sessionsProcessed++;
-          
-          // Add a small delay between sessions
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-        } catch (error) {
-          console.error(`Error processing session ${sessionsProcessed + 1}:`, error);
-          break;
+          return NextResponse.json({
+            success: false,
+            error: 'Auto-continuation failed',
+            details: autoContinueData.error,
+            session: sessionData.session,
+            useSessionMode: true,
+            note: `Session started but auto-continuation failed. You may need to manually continue or use the auto-continue script.`
+          });
         }
+      } catch (autoContinueError) {
+        console.error('Error during auto-continuation:', autoContinueError);
+        
+        return NextResponse.json({
+          success: true,
+          message: `Session-based sync started but auto-continuation encountered an error.`,
+          session: sessionData.session,
+          useSessionMode: true,
+          auto_continuation_error: (autoContinueError as Error).message,
+          note: `Session is ready for manual continuation or use the auto-continue script: node scripts/auto-continue-sessions.js`
+        });
       }
       
-      return NextResponse.json({
-        success: true,
-        message: `Session-based sync started with auto-continuation. Processed ${sessionsProcessed} sessions.`,
-        session: sessionData.session,
-        useSessionMode: true,
-        sessionsProcessed: sessionsProcessed,
-        note: `Remaining sessions can be processed by calling the continue action manually or using an external scheduler`
-      });
+
     }
 
     // 1. Load mapping using the mapping service (fresh data, no cache)
