@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
+import { mappingService } from '../../../services/mapping';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,9 +37,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Load existing mapping
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
-    const existingMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
+    // Load existing mapping using the mapping service
+    const { mapping: existingMapping } = await mappingService.getMapping();
     
     // Check for duplicates
     const existingSkus = new Set(existingMapping.products.map((p: any) => p.shopify_sku));
@@ -57,8 +55,14 @@ export async function POST(request: NextRequest) {
     // Add new products
     existingMapping.products.push(...products);
     
-    // Save updated mapping
-    fs.writeFileSync(mappingPath, JSON.stringify(existingMapping, null, 2));
+    // Save updated mapping using the mapping service
+    const result = await mappingService.updateMapping(existingMapping, 'bulk_add_api');
+    if (!result.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Failed to update mapping: ${result.error}` 
+      }, { status: 500 });
+    }
     
     return NextResponse.json({ 
       success: true, 

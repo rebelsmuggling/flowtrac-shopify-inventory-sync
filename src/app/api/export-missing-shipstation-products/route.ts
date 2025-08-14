@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
 import { getProductDescriptions } from '../../../../services/flowtrac';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 
 const SHIPSTATION_API_KEY = process.env.SHIPSTATION_API_KEY!;
 const SHIPSTATION_API_SECRET = process.env.SHIPSTATION_API_SECRET!;
@@ -46,29 +44,12 @@ export async function GET(request: NextRequest) {
     
     const operation = async (): Promise<NextResponse> => {
 
-    // 1. Load mapping
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Using imported mapping data');
-      mapping = importedMapping;
-    } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      console.log('Using file mapping data');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
+    // 1. Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data`);
 
     // 2. Collect all SKUs (simple and bundle components)
-    const skus = new Set<string>();
-    for (const product of mapping.products) {
-      if (product.flowtrac_sku) skus.add(product.flowtrac_sku);
-      if (Array.isArray(product.bundle_components)) {
-        for (const comp of product.bundle_components) {
-          if (comp.flowtrac_sku) skus.add(comp.flowtrac_sku);
-        }
-      }
-    }
+    const skus = await mappingService.getMappedSkus();
 
     // 3. Check which SKUs exist in ShipStation (with concurrency and timeout)
     console.log(`Checking ${skus.size} SKUs in ShipStation...`);

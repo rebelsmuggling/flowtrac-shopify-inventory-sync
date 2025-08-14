@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getImportedMapping } from '../../../utils/imported-mapping-store';
-import path from 'path';
-import fs from 'fs';
-
 export async function GET(request: NextRequest) {
   try {
     console.log('Testing mapping product IDs...');
@@ -14,7 +11,6 @@ export async function GET(request: NextRequest) {
     if (importedMapping) {
       mapping = importedMapping;
     } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
       mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
     }
     

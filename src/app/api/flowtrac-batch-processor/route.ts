@@ -132,7 +132,7 @@ async function startBatchProcessing() {
       
       // Store the mapping in the imported mapping store for future use
       const { setImportedMapping } = require('../../../utils/imported-mapping-store');
-      setImportedMapping(mapping);
+      await mappingService.updateMapping(mapping, 'api_update');
       console.log('Mapping loaded and stored in imported mapping store');
     }
     
@@ -229,7 +229,7 @@ async function continueBatchProcessing(sessionId: string) {
       
       // Store the mapping in the imported mapping store for future use
       const { setImportedMapping } = require('../../../utils/imported-mapping-store');
-      setImportedMapping(mapping);
+      await mappingService.updateMapping(mapping, 'api_update');
       console.log('Mapping loaded and stored in imported mapping store for continue operation');
     }
     
@@ -605,7 +605,7 @@ async function refreshMappingFromRepository() {
     
     // Store in the imported mapping store
     const { setImportedMapping } = require('../../../utils/imported-mapping-store');
-    setImportedMapping(mapping);
+    await mappingService.updateMapping(mapping, 'api_update');
     
     console.log(`Mapping refreshed: ${mapping.products?.length || 0} products loaded`);
     

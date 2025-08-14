@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-
 export async function GET(request: NextRequest) {
   try {
     // Load current mapping
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
     const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
     
     // Convert to CSV format

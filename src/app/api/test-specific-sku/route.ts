@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 import axios from 'axios';
 import qs from 'qs';
 
@@ -104,7 +104,8 @@ export async function GET(request: NextRequest) {
     console.log(`Testing SKU: ${sku}`);
     
     // Check if SKU exists in mapping
-    const mapping = getImportedMapping();
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data`);
     let skuInMapping = false;
     let productIdInMapping = null;
     

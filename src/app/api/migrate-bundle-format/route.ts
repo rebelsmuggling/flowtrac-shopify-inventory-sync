@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-
 export async function POST(request: NextRequest) {
   try {
     // Load mapping.json
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
     const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
     
     let migratedCount = 0;
@@ -30,7 +26,10 @@ export async function POST(request: NextRequest) {
     mapping.lastMigration = new Date().toISOString();
     
     // Write back to mapping.json
-    fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+    const result = await mappingService.updateMapping(mapping, 'api_update');
+      if (!result.success) {
+        throw new Error(`Failed to update mapping: ${result.error}`);
+      }
     
     return NextResponse.json({ 
       success: true, 

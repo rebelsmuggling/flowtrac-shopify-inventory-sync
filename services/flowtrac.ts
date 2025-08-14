@@ -1,16 +1,12 @@
 import axios from 'axios';
 import qs from 'qs';
-import fs from 'fs';
-import path from 'path';
 import type { MappingFile } from '../src/types/mapping';
 import { Parser as CsvParser } from 'json2csv';
-import { getImportedMapping } from '../src/utils/imported-mapping-store';
+import { mappingService } from '../src/services/mapping';
 
 const FLOWTRAC_API_URL = process.env.FLOWTRAC_API_URL;
 const FLOWTRAC_BADGE = process.env.FLOWTRAC_BADGE;
 const FLOWTRAC_PIN = process.env.FLOWTRAC_PIN;
-
-const mappingPath = path.join(process.cwd(), 'mapping.json');
 
 async function getFlowtracAuthCookie() {
   const loginRes = await axios.post(
@@ -66,56 +62,21 @@ async function searchFlowtracProductBySku(sku: string, flowAuthCookie: string) {
   }
 }
 
-function getProductIdForSku(sku: string, mapping: any): string | undefined {
-  for (const product of mapping.products) {
-    if (product.flowtrac_sku === sku && product.flowtrac_product_id) return product.flowtrac_product_id;
-    if (product.bundle_components) {
-      for (const comp of product.bundle_components) {
-        if (comp.flowtrac_sku === sku && comp.flowtrac_product_id) return comp.flowtrac_product_id;
-      }
-    }
-  }
-  return undefined;
+async function getProductIdForSku(sku: string): Promise<string | undefined> {
+  return await mappingService.getFlowtracProductId(sku);
 }
 
-function setProductIdForSku(sku: string, product_id: string, mapping: any): boolean {
-  let updated = false;
-  for (const product of mapping.products) {
-    if (product.flowtrac_sku === sku) {
-      if (product.flowtrac_product_id !== product_id) {
-        product.flowtrac_product_id = product_id;
-        updated = true;
-      }
-    }
-    if (product.bundle_components) {
-      for (const comp of product.bundle_components) {
-        if (comp.flowtrac_sku === sku) {
-          if (comp.flowtrac_product_id !== product_id) {
-            comp.flowtrac_product_id = product_id;
-            updated = true;
-          }
-        }
-      }
-    }
-  }
-  return updated;
+async function setProductIdForSku(sku: string, product_id: string): Promise<boolean> {
+  return await mappingService.setFlowtracProductId(sku, product_id);
 }
 
 export async function fetchFlowtracInventory(skus: string[]): Promise<Record<string, number>> {
   // 1. Authenticate to get session cookie
   const flowAuthCookie = await getFlowtracAuthCookie();
 
-  // 2. Load mapping (try imported mapping first, then fallback to file)
-  let mapping: MappingFile;
-  const importedMapping = getImportedMapping();
-  
-  if (importedMapping) {
-    console.log('Using imported mapping data for fetchFlowtracInventory');
-    mapping = importedMapping;
-  } else {
-    console.log('Using file mapping data for fetchFlowtracInventory');
-    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-  }
+  // 2. Load mapping using the mapping service
+  const { mapping, source } = await mappingService.getMapping();
+  console.log(`Using ${source} mapping data for fetchFlowtracInventory`);
 
   // 3. Fetch all Flowtrac products once (for self-healing)
   const products = await fetchAllFlowtracProducts(flowAuthCookie);
@@ -129,11 +90,11 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
   // 4. Ensure all SKUs have product_id, self-heal if missing
   const skuToPidForQuery: Record<string, string> = {};
   for (const sku of skus) {
-    let pid = await getProductIdForSku(sku, mapping);
+    let pid = await getProductIdForSku(sku);
     if (!pid) {
       pid = skuToProductId[sku];
       if (pid) {
-        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+        if (await setProductIdForSku(sku, pid)) mappingUpdated = true;
       } else {
         throw new Error(`SKU '${sku}' not found in Flowtrac products.`);
       }
@@ -202,30 +163,9 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
  * @param flowtracProducts Array of Flowtrac product objects
  * @param onlyActive If true, only include products with active === 'Active'
  */
-export function filterProductsToSync(flowtracProducts: any[], onlyActive = true): any[] {
-  // Load mapping (try imported mapping first, then fallback to file)
-  let mapping: MappingFile;
-  const importedMapping = getImportedMapping();
-  
-  if (importedMapping) {
-    mapping = importedMapping;
-  } else {
-    const mappingPath = path.resolve(__dirname, '../../../mapping.json');
-    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-  }
-
-  // Collect all mapped SKUs from simple and bundle products
-  const mappedSkus = new Set<string>();
-  for (const product of mapping.products) {
-    if ('flowtrac_sku' in product && product.flowtrac_sku) {
-      mappedSkus.add(product.flowtrac_sku);
-    }
-    if ('bundle_components' in product && Array.isArray(product.bundle_components)) {
-      for (const comp of product.bundle_components) {
-        if (comp.flowtrac_sku) mappedSkus.add(comp.flowtrac_sku);
-      }
-    }
-  }
+export async function filterProductsToSync(flowtracProducts: any[], onlyActive = true): Promise<any[]> {
+  // Load mapping using the mapping service
+  const mappedSkus = await mappingService.getMappedSkus();
 
   // Filter Flowtrac products by SKU and (optionally) active status
   return flowtracProducts.filter(p =>
@@ -237,17 +177,9 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   // 1. Authenticate to get session cookie
   const flowAuthCookie = await getFlowtracAuthCookie();
 
-  // 2. Load mapping (try imported mapping first, then fallback to file)
-  let mapping: MappingFile;
-  const importedMapping = getImportedMapping();
-  
-  if (importedMapping) {
-    console.log('Using imported mapping data for fetchFlowtracInventoryWithBins');
-    mapping = importedMapping;
-  } else {
-    console.log('Using file mapping data for fetchFlowtracInventoryWithBins');
-    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-  }
+  // 2. Load mapping using the mapping service
+  const { mapping, source } = await mappingService.getMapping();
+  console.log(`Using ${source} mapping data for fetchFlowtracInventoryWithBins`);
 
   // 3. Fetch all Flowtrac products once (for self-healing)
   const products = await fetchAllFlowtracProducts(flowAuthCookie);
@@ -263,7 +195,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   const missingSkus: string[] = [];
   
   for (const sku of skus) {
-    let pid = getProductIdForSku(sku, mapping);
+    let pid = await getProductIdForSku(sku);
     if (!pid) {
       // Try to find in the products list first
       pid = skuToProductId[sku];
@@ -273,7 +205,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
         const product = await searchFlowtracProductBySku(sku, flowAuthCookie);
         if (product && product.product_id) {
           pid = product.product_id;
-          if (pid && setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+          if (pid && await setProductIdForSku(sku, pid)) mappingUpdated = true;
           console.log(`Found SKU '${sku}' with product_id '${pid}' via direct search`);
         } else {
           console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
@@ -281,7 +213,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
           continue;
         }
       } else {
-        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+        if (await setProductIdForSku(sku, pid)) mappingUpdated = true;
       }
     }
     
@@ -296,7 +228,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
         const directProduct = await searchFlowtracProductBySku(sku, flowAuthCookie);
         if (directProduct && directProduct.product_id) {
           pid = directProduct.product_id;
-          if (pid && setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+          if (pid && await setProductIdForSku(sku, pid)) mappingUpdated = true;
           console.log(`Updated SKU '${sku}' with correct product_id '${pid}'`);
         } else {
           console.warn(`SKU '${sku}' not found in Flowtrac products. Skipping.`);
@@ -312,32 +244,7 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
   }
   
   if (mappingUpdated) {
-    console.log('Mapping updated with missing Flowtrac product_ids, attempting to persist to GitHub...');
-    
-    // Try to update GitHub mapping if token is available
-    if (process.env.GITHUB_TOKEN) {
-      try {
-        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-        const githubResponse = await fetch(`${baseUrl}/api/github-mapping`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mapping })
-        });
-        
-        if (githubResponse.ok) {
-          const result = await githubResponse.json();
-          console.log('Successfully updated GitHub mapping with product IDs:', result.message);
-        } else {
-          const errorText = await githubResponse.text();
-          console.warn('Failed to update GitHub mapping. Status:', githubResponse.status, 'Response:', errorText);
-        }
-      } catch (error) {
-        console.warn('Error updating GitHub mapping:', error);
-        console.warn('Error details:', (error as Error).message);
-      }
-    } else {
-      console.log('GitHub token not available, mapping changes will not be persisted');
-    }
+    console.log('Mapping updated with missing Flowtrac product_ids in database');
   }
   
   if (missingSkus.length > 0) {
@@ -418,15 +325,9 @@ export async function fetchFlowtracInventoryWithBins(skus: string[]): Promise<Re
 export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> {
   const flowAuthCookie = await getFlowtracAuthCookie();
   
-  // Load mapping (try imported mapping first, then fallback to file)
-  let mapping: MappingFile;
-  const importedMapping = getImportedMapping();
-  
-  if (importedMapping) {
-    mapping = importedMapping;
-  } else {
-    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-  }
+  // Load mapping using the mapping service
+  const { mapping, source } = await mappingService.getMapping();
+  console.log(`Using ${source} mapping data for exportRawFlowtracBinsToCsv`);
   const products = await fetchAllFlowtracProducts(flowAuthCookie);
   const skuToProductId: Record<string, string> = {};
   for (const p of products) {
@@ -436,11 +337,11 @@ export async function exportRawFlowtracBinsToCsv(skus: string[]): Promise<void> 
   let mappingUpdated = false;
   const skuToPidForQuery: Record<string, string> = {};
   for (const sku of skus) {
-    let pid = getProductIdForSku(sku, mapping);
+    let pid = await getProductIdForSku(sku);
     if (!pid) {
       pid = skuToProductId[sku];
       if (pid) {
-        if (setProductIdForSku(sku, pid, mapping)) mappingUpdated = true;
+        if (await setProductIdForSku(sku, pid)) mappingUpdated = true;
       } else {
         throw new Error(`SKU '${sku}' not found in Flowtrac products.`);
       }

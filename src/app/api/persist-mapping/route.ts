@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store in both the imported mapping store and the persistent cache
-    setImportedMapping(mapping);
+    await mappingService.updateMapping(mapping, 'api_update');
     setCachedMapping(mapping);
 
     const status = getCacheStatus();

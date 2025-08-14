@@ -3,15 +3,13 @@ dotenv.config({ path: '.env.local' });
 
 import axios from 'axios';
 import qs from 'qs';
-import fs from 'fs';
-import path from 'path';
-import { getImportedMapping, setImportedMapping } from './imported-mapping-store';
+import { mappingService } from '../services/mapping';
 
 const FLOWTRAC_API_URL = process.env.FLOWTRAC_API_URL;
 const FLOWTRAC_BADGE = process.env.FLOWTRAC_BADGE;
 const FLOWTRAC_PIN = process.env.FLOWTRAC_PIN;
 
-const mappingPath = path.resolve(__dirname, '../../../mapping.json');
+
 
 async function fetchAllFlowtracProducts(flowAuthCookie: string) {
   const productsRes = await axios.get(`${FLOWTRAC_API_URL}/products`, {
@@ -62,17 +60,9 @@ function updateMappingWithProductIds(mapping: any, skuToProductId: Record<string
 // New function for enriching mapping with Shopify variant and inventory item IDs
 export async function enrichMappingWithShopifyVariantAndInventoryIds() {
   try {
-    // Get current mapping (imported or file)
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Enriching imported mapping data');
-      mapping = importedMapping;
-    } else {
-      console.log('Enriching file mapping data');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
+    // Get current mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Enriching ${source} mapping data`);
 
     // Authenticate and fetch all Flowtrac products
     const flowAuthCookie = await getFlowtracAuthCookie();
@@ -89,15 +79,13 @@ export async function enrichMappingWithShopifyVariantAndInventoryIds() {
     const updated = updateMappingWithProductIds(mapping, skuToProductId);
 
     if (updated) {
-      // Update the imported mapping store if we're using imported data
-      if (importedMapping) {
-        setImportedMapping(mapping);
-        console.log('Imported mapping updated with Flowtrac product_ids.');
+      // Update mapping using the mapping service
+      const result = await mappingService.updateMapping(mapping, 'enrich_product_ids');
+      if (result.success) {
+        console.log(`Mapping updated with Flowtrac product_ids in ${source}`);
       } else {
-        // Write to file if using file-based mapping
-        try {
-          fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-          console.log('mapping.json updated with Flowtrac product_ids.');
+        console.error('Failed to update mapping:', result.error);
+      }
         } catch (fileError) {
           console.log('Could not write to file system (expected in Vercel):', fileError);
         }

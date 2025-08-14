@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import { rateLimit } from '../../middleware/rateLimit';
-import path from 'path';
-import fs from 'fs';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory, updateShopifyInventoryBulk } from '../../../../services/shopify';
 import { updateAmazonInventory } from '../../../../services/amazon';
 import { updateShipStationWarehouseLocation } from '../../../../services/shipstation';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 
 export async function POST(request: NextRequest) {
   // Rate limiting
@@ -51,29 +49,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. Load mapping.json (try imported mapping first, then fallback to file)
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Using imported mapping data');
-      mapping = importedMapping;
-    } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      console.log('DEBUG: Resolved mappingPath in API route:', mappingPath);
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
+    // 1. Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data`);
 
     // 2. Collect all SKUs (simple and bundle components)
-    const skus = new Set<string>();
-    for (const product of mapping.products) {
-      if (product.flowtrac_sku) skus.add(product.flowtrac_sku);
-      if (Array.isArray(product.bundle_components)) {
-        for (const comp of product.bundle_components) {
-          if (comp.flowtrac_sku) skus.add(comp.flowtrac_sku);
-        }
-      }
-    }
+    const skus = await mappingService.getMappedSkus();
 
     // 3. Fetch inventory data from database (instead of Flowtrac directly)
     const { getFlowtracInventory } = await import('../../../lib/database');
@@ -121,17 +102,9 @@ export async function POST(request: NextRequest) {
     } else {
       await enrichMappingWithShopifyVariantAndInventoryIds();
       
-      // Reload mapping after enrichment (try imported mapping first, then fallback to file)
-      const importedMappingAfterEnrichment = getImportedMapping();
-      
-      if (importedMappingAfterEnrichment) {
-        console.log('Using imported mapping data after enrichment');
-        updatedMapping = importedMappingAfterEnrichment;
-      } else {
-        const mappingPath = path.join(process.cwd(), 'mapping.json');
-        console.log('Using file mapping data after enrichment');
-        updatedMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-      }
+      // Reload mapping after enrichment using the mapping service
+      const { mapping: updatedMappingData } = await mappingService.getMapping();
+      updatedMapping = updatedMappingData;
     }
 
     // 6. Update inventory in Shopify and Amazon for each SKU

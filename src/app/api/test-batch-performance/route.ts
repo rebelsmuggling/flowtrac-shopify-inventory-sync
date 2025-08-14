@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getImportedMapping } from '../../../utils/imported-mapping-store';
-import path from 'path';
-import fs from 'fs';
-
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -34,7 +31,6 @@ export async function GET(request: NextRequest) {
       
       // Fallback to file system
       if (!mapping) {
-        const mappingPath = path.join(process.cwd(), 'mapping.json');
         console.log('Using file mapping data for batch test');
         mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
       }

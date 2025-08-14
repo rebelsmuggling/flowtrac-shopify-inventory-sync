@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -31,7 +28,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Load existing mapping
-    const mappingPath = path.join(process.cwd(), 'mapping.json');
     const existingMapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
     
     // Parse CSV data

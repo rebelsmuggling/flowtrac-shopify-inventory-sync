@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-import { getImportedMapping } from '../../../utils/imported-mapping-store';
+import { mappingService } from '../../../services/mapping';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,46 +16,12 @@ export async function GET(request: NextRequest) {
       return await generateDatabaseCSV(includeMissingSkus);
     }
 
-    // 1. Load mapping.json (try imported mapping first, then fallback to file)
-    let mapping;
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Using imported mapping data for CSV export');
-      mapping = importedMapping;
-    } else {
-      // Try to load from mapping API first
-      try {
-        const mappingRes = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/mapping`);
-        if (mappingRes.ok) {
-          const mappingData = await mappingRes.json();
-          if (mappingData.success) {
-            console.log('Using mapping API data for CSV export');
-            mapping = mappingData.mapping;
-          }
-        }
-      } catch (apiError) {
-        console.log('Mapping API not available, falling back to file');
-      }
-      
-      // Fallback to file system
-      if (!mapping) {
-        const mappingPath = path.join(process.cwd(), 'mapping.json');
-        console.log('Using file mapping data for CSV export');
-        mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-      }
-    }
+    // 1. Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for CSV export`);
 
-    // 2. Collect all SKUs (simple and bundle components)
-    const skus = new Set<string>();
-    for (const product of mapping.products) {
-      if (product.flowtrac_sku) skus.add(product.flowtrac_sku);
-      if (Array.isArray(product.bundle_components)) {
-        for (const comp of product.bundle_components) {
-          if (comp.flowtrac_sku) skus.add(comp.flowtrac_sku);
-        }
-      }
-    }
+    // 2. Collect all SKUs using the mapping service
+    const skus = await mappingService.getMappedSkus();
 
     // 3. Generate inventory data with resilient processing like main sync
     console.log('Generating inventory data for CSV export');
@@ -382,18 +346,9 @@ async function generateDatabaseCSV(includeMissingSkus: boolean) {
   try {
     console.log('Generating CSV from database');
 
-    // 1. Load mapping.json
-    let mapping;
-    const importedMapping = getImportedMapping();
-
-    if (importedMapping) {
-      console.log('Using imported mapping data for database CSV export');
-      mapping = importedMapping;
-    } else {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      console.log('Using file mapping data for database CSV export');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
+    // 1. Load mapping using the mapping service
+    const { mapping, source } = await mappingService.getMapping();
+    console.log(`Using ${source} mapping data for database CSV export`);
 
     // 2. Get inventory data from database
     const { getFlowtracInventory } = await import('../../../lib/database');
@@ -415,16 +370,8 @@ async function generateDatabaseCSV(includeMissingSkus: boolean) {
 
     console.log(`Retrieved ${inventoryResult.data?.length || 0} inventory records from database`);
 
-    // 3. Collect all SKUs from mapping
-    const skus = new Set<string>();
-    for (const product of mapping.products) {
-      if (product.flowtrac_sku) skus.add(product.flowtrac_sku);
-      if (Array.isArray(product.bundle_components)) {
-        for (const comp of product.bundle_components) {
-          if (comp.flowtrac_sku) skus.add(comp.flowtrac_sku);
-        }
-      }
-    }
+    // 3. Collect all SKUs using the mapping service
+    const skus = await mappingService.getMappedSkus();
 
     // 4. Generate CSV data
     const csvData: any[] = [];

@@ -1,13 +1,12 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import { mappingService } from '../src/services/mapping';
 
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 const SHOPIFY_API_PASSWORD = process.env.SHOPIFY_API_PASSWORD;
 const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL;
 const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2023-10';
-
-const mappingPath = path.join(process.cwd(), 'mapping.json');
 
 const shopifyGraphqlUrl = `https://${SHOPIFY_STORE_URL}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
@@ -210,23 +209,9 @@ export async function updateShopifyInventory(inventoryItemId: string, available:
 }
 
 export async function enrichMappingWithShopifyVariantAndInventoryIds(): Promise<void> {
-  // Get current mapping (imported or file)
-  let mapping;
-  try {
-    const { getImportedMapping, setImportedMapping } = await import('../src/utils/imported-mapping-store');
-    const importedMapping = getImportedMapping();
-    
-    if (importedMapping) {
-      console.log('Enriching imported mapping data with Shopify IDs');
-      mapping = importedMapping;
-    } else {
-      console.log('Enriching file mapping data with Shopify IDs');
-      mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-    }
-  } catch (error) {
-    console.log('Using file mapping data (imported mapping not available)');
-    mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf-8'));
-  }
+  // Get current mapping using the mapping service
+  const { mapping, source } = await mappingService.getMapping();
+  console.log(`Enriching ${source} mapping data with Shopify IDs`);
 
   let updated = false;
   for (const product of mapping.products) {
@@ -248,21 +233,11 @@ export async function enrichMappingWithShopifyVariantAndInventoryIds(): Promise<
   }
   
   if (updated) {
-    try {
-      const { getImportedMapping, setImportedMapping } = await import('../src/utils/imported-mapping-store');
-      const importedMapping = getImportedMapping();
-      
-      if (importedMapping) {
-        setImportedMapping(mapping);
-        console.log('Imported mapping updated with Shopify variant and inventory item IDs.');
-      } else {
-        fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-        console.log('mapping.json updated with Shopify variant and inventory item IDs.');
-      }
-    } catch (error) {
-      // Fallback to file system
-      fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
-      console.log('mapping.json updated with Shopify variant and inventory item IDs.');
+    const result = await mappingService.updateMapping(mapping, 'shopify_service');
+    if (result.success) {
+      console.log(`Mapping updated with Shopify variant and inventory item IDs in ${source}`);
+    } else {
+      console.error('Failed to update mapping:', result.error);
     }
   }
 } 

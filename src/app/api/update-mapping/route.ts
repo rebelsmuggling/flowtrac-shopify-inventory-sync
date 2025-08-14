@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
 import { setImportedMapping } from '../../../utils/imported-mapping-store';
 
 export async function POST(request: NextRequest) {
@@ -16,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store the mapping data in memory and persist it
-    setImportedMapping(mapping);
+    await mappingService.updateMapping(mapping, 'api_update');
     
     // Also persist to the cache for longer-term storage
     try {
@@ -107,8 +105,10 @@ export async function POST(request: NextRequest) {
     
     // Also try to write to file system (for local development)
     try {
-      const mappingPath = path.join(process.cwd(), 'mapping.json');
-      fs.writeFileSync(mappingPath, JSON.stringify(mapping, null, 2));
+      const result = await mappingService.updateMapping(mapping, 'api_update');
+      if (!result.success) {
+        throw new Error(`Failed to update mapping: ${result.error}`);
+      }
     } catch (fileError) {
       console.log('Could not write to file system (expected in Vercel):', fileError);
     }
