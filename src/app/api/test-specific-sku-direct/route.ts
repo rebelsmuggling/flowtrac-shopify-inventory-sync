@@ -3,6 +3,10 @@ import { mappingService } from '../../../services/mapping';
 import { getFlowtracInventory } from '../../../lib/database';
 import axios from 'axios';
 
+function extractIdFromGid(gid: string): string {
+  return gid.split('/').pop() || gid;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { sku } = await request.json();
