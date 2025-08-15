@@ -12,9 +12,9 @@ export async function POST(request: NextRequest) {
     
     // 2. Get all SKUs that have Amazon SKUs
     const amazonSkus = mapping.products
-      .filter(product => product.amazon_sku)
-      .map(product => product.flowtrac_sku)
-      .filter(Boolean);
+      .filter(product => product.amazon_sku && product.flowtrac_sku)
+      .map(product => product.flowtrac_sku!)
+      .filter((sku): sku is string => Boolean(sku));
     
     console.log(`Found ${amazonSkus.length} products with Amazon SKUs`);
     

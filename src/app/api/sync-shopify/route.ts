@@ -12,9 +12,9 @@ export async function POST(request: NextRequest) {
     
     // 2. Get all SKUs that have Shopify SKUs
     const shopifySkus = mapping.products
-      .filter(product => product.shopify_sku)
-      .map(product => product.flowtrac_sku)
-      .filter(Boolean);
+      .filter(product => product.shopify_sku && product.flowtrac_sku)
+      .map(product => product.flowtrac_sku!)
+      .filter((sku): sku is string => Boolean(sku));
     
     console.log(`Found ${shopifySkus.length} products with Shopify SKUs`);
     
