@@ -34,6 +34,14 @@ export default function Home() {
   const [fetchingDescriptions, setFetchingDescriptions] = useState(false);
   const [descriptionsResult, setDescriptionsResult] = useState<any>(null);
   const [missingSkusInfo, setMissingSkusInfo] = useState<any>(null);
+  
+  // Separate sync states
+  const [shopifySyncing, setShopifySyncing] = useState(false);
+  const [amazonSyncing, setAmazonSyncing] = useState(false);
+  const [shipstationSyncing, setShipstationSyncing] = useState(false);
+  const [shopifyResult, setShopifyResult] = useState<any>(null);
+  const [amazonResult, setAmazonResult] = useState<any>(null);
+  const [shipstationResult, setShipstationResult] = useState<any>(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -65,6 +73,72 @@ export default function Home() {
       setResult("❌ Sync failed: " + (err as Error).message);
     }
     setSyncing(false);
+  };
+
+  const handleShopifySync = async () => {
+    setShopifySyncing(true);
+    setShopifyResult(null);
+    
+    try {
+      const res = await fetch("/api/sync-shopify", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setShopifyResult(data);
+      } else {
+        setShopifyResult({ error: data.error || 'Unknown error' });
+      }
+    } catch (err) {
+      setShopifyResult({ error: (err as Error).message });
+    }
+    setShopifySyncing(false);
+  };
+
+  const handleAmazonSync = async () => {
+    setAmazonSyncing(true);
+    setAmazonResult(null);
+    
+    try {
+      const res = await fetch("/api/sync-amazon", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setAmazonResult(data);
+      } else {
+        setAmazonResult({ error: data.error || 'Unknown error' });
+      }
+    } catch (err) {
+      setAmazonResult({ error: (err as Error).message });
+    }
+    setAmazonSyncing(false);
+  };
+
+  const handleShipStationSync = async () => {
+    setShipstationSyncing(true);
+    setShipstationResult(null);
+    
+    try {
+      const res = await fetch("/api/sync-shipstation", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setShipstationResult(data);
+      } else {
+        setShipstationResult({ error: data.error || 'Unknown error' });
+      }
+    } catch (err) {
+      setShipstationResult({ error: (err as Error).message });
+    }
+    setShipstationSyncing(false);
   };
 
   const handleContinueSession = async () => {
@@ -690,15 +764,76 @@ export default function Home() {
           Sync inventory from Flowtrac to Shopify and Amazon. Use the Preview CSV button to see what quantities would be synced without actually performing the sync.
         </p>
 
-        {/* --- Sync Now Button and Feedback --- */}
-        <div style={{ marginTop: 32, width: "100%", maxWidth: 480 }}>
+        {/* --- Separate Sync Buttons and Status --- */}
+        <div style={{ marginTop: 32, width: "100%", maxWidth: 800 }}>
+          <h3 style={{ margin: "0 0 16px 0", color: "#495057" }}>🔄 Individual Platform Syncs</h3>
+          <p style={{ fontSize: "0.9rem", color: "#6c757d", marginBottom: 16 }}>
+            Sync inventory to individual platforms. Each sync processes only products relevant to that platform.
+          </p>
+          
+          {/* Sync Buttons Row */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button
+              onClick={handleShopifySync}
+              disabled={shopifySyncing}
+              style={{
+                padding: "0.75rem 1.5rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: shopifySyncing ? "#ccc" : "#95bf47",
+                color: "#fff",
+                border: "none",
+                cursor: shopifySyncing ? "not-allowed" : "pointer",
+                flex: 1,
+                minWidth: "140px",
+              }}
+            >
+              {shopifySyncing ? "🔄 Syncing..." : "🛍️ Shopify Sync"}
+            </button>
+            <button
+              onClick={handleAmazonSync}
+              disabled={amazonSyncing}
+              style={{
+                padding: "0.75rem 1.5rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: amazonSyncing ? "#ccc" : "#ff9900",
+                color: "#fff",
+                border: "none",
+                cursor: amazonSyncing ? "not-allowed" : "pointer",
+                flex: 1,
+                minWidth: "140px",
+              }}
+            >
+              {amazonSyncing ? "🔄 Syncing..." : "📦 Amazon Sync"}
+            </button>
+            <button
+              onClick={handleShipStationSync}
+              disabled={shipstationSyncing}
+              style={{
+                padding: "0.75rem 1.5rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: shipstationSyncing ? "#ccc" : "#17a2b8",
+                color: "#fff",
+                border: "none",
+                cursor: shipstationSyncing ? "not-allowed" : "pointer",
+                flex: 1,
+                minWidth: "140px",
+              }}
+            >
+              {shipstationSyncing ? "🔄 Syncing..." : "🚢 ShipStation Sync"}
+            </button>
+          </div>
+          
+          {/* Legacy Sync Button */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <button
               onClick={handleSync}
               disabled={syncing}
               style={{
                 padding: "0.75rem 1.5rem",
-                fontSize: "1.1rem",
+                fontSize: "1rem",
                 borderRadius: "6px",
                 background: syncing ? "#ccc" : "#0070f3",
                 color: "#fff",
@@ -707,7 +842,7 @@ export default function Home() {
                 flex: 2,
               }}
             >
-              {syncing ? "Syncing..." : "Sync Now"}
+              {syncing ? "Syncing..." : "🔄 Full Sync (All Platforms)"}
             </button>
             <button
               onClick={handleExportInventoryCSV}
@@ -744,6 +879,159 @@ export default function Home() {
             >
               {fetchingDescriptions ? "Exporting..." : "📋 Export Missing ShipStation Products"}
             </button>
+          </div>
+          
+          {/* Individual Sync Status Sections */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
+            {/* Shopify Sync Status */}
+            <div style={{ 
+              flex: 1, 
+              minWidth: "250px",
+              padding: 16, 
+              border: "1px solid #e9ecef", 
+              borderRadius: "8px",
+              backgroundColor: shopifyResult ? "#f8f9fa" : "#fff"
+            }}>
+              <h4 style={{ margin: "0 0 8px 0", color: "#95bf47" }}>🛍️ Shopify Status</h4>
+              {shopifySyncing && (
+                <div style={{ color: "#6c757d", fontSize: "0.9rem" }}>
+                  🔄 Syncing Shopify inventory...
+                </div>
+              )}
+              {shopifyResult && !shopifySyncing && (
+                <div>
+                  {shopifyResult.error ? (
+                    <div style={{ color: "#dc3545", fontSize: "0.9rem" }}>
+                      ❌ {shopifyResult.error}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: "0.9rem" }}>
+                      <div style={{ color: "#28a745", fontWeight: "bold", marginBottom: 4 }}>
+                        ✅ {shopifyResult.message}
+                      </div>
+                      <div style={{ color: "#6c757d" }}>
+                        📊 Success Rate: {shopifyResult.results?.successRate}% ({shopifyResult.results?.successful}/{shopifyResult.results?.total})
+                      </div>
+                      {shopifyResult.results?.errors?.length > 0 && (
+                        <details style={{ marginTop: 8 }}>
+                          <summary style={{ cursor: "pointer", color: "#dc3545" }}>
+                            ❌ {shopifyResult.results.errors.length} errors
+                          </summary>
+                          <ul style={{ fontSize: "0.8rem", margin: "4px 0 0 0", paddingLeft: 16 }}>
+                            {shopifyResult.results.errors.slice(0, 3).map((error: string, index: number) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                            {shopifyResult.results.errors.length > 3 && (
+                              <li>... and {shopifyResult.results.errors.length - 3} more</li>
+                            )}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Amazon Sync Status */}
+            <div style={{ 
+              flex: 1, 
+              minWidth: "250px",
+              padding: 16, 
+              border: "1px solid #e9ecef", 
+              borderRadius: "8px",
+              backgroundColor: amazonResult ? "#f8f9fa" : "#fff"
+            }}>
+              <h4 style={{ margin: "0 0 8px 0", color: "#ff9900" }}>📦 Amazon Status</h4>
+              {amazonSyncing && (
+                <div style={{ color: "#6c757d", fontSize: "0.9rem" }}>
+                  🔄 Syncing Amazon inventory...
+                </div>
+              )}
+              {amazonResult && !amazonSyncing && (
+                <div>
+                  {amazonResult.error ? (
+                    <div style={{ color: "#dc3545", fontSize: "0.9rem" }}>
+                      ❌ {amazonResult.error}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: "0.9rem" }}>
+                      <div style={{ color: "#28a745", fontWeight: "bold", marginBottom: 4 }}>
+                        ✅ {amazonResult.message}
+                      </div>
+                      <div style={{ color: "#6c757d" }}>
+                        📊 Success Rate: {amazonResult.results?.successRate}% ({amazonResult.results?.successful}/{amazonResult.results?.total})
+                      </div>
+                      {amazonResult.results?.errors?.length > 0 && (
+                        <details style={{ marginTop: 8 }}>
+                          <summary style={{ cursor: "pointer", color: "#dc3545" }}>
+                            ❌ {amazonResult.results.errors.length} errors
+                          </summary>
+                          <ul style={{ fontSize: "0.8rem", margin: "4px 0 0 0", paddingLeft: 16 }}>
+                            {amazonResult.results.errors.slice(0, 3).map((error: string, index: number) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                            {amazonResult.results.errors.length > 3 && (
+                              <li>... and {amazonResult.results.errors.length - 3} more</li>
+                            )}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* ShipStation Sync Status */}
+            <div style={{ 
+              flex: 1, 
+              minWidth: "250px",
+              padding: 16, 
+              border: "1px solid #e9ecef", 
+              borderRadius: "8px",
+              backgroundColor: shipstationResult ? "#f8f9fa" : "#fff"
+            }}>
+              <h4 style={{ margin: "0 0 8px 0", color: "#17a2b8" }}>🚢 ShipStation Status</h4>
+              {shipstationSyncing && (
+                <div style={{ color: "#6c757d", fontSize: "0.9rem" }}>
+                  🔄 Updating warehouse locations...
+                </div>
+              )}
+              {shipstationResult && !shipstationSyncing && (
+                <div>
+                  {shipstationResult.error ? (
+                    <div style={{ color: "#dc3545", fontSize: "0.9rem" }}>
+                      ❌ {shipstationResult.error}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: "0.9rem" }}>
+                      <div style={{ color: "#28a745", fontWeight: "bold", marginBottom: 4 }}>
+                        ✅ {shipstationResult.message}
+                      </div>
+                      <div style={{ color: "#6c757d" }}>
+                        📊 Success Rate: {shipstationResult.results?.successRate}% ({shipstationResult.results?.successful}/{shipstationResult.results?.total})
+                      </div>
+                      {shipstationResult.results?.errors?.length > 0 && (
+                        <details style={{ marginTop: 8 }}>
+                          <summary style={{ cursor: "pointer", color: "#dc3545" }}>
+                            ❌ {shipstationResult.results.errors.length} errors
+                          </summary>
+                          <ul style={{ fontSize: "0.8rem", margin: "4px 0 0 0", paddingLeft: 16 }}>
+                            {shipstationResult.results.errors.slice(0, 3).map((error: string, index: number) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                            {shipstationResult.results.errors.length > 3 && (
+                              <li>... and {shipstationResult.results.errors.length - 3} more</li>
+                            )}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Database Batch Processor Section */}
