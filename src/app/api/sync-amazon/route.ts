@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
               });
             } else {
               results.failed++;
-              const errorMessage = `Failed to update ${result.sku}: ${result.error}`;
+              const errorMessage = `Failed to update ${result.sku}: ${'error' in result ? result.error : 'Unknown error'}`;
               results.errors.push(errorMessage);
             }
           }
