@@ -192,6 +192,22 @@ async function main() {
             console.log(`Sessions processed: ${autoContinueData.sessions_processed}`);
             console.log(`Total duration: ${autoContinueData.total_duration_ms}ms`);
             console.log(`Final status: ${autoContinueData.final_status}`);
+            console.log(`Timeout safe: ${autoContinueData.timeout_safe ? 'Yes' : 'No'}`);
+            
+            if (autoContinueData.has_more_sessions) {
+              console.log(`⚠️  ${autoContinueData.remaining_sessions} sessions remaining.`);
+              console.log(`💡 Note: ${autoContinueData.note}`);
+              
+              // If there are more sessions, suggest running the script again
+              console.log('\n🔄 To continue processing remaining sessions, run this script again:');
+              console.log('   node scripts/auto-continue-sessions.js');
+              
+              // Or suggest using a cron job for automatic continuation
+              console.log('\n⏰ For automatic continuation, consider setting up a cron job:');
+              console.log('   */5 * * * * cd /path/to/project && node scripts/auto-continue-sessions.js');
+            } else {
+              console.log('✅ All sessions completed successfully!');
+            }
             return;
           } else {
             throw new Error(`Auto-continuation failed: ${autoContinueData.error}`);

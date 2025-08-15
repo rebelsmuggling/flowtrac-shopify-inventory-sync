@@ -64,72 +64,98 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
   });
 
   try {
-    console.log(`[Amazon Sync] Updating inventory for SKU ${amazonSku} to quantity ${quantity} using POST_FLAT_FILE_INVLOADER_DATA feed`);
+    console.log(`[Amazon Sync] Updating inventory for SKU ${amazonSku} to quantity ${quantity} using JSON_LISTINGS_FEED`);
 
-    // Use POST_FLAT_FILE_INVLOADER_DATA feed for inventory updates
-    // This is the legacy but reliable feed type for inventory updates
-    
-    // 1. Create feed content - Tab-delimited format for POST_INVENTORY_AVAILABILITY_DATA
-    // Required columns: sku, quantity, fulfillment-center-id, handling-time
-    const feedContent = `sku\tquantity\tfulfillment-center-id\thandling-time\n${amazonSku}\t${quantity}\tAMAZON_NA\t2\n`;
+    // Use JSON_LISTINGS_FEED for inventory updates (new recommended approach)
+    const sellerId = process.env.AMAZON_SELLER_ID;
+    if (!sellerId) {
+      throw new Error('AMAZON_SELLER_ID environment variable is required for JSON feed');
+    }
 
-    console.log('[Amazon Sync] Inventory feed content:', feedContent);
+    // 1. Create JSON feed content for inventory update
+    const feedContent = {
+      header: {
+        sellerId: sellerId,
+        version: "2.0",
+        issueLocale: "en_US"
+      },
+      messages: [
+        {
+          messageId: 1,
+          sku: amazonSku,
+          operationType: "PARTIAL_UPDATE",
+          productType: "PRODUCT", // Generic product type - can be customized based on your products
+          attributes: {
+            fulfillment_availability: [
+              {
+                fulfillment_channel_code: "DEFAULT", // For seller-fulfilled inventory
+                quantity: quantity
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    console.log('[Amazon Sync] JSON feed content:', JSON.stringify(feedContent, null, 2));
 
     // 2. Create a feed document
     const createDocRes = await sellingPartner.callAPI({
       operation: 'createFeedDocument',
       body: {
-        contentType: 'text/tab-separated-values'
+        contentType: 'application/json'
       },
       endpoint: 'feeds'
     });
     const { feedDocumentId, url } = createDocRes;
 
-    // 3. Upload the feed file
+    // 3. Upload the JSON feed file
     const uploadRes = await fetch(url, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'text/tab-separated-values'
+        'Content-Type': 'application/json'
       },
-      body: Buffer.from(feedContent, 'utf-8')
+      body: JSON.stringify(feedContent)
     });
     if (!uploadRes.ok) {
       throw new Error(`Failed to upload JSON feed document: ${uploadRes.status} ${uploadRes.statusText}`);
     }
 
-    // 4. Submit the inventory feed
+    // 4. Submit the JSON inventory feed
     const createFeedParams = {
       operation: 'createFeed',
       body: {
-        feedType: 'POST_FLAT_FILE_INVLOADER_DATA',
+        feedType: 'JSON_LISTINGS_FEED',
         marketplaceIds: [process.env.AMAZON_MARKETPLACE_ID],
         inputFeedDocumentId: feedDocumentId
       },
       endpoint: 'feeds'
     };
-    console.log('[Amazon Sync] Inventory feed params:', JSON.stringify(createFeedParams, null, 2));
+    console.log('[Amazon Sync] JSON inventory feed params:', JSON.stringify(createFeedParams, null, 2));
     const submitFeedRes = await sellingPartner.callAPI(createFeedParams);
-    console.log('[Amazon Sync] Inventory feed response:', submitFeedRes);
+    console.log('[Amazon Sync] JSON inventory feed response:', submitFeedRes);
     const { feedId } = submitFeedRes;
-    console.log(`[Amazon Sync] Submitted inventory feed for SKU ${amazonSku}, feedId: ${feedId}`);
-    return { success: true, feedId, method: 'inventory_feed' };
+    console.log(`[Amazon Sync] Submitted JSON inventory feed for SKU ${amazonSku}, feedId: ${feedId}`);
+    return { success: true, feedId, method: 'json_listings_feed' };
     
   } catch (error: any) {
-    console.error('[Amazon Sync] Error updating inventory with inventory feed:', error);
+    console.error('[Amazon Sync] Error updating inventory with JSON feed:', error);
     if (error && error.response) {
       console.error('[Amazon Sync] Error response data:', error.response.data);
       console.error('[Amazon Sync] Error response status:', error.response.status);
       console.error('[Amazon Sync] Error response headers:', error.response.headers);
     }
     
-    // If the inventory feed fails, try the legacy feed approach as fallback
-    console.log('[Amazon Sync] Inventory feed failed, trying legacy feed approach as fallback...');
+    // If the JSON feed fails, try the legacy flat file approach as fallback
+    console.log('[Amazon Sync] JSON feed failed, trying legacy flat file approach as fallback...');
     return await updateAmazonInventoryLegacy(sellingPartner, amazonSku, quantity);
   }
 }
 
 async function updateAmazonInventoryLegacy(sellingPartner: any, amazonSku: string, quantity: number) {
   try {
+    console.log(`[Amazon Sync] Using legacy flat file method for SKU ${amazonSku} with quantity ${quantity}`);
+
     // 1. Generate feed content (tab-delimited, with required columns for POST_FLAT_FILE_INVLOADER_DATA)
     // Required columns: sku, quantity, handling-time
     const feedContent = `sku	quantity	handling-time\n${amazonSku}	${quantity}	1\n`;
@@ -181,5 +207,106 @@ async function updateAmazonInventoryLegacy(sellingPartner: any, amazonSku: strin
       console.error('[Amazon Sync] Legacy error response data:', error.response.data);
     }
     return { success: false, error: error.message, method: 'legacy' };
+  }
+}
+
+// New function for bulk inventory updates using JSON feed
+export async function updateAmazonInventoryBulk(updates: Array<{ sku: string; quantity: number }>) {
+  const sellingPartner = new SellingPartner({
+    region: 'na',
+    refresh_token: process.env.AMAZON_REFRESH_TOKEN!,
+    credentials: {
+      SELLING_PARTNER_APP_CLIENT_ID: process.env.AMAZON_CLIENT_ID!,
+      SELLING_PARTNER_APP_CLIENT_SECRET: process.env.AMAZON_CLIENT_SECRET!,
+      AWS_ACCESS_KEY_ID: process.env.AMAZON_AWS_ACCESS_KEY_ID!,
+      AWS_SECRET_ACCESS_KEY: process.env.AMAZON_AWS_SECRET_ACCESS_KEY!,
+      AWS_SELLING_PARTNER_ROLE: process.env.AMAZON_ROLE_ARN!,
+    }
+  });
+
+  try {
+    console.log(`[Amazon Sync] Updating bulk inventory for ${updates.length} SKUs using JSON_LISTINGS_FEED`);
+
+    const sellerId = process.env.AMAZON_SELLER_ID;
+    if (!sellerId) {
+      throw new Error('AMAZON_SELLER_ID environment variable is required for JSON feed');
+    }
+
+    // 1. Create JSON feed content for bulk inventory update
+    const feedContent = {
+      header: {
+        sellerId: sellerId,
+        version: "2.0",
+        issueLocale: "en_US"
+      },
+      messages: updates.map((update, index) => ({
+        messageId: index + 1,
+        sku: update.sku,
+        operationType: "PARTIAL_UPDATE",
+        productType: "PRODUCT", // Generic product type
+        attributes: {
+          fulfillment_availability: [
+            {
+              fulfillment_channel_code: "DEFAULT", // For seller-fulfilled inventory
+              quantity: update.quantity
+            }
+          ]
+        }
+      }))
+    };
+
+    console.log(`[Amazon Sync] Bulk JSON feed content for ${updates.length} SKUs`);
+
+    // 2. Create a feed document
+    const createDocRes = await sellingPartner.callAPI({
+      operation: 'createFeedDocument',
+      body: {
+        contentType: 'application/json'
+      },
+      endpoint: 'feeds'
+    });
+    const { feedDocumentId, url } = createDocRes;
+
+    // 3. Upload the JSON feed file
+    const uploadRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(feedContent)
+    });
+    if (!uploadRes.ok) {
+      throw new Error(`Failed to upload bulk JSON feed document: ${uploadRes.status} ${uploadRes.statusText}`);
+    }
+
+    // 4. Submit the JSON inventory feed
+    const createFeedParams = {
+      operation: 'createFeed',
+      body: {
+        feedType: 'JSON_LISTINGS_FEED',
+        marketplaceIds: [process.env.AMAZON_MARKETPLACE_ID],
+        inputFeedDocumentId: feedDocumentId
+      },
+      endpoint: 'feeds'
+    };
+    const submitFeedRes = await sellingPartner.callAPI(createFeedParams);
+    const { feedId } = submitFeedRes;
+    console.log(`[Amazon Sync] Submitted bulk JSON inventory feed for ${updates.length} SKUs, feedId: ${feedId}`);
+    return { success: true, feedId, method: 'json_listings_feed', skusProcessed: updates.length };
+    
+  } catch (error: any) {
+    console.error('[Amazon Sync] Error updating bulk inventory with JSON feed:', error);
+    if (error && error.response) {
+      console.error('[Amazon Sync] Error response data:', error.response.data);
+    }
+    
+    // If bulk JSON feed fails, try individual updates as fallback
+    console.log('[Amazon Sync] Bulk JSON feed failed, trying individual updates as fallback...');
+    const results = [];
+    for (const update of updates) {
+      const result = await updateAmazonInventory(update.sku, update.quantity);
+      results.push({ sku: update.sku, ...result });
+    }
+    return { success: false, error: 'Bulk update failed, used individual fallback', results };
   }
 } 

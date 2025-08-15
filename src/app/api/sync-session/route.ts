@@ -289,8 +289,9 @@ async function autoContinueSession() {
   console.log(`Auto-continuing session from batch ${session.current_batch} to completion`);
   
   let sessionsProcessed = 0;
-  const maxSessionsToProcess = 10; // Limit to prevent infinite loops
+  const maxSessionsToProcess = 3; // Reduced from 10 to 3 for better timeout safety
   const startTime = Date.now();
+  const maxTotalTime = 240000; // 4 minutes max (leaving 60s buffer for Vercel's 300s limit)
   
   try {
     while (session.status === 'in_progress' && sessionsProcessed < maxSessionsToProcess) {
@@ -301,7 +302,14 @@ async function autoContinueSession() {
         break;
       }
       
-      console.log(`Auto-continuing to session ${nextSession} of ${session.total_batches}`);
+      // Check if we're approaching the timeout limit
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime > maxTotalTime) {
+        console.log(`Approaching timeout limit (${elapsedTime}ms elapsed), stopping auto-continuation`);
+        break;
+      }
+      
+      console.log(`Auto-continuing to session ${nextSession} of ${session.total_batches} (${elapsedTime}ms elapsed)`);
       
       // Process the next session
       const result = await processSession(session, nextSession);
@@ -334,11 +342,14 @@ async function autoContinueSession() {
       }
       
       // Add a small delay between sessions to prevent overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced from 2000ms to 1000ms
     }
     
     const endTime = Date.now();
     const totalDuration = endTime - startTime;
+    
+    const hasMoreSessions = session.current_batch < session.total_batches;
+    const remainingSessions = session.total_batches - session.current_batch;
     
     return NextResponse.json({
       success: true,
@@ -346,7 +357,13 @@ async function autoContinueSession() {
       sessions_processed: sessionsProcessed,
       total_duration_ms: totalDuration,
       session: session,
-      final_status: session.status
+      final_status: session.status,
+      has_more_sessions: hasMoreSessions,
+      remaining_sessions: remainingSessions,
+      timeout_safe: totalDuration < maxTotalTime,
+      note: hasMoreSessions ? 
+        `Remaining ${remainingSessions} sessions need to be processed. Use the auto-continue script or manual continuation.` :
+        'All sessions completed successfully.'
     });
     
   } catch (error) {
@@ -459,7 +476,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         
         // Import sync services
         const { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventoryBulk } = await import('../../../../services/shopify');
-        const { updateAmazonInventory } = await import('../../../../services/amazon');
+        const { updateAmazonInventory, updateAmazonInventoryBulk } = await import('../../../../services/amazon');
         const { updateShipStationWarehouseLocation } = await import('../../../../services/shipstation');
         
         // Self-heal: Enrich mapping with missing Shopify variant and inventory item IDs
@@ -502,22 +519,32 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
           }
         }
         
-        // Amazon sync for products in shopifyInventory (with timeout protection)
-        const amazonPromises = [];
+        // Amazon sync for products in shopifyInventory (bulk update with timeout protection)
+        const amazonUpdates: Array<{ sku: string; quantity: number }> = [];
         for (const [sku, quantity] of Object.entries(shopifyInventory)) {
           const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
           
           if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
-            const amazonPromise = updateAmazonInventory(product.amazon_sku, quantity)
-              .then(result => {
-                console.log(`Amazon sync for SKU ${product.amazon_sku}:`, result);
-                return { success: true, sku: product.amazon_sku, result };
-              })
-              .catch(err => {
-                console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
-                return { success: false, sku: product.amazon_sku, error: err.message };
-              });
-            amazonPromises.push(amazonPromise);
+            amazonUpdates.push({ sku: product.amazon_sku, quantity });
+          }
+        }
+        
+        // Bulk Amazon sync with timeout
+        if (amazonUpdates.length > 0) {
+          console.log(`Starting bulk Amazon update for ${amazonUpdates.length} items...`);
+          const amazonTimeoutMs = 60000; // 60 second timeout for Amazon bulk update
+          
+          try {
+            const amazonResult = await Promise.race([
+              updateAmazonInventoryBulk(amazonUpdates),
+              new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Amazon bulk update timeout')), amazonTimeoutMs)
+              )
+            ]);
+            console.log(`Bulk Amazon update completed:`, amazonResult);
+          } catch (amazonError) {
+            console.error(`Amazon bulk update failed: ${(amazonError as Error).message}`);
+            // Continue with other platforms even if Amazon fails
           }
         }
         
@@ -552,19 +579,18 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
           shipstationPromises.push(shipstationPromise);
         }
         
-        // Wait for all Amazon and ShipStation updates with timeout
+        // Wait for all ShipStation updates with timeout (Amazon is now handled separately with bulk updates)
         const timeoutMs = 60000; // 60 second timeout for platform syncs
-        const platformPromises = [...amazonPromises, ...shipstationPromises];
         
-        if (platformPromises.length > 0) {
-          console.log(`Waiting for ${platformPromises.length} platform updates with ${timeoutMs}ms timeout...`);
+        if (shipstationPromises.length > 0) {
+          console.log(`Waiting for ${shipstationPromises.length} ShipStation updates with ${timeoutMs}ms timeout...`);
           const platformResults = await Promise.race([
-            Promise.all(platformPromises),
+            Promise.all(shipstationPromises),
             new Promise<never>((_, reject) => 
               setTimeout(() => reject(new Error('Platform sync timeout')), timeoutMs)
             )
           ]);
-          console.log(`Platform sync completed: ${platformResults.length} updates processed`);
+          console.log(`ShipStation sync completed: ${platformResults.length} updates processed`);
         }
         
         console.log(`Platform sync completed for session ${sessionNumber}`);

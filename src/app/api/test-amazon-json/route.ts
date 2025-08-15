@@ -1,87 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateAmazonInventory } from '../../../../services/amazon';
-import { mappingService } from '../../../services/mapping';
-import { getFlowtracInventory } from '../../../lib/database';
+import { updateAmazonInventory, updateAmazonInventoryBulk } from '../../../../services/amazon';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sku } = body;
+    const { sku, quantity, testType = 'single' } = body;
 
-    if (!sku) {
-      return NextResponse.json({
-        success: false,
-        error: 'Missing required parameter: sku'
-      });
-    }
+    console.log(`🧪 Testing Amazon JSON feed - Type: ${testType}, SKU: ${sku}, Quantity: ${quantity}`);
 
-    console.log(`Testing Amazon JSON API for SKU: ${sku}`);
-
-    // Get the mapping to find the correct Amazon SKU
-    const { mapping } = await mappingService.getMapping();
-    
-    // Try to find the product by different SKU types
-    let product = mapping.products.find((p: any) => p.flowtrac_sku === sku);
-    if (!product) {
-      product = mapping.products.find((p: any) => p.shopify_sku === sku);
-    }
-    if (!product) {
-      product = mapping.products.find((p: any) => p.amazon_sku === sku);
-    }
-
-    if (!product) {
-      return NextResponse.json({
-        success: false,
-        error: `Product not found in mapping for SKU: ${sku}`
-      });
-    }
-
-    const amazonSku = product.amazon_sku;
-    if (!amazonSku || typeof amazonSku !== 'string' || amazonSku.trim() === '') {
-      return NextResponse.json({
-        success: false,
-        error: `No Amazon SKU found for product: ${sku}`,
-        product: {
-          flowtrac_sku: product.flowtrac_sku,
-          shopify_sku: product.shopify_sku,
-          amazon_sku: product.amazon_sku
-        }
-      });
-    }
-
-    console.log(`Found product: ${sku} -> Amazon SKU: ${amazonSku}`);
-
-    // Get quantity from database instead of using manually provided quantity
-    const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
-    
-    if (!inventoryResult.success) {
-      return NextResponse.json({
-        success: false,
-        error: `Failed to get inventory from database: ${inventoryResult.error}`
-      });
-    }
-
-    let quantity = 0;
-    if (inventoryResult.data && inventoryResult.data.length > 0) {
-      quantity = inventoryResult.data[0].quantity;
-    }
-
-    console.log(`Database quantity for ${sku}: ${quantity}`);
-
-    const result = await updateAmazonInventory(amazonSku, quantity);
-
-    return NextResponse.json({
-      success: true,
-      test: {
-        originalSku: sku,
-        amazonSku: amazonSku,
-        databaseQuantity: quantity,
-        result
+    if (testType === 'single') {
+      // Test single SKU update
+      if (!sku || quantity === undefined) {
+        return NextResponse.json({
+          success: false,
+          error: 'Missing required parameters: sku and quantity'
+        });
       }
-    });
+
+      console.log(`📦 Testing single SKU update for ${sku} with quantity ${quantity}`);
+      const result = await updateAmazonInventory(sku, quantity);
+
+      return NextResponse.json({
+        success: true,
+        testType: 'single',
+        sku,
+        quantity,
+        result
+      });
+
+    } else if (testType === 'bulk') {
+      // Test bulk SKU update
+      const testUpdates = [
+        { sku: sku || 'TEST-SKU-001', quantity: quantity || 10 },
+        { sku: 'TEST-SKU-002', quantity: 15 },
+        { sku: 'TEST-SKU-003', quantity: 20 }
+      ];
+
+      console.log(`📦 Testing bulk SKU update for ${testUpdates.length} SKUs`);
+      const result = await updateAmazonInventoryBulk(testUpdates);
+
+      return NextResponse.json({
+        success: true,
+        testType: 'bulk',
+        updates: testUpdates,
+        result
+      });
+
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid testType. Use "single" or "bulk"'
+      });
+    }
 
   } catch (error) {
-    console.error('Test Amazon JSON API error:', error);
+    console.error('❌ Amazon JSON feed test failed:', error);
     return NextResponse.json({
       success: false,
       error: (error as Error).message
@@ -90,87 +63,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    const url = new URL(request.url);
-    const sku = url.searchParams.get('sku');
-
-    if (!sku) {
-      return NextResponse.json({
-        success: false,
-        error: 'Missing required parameter: sku'
-      });
+  return NextResponse.json({
+    message: 'Amazon JSON Feed Test Endpoint',
+    usage: {
+      single: 'POST with { "sku": "YOUR-SKU", "quantity": 10, "testType": "single" }',
+      bulk: 'POST with { "testType": "bulk" }'
     }
-
-    console.log(`Testing Amazon JSON API for SKU: ${sku}`);
-
-    // Get the mapping to find the correct Amazon SKU
-    const { mapping } = await mappingService.getMapping();
-    
-    // Try to find the product by different SKU types
-    let product = mapping.products.find((p: any) => p.flowtrac_sku === sku);
-    if (!product) {
-      product = mapping.products.find((p: any) => p.shopify_sku === sku);
-    }
-    if (!product) {
-      product = mapping.products.find((p: any) => p.amazon_sku === sku);
-    }
-
-    if (!product) {
-      return NextResponse.json({
-        success: false,
-        error: `Product not found in mapping for SKU: ${sku}`
-      });
-    }
-
-    const amazonSku = product.amazon_sku;
-    if (!amazonSku || typeof amazonSku !== 'string' || amazonSku.trim() === '') {
-      return NextResponse.json({
-        success: false,
-        error: `No Amazon SKU found for product: ${sku}`,
-        product: {
-          flowtrac_sku: product.flowtrac_sku,
-          shopify_sku: product.shopify_sku,
-          amazon_sku: product.amazon_sku
-        }
-      });
-    }
-
-    console.log(`Found product: ${sku} -> Amazon SKU: ${amazonSku}`);
-
-    // Get quantity from database instead of using manually provided quantity
-    const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
-    
-    if (!inventoryResult.success) {
-      return NextResponse.json({
-        success: false,
-        error: `Failed to get inventory from database: ${inventoryResult.error}`
-      });
-    }
-
-    let quantity = 0;
-    if (inventoryResult.data && inventoryResult.data.length > 0) {
-      quantity = inventoryResult.data[0].quantity;
-    }
-
-    console.log(`Database quantity for ${sku}: ${quantity}`);
-
-    const result = await updateAmazonInventory(amazonSku, quantity);
-
-    return NextResponse.json({
-      success: true,
-      test: {
-        originalSku: sku,
-        amazonSku: amazonSku,
-        databaseQuantity: quantity,
-        result
-      }
-    });
-
-  } catch (error) {
-    console.error('Test Amazon JSON API error:', error);
-    return NextResponse.json({
-      success: false,
-      error: (error as Error).message
-    }, { status: 500 });
-  }
+  });
 }

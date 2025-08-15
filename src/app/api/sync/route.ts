@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // import { rateLimit } from '../../middleware/rateLimit';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 import { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventory, updateShopifyInventoryBulk } from '../../../../services/shopify';
-import { updateAmazonInventory } from '../../../../services/amazon';
+import { updateAmazonInventory, updateAmazonInventoryBulk } from '../../../../services/amazon';
 import { updateShipStationWarehouseLocation } from '../../../../services/shipstation';
 import { mappingService } from '../../../services/mapping';
 
@@ -224,22 +224,61 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Amazon sync for products in shopifyInventory
+    // Amazon sync for products in shopifyInventory (bulk update)
+    const amazonUpdates: Array<{ sku: string; quantity: number }> = [];
+    const amazonUpdateMap: Record<string, { sku: string; quantity: number }> = {};
+    
+    // Collect all Amazon updates
     for (const [sku, quantity] of Object.entries(shopifyInventory)) {
       const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
       
       if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
-        if (dryRun) {
-          updateResults[sku].amazon = { success: true, dryRun: true, message: `Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}` };
-          console.log(`DRY RUN: Would update Amazon inventory for SKU ${product.amazon_sku} to ${quantity}`);
-        } else {
-          try {
-            const amazonResult = await updateAmazonInventory(product.amazon_sku, quantity);
-            updateResults[sku].amazon = amazonResult;
-            console.log(`Amazon sync for SKU ${product.amazon_sku}:`, amazonResult);
-          } catch (err: any) {
-            updateResults[sku].amazon = { success: false, error: err.message };
-            console.error(`Failed to update Amazon inventory for SKU ${product.amazon_sku}: ${err.message}`);
+        amazonUpdates.push({ sku: product.amazon_sku, quantity });
+        amazonUpdateMap[sku] = { sku: product.amazon_sku, quantity };
+        updateResults[sku] = { shopify: updateResults[sku]?.shopify || null, amazon: null };
+      }
+    }
+    
+    // Bulk Amazon sync
+    if (amazonUpdates.length > 0) {
+      if (dryRun) {
+        console.log(`DRY RUN: Would bulk update ${amazonUpdates.length} Amazon inventory items`);
+        for (const update of amazonUpdates) {
+          const shopifySku = Object.keys(amazonUpdateMap).find(key => amazonUpdateMap[key].sku === update.sku);
+          if (shopifySku && updateResults[shopifySku]) {
+            updateResults[shopifySku].amazon = { 
+              success: true, 
+              dryRun: true, 
+              message: `Would update Amazon inventory for SKU ${update.sku} to ${update.quantity}` 
+            };
+          }
+        }
+      } else {
+        try {
+          console.log(`Starting bulk Amazon update for ${amazonUpdates.length} items...`);
+          const bulkResult = await updateAmazonInventoryBulk(amazonUpdates);
+          console.log(`Bulk Amazon update completed:`, bulkResult);
+          
+          // Mark all as successful initially (we'll handle individual failures if needed)
+          for (const update of amazonUpdates) {
+            const shopifySku = Object.keys(amazonUpdateMap).find(key => amazonUpdateMap[key].sku === update.sku);
+            if (shopifySku && updateResults[shopifySku]) {
+              updateResults[shopifySku].amazon = { success: true, method: bulkResult.method };
+            }
+          }
+          
+          // Log any errors
+          if (!bulkResult.success && bulkResult.results) {
+            console.error('Amazon bulk update errors:', bulkResult.results);
+          }
+        } catch (err: any) {
+          console.error('Bulk Amazon update failed:', err.message);
+          // Mark all as failed
+          for (const update of amazonUpdates) {
+            const shopifySku = Object.keys(amazonUpdateMap).find(key => amazonUpdateMap[key].sku === update.sku);
+            if (shopifySku && updateResults[shopifySku]) {
+              updateResults[shopifySku].amazon = { success: false, error: err.message };
+            }
           }
         }
       }
