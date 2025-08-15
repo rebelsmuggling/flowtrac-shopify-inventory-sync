@@ -13,10 +13,10 @@ export async function POST(request: NextRequest) {
     
     console.log(`Testing specific SKU: ${sku}`);
     
-    // Get mapping and inventory data
-    const { mapping } = await mappingService.getMapping();
+    // Get mapping and inventory data (fresh from database)
+    const { mapping } = await mappingService.getMappingFresh();
     const product = mapping.products.find((p: any) => 
-      p.flowtrac_sku === sku || p.shopify_sku === sku
+      p.flowtrac_sku === sku || p.shopify_sku === sku || p.amazon_sku === sku
     );
     
     if (!product) {
