@@ -1,32 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * Amazon Feed Troubleshooter
+ * Simple Amazon Feed Test
  * 
- * Comprehensive testing and troubleshooting for Amazon JSON feed submissions.
- * This script helps diagnose issues with Amazon SP-API feed submissions.
- * 
- * Usage:
- *   node scripts/amazon-feed-troubleshooter.js
- *   node scripts/amazon-feed-troubleshooter.js --test-single
- *   node scripts/amazon-feed-troubleshooter.js --test-bulk
- *   node scripts/amazon-feed-troubleshooter.js --diagnose
+ * Tests Amazon SP-API connection and basic functionality without importing the service.
  */
 
 require('dotenv').config({ path: '.env.local' });
-
-const { updateAmazonInventory, updateAmazonInventoryBulk } = require('../services/amazon.ts');
-
-// Test configurations
-const TEST_SKUS = {
-  single: { sku: 'TEST-SKU-001', quantity: 10 },
-  bulk: [
-    { sku: 'TEST-SKU-002', quantity: 15 },
-    { sku: 'TEST-SKU-003', quantity: 20 },
-    { sku: 'TEST-SKU-004', quantity: 25 },
-    { sku: 'TEST-SKU-005', quantity: 30 }
-  ]
-};
 
 async function checkEnvironmentVariables() {
   console.log('🔧 Checking Amazon SP-API Environment Variables...\n');
@@ -120,7 +100,16 @@ async function testAmazonConnection() {
     console.log('✅ SP-API Connection successful!');
     console.log(`   Marketplaces: ${response.payload?.length || 0} found`);
     
-    return { success: true, sellingPartner };
+    if (response.payload && response.payload.length > 0) {
+      console.log('   Marketplace details:');
+      response.payload.forEach((marketplace, index) => {
+        console.log(`     ${index + 1}. ${marketplace.marketplaceName} (${marketplace.marketplaceId})`);
+      });
+    } else {
+      console.log('   ⚠️  No marketplaces found - this might indicate a configuration issue');
+    }
+    
+    return { success: true, sellingPartner, marketplaces: response.payload?.length || 0 };
   } catch (error) {
     console.error('❌ Amazon SP-API connection failed:', error.message);
     if (error.response) {
@@ -128,72 +117,6 @@ async function testAmazonConnection() {
       console.error('Response data:', error.response.data);
     }
     return { success: false, error: error.message };
-  }
-}
-
-async function testSingleSkuUpdate() {
-  console.log('\n📦 Testing Single SKU Update...\n');
-  
-  const { sku, quantity } = TEST_SKUS.single;
-  console.log(`Updating SKU: ${sku} to quantity: ${quantity}`);
-  
-  const startTime = Date.now();
-  
-  try {
-    const result = await updateAmazonInventory(sku, quantity);
-    const duration = Date.now() - startTime;
-    
-    console.log(`⏱️  Duration: ${duration}ms`);
-    console.log('Result:', result);
-    
-    if (result.success) {
-      console.log(`✅ Success! Feed ID: ${result.feedId}, Method: ${result.method}`);
-      return { success: true, result, duration };
-    } else {
-      console.log(`❌ Failed: ${result.error}`);
-      return { success: false, error: result.error, duration };
-    }
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ Exception after ${duration}ms:`, error.message);
-    return { success: false, error: error.message, duration };
-  }
-}
-
-async function testBulkSkuUpdate() {
-  console.log('\n📦 Testing Bulk SKU Update...\n');
-  
-  const updates = TEST_SKUS.bulk;
-  console.log(`Updating ${updates.length} SKUs in bulk:`);
-  updates.forEach(update => console.log(`   - ${update.sku}: ${update.quantity}`));
-  
-  const startTime = Date.now();
-  
-  try {
-    const result = await updateAmazonInventoryBulk(updates);
-    const duration = Date.now() - startTime;
-    
-    console.log(`⏱️  Duration: ${duration}ms`);
-    console.log('Result:', result);
-    
-    if (result.success) {
-      console.log(`✅ Success! Feed ID: ${result.feedId}, Method: ${result.method}, SKUs: ${result.skusProcessed}`);
-      return { success: true, result, duration };
-    } else {
-      console.log(`❌ Failed: ${result.error}`);
-      if (result.results) {
-        console.log('Individual results:');
-        result.results.forEach(r => {
-          const status = r.success ? '✅' : '❌';
-          console.log(`   ${status} ${r.sku}: ${r.success ? 'Success' : r.error}`);
-        });
-      }
-      return { success: false, error: result.error, results: result.results, duration };
-    }
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ Exception after ${duration}ms:`, error.message);
-    return { success: false, error: error.message, duration };
   }
 }
 
@@ -239,27 +162,113 @@ async function testFeedDocumentCreation() {
   }
 }
 
-async function runDiagnostics() {
-  console.log('🔍 Running Amazon Feed Diagnostics...\n');
+async function testInventoryFeed() {
+  console.log('\n📦 Testing Inventory Feed Creation...\n');
+  
+  try {
+    const { SellingPartner } = require('amazon-sp-api');
+    const sellingPartner = new SellingPartner({
+      region: 'na',
+      refresh_token: process.env.AMAZON_REFRESH_TOKEN,
+      credentials: {
+        SELLING_PARTNER_APP_CLIENT_ID: process.env.AMAZON_CLIENT_ID,
+        SELLING_PARTNER_APP_CLIENT_SECRET: process.env.AMAZON_CLIENT_SECRET,
+        AWS_ACCESS_KEY_ID: process.env.AMAZON_AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY: process.env.AMAZON_AWS_SECRET_ACCESS_KEY,
+        AWS_SELLING_PARTNER_ROLE: process.env.AMAZON_ROLE_ARN,
+      }
+    });
+
+    // Create feed document
+    console.log('Creating feed document...');
+    const createDocRes = await sellingPartner.callAPI({
+      operation: 'createFeedDocument',
+      body: {
+        contentType: 'application/json'
+      },
+      endpoint: 'feeds'
+    });
+
+    // Create test inventory feed
+    const testFeed = {
+      header: {
+        sellerId: process.env.AMAZON_SELLER_ID,
+        version: "2.0"
+      },
+      messages: [
+        {
+          messageId: 1,
+          operationType: "Update",
+          inventory: {
+            sku: "TEST-SKU-001",
+            quantity: 10
+          }
+        }
+      ]
+    };
+
+    // Upload feed content
+    console.log('Uploading feed content...');
+    const uploadResponse = await fetch(createDocRes.url, {
+      method: 'PUT',
+      body: JSON.stringify(testFeed),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+    }
+
+    console.log('✅ Feed content uploaded successfully!');
+
+    // Create feed
+    console.log('Creating feed...');
+    const createFeedRes = await sellingPartner.callAPI({
+      operation: 'createFeed',
+      body: {
+        feedType: 'JSON_LISTINGS_FEED',
+        marketplaceIds: [process.env.AMAZON_MARKETPLACE_ID],
+        inputFeedDocumentId: createDocRes.feedDocumentId
+      },
+      endpoint: 'feeds'
+    });
+
+    console.log('✅ Feed created successfully!');
+    console.log(`   Feed ID: ${createFeedRes.feedId}`);
+    
+    return { success: true, feedId: createFeedRes.feedId };
+  } catch (error) {
+    console.error('❌ Inventory feed test failed:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
+    return { success: false, error: error.message };
+  }
+}
+
+async function main() {
+  console.log('🧪 Simple Amazon Feed Test');
+  console.log('='.repeat(40));
   
   const results = {
     environment: await checkEnvironmentVariables(),
     connection: await testAmazonConnection(),
     feedDocument: await testFeedDocumentCreation(),
-    singleSku: await testSingleSkuUpdate(),
-    bulkSku: await testBulkSkuUpdate()
+    inventoryFeed: await testInventoryFeed()
   };
   
   console.log('\n' + '='.repeat(60));
-  console.log('📊 DIAGNOSTIC SUMMARY');
+  console.log('📊 TEST SUMMARY');
   console.log('='.repeat(60));
   
   const tests = [
     { name: 'Environment Variables', result: results.environment },
     { name: 'SP-API Connection', result: results.connection.success },
     { name: 'Feed Document Creation', result: results.feedDocument.success },
-    { name: 'Single SKU Update', result: results.singleSku.success },
-    { name: 'Bulk SKU Update', result: results.bulkSku.success }
+    { name: 'Inventory Feed Test', result: results.inventoryFeed.success }
   ];
   
   let passedTests = 0;
@@ -277,42 +286,18 @@ async function runDiagnostics() {
     console.log('⚠️  Some tests failed. Check the output above for details.');
   }
   
-  return results;
-}
-
-async function main() {
-  const args = process.argv.slice(2);
-  
-  console.log('🧪 Amazon Feed Troubleshooter');
-  console.log('='.repeat(40));
-  
-  if (args.includes('--test-single')) {
-    await checkEnvironmentVariables();
-    await testSingleSkuUpdate();
-  } else if (args.includes('--test-bulk')) {
-    await checkEnvironmentVariables();
-    await testBulkSkuUpdate();
-  } else if (args.includes('--diagnose')) {
-    await runDiagnostics();
-  } else {
-    // Run full diagnostics by default
-    await runDiagnostics();
+  // Special note about marketplaces
+  if (results.connection.success && results.connection.marketplaces === 0) {
+    console.log('\n⚠️  IMPORTANT: No marketplaces found!');
+    console.log('   This could be why your Amazon syncs are failing.');
+    console.log('   Check your AMAZON_MARKETPLACE_ID and seller account permissions.');
   }
 }
 
 // Run the script
 if (require.main === module) {
   main().catch((error) => {
-    console.error('Script failed:', error);
+    console.error('Test failed:', error);
     process.exit(1);
   });
 }
-
-module.exports = {
-  checkEnvironmentVariables,
-  testAmazonConnection,
-  testSingleSkuUpdate,
-  testBulkSkuUpdate,
-  testFeedDocumentCreation,
-  runDiagnostics
-};
