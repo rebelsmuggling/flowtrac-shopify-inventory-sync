@@ -27,9 +27,9 @@ async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: s
   
   console.log(`Starting verification for ${updates.length} items...`);
   
-  // Limit verification to first 50 items to prevent timeouts
-  const itemsToVerify = updates.slice(0, 50);
-  console.log(`Verifying first ${itemsToVerify.length} items to prevent timeout...`);
+  // Limit verification to last 50 items to prevent timeouts
+  const itemsToVerify = updates.slice(-50);
+  console.log(`Verifying last ${itemsToVerify.length} items to prevent timeout...`);
   
   // Process verification one by one to avoid GraphQL complexity issues
   for (const update of itemsToVerify) {
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
             } : {
               actualQuantity: -1,
               updateSuccessful: null,
-              locationName: 'Not Verified (Limited to 50 items)'
+              locationName: 'Not Verified (Limited to last 50 items)'
             }
           });
         }
