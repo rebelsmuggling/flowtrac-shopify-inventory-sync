@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
 import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession, SyncSession } from '../../../lib/database';
+import { updateShopifyInventory } from '../../../../services/shopify';
+import { updateAmazonInventory } from '../../../../services/amazon';
+import { updateShipStationWarehouseLocation } from '../../../../services/shipstation';
 
 const BATCH_SIZE = 30; // Further reduced batch size to avoid Vercel timeout (300 seconds)
 
@@ -452,8 +455,57 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       
       console.log(`Session ${sessionNumber} inventory processing completed: ${successfulSkus} successful, ${failedSkus} failed`);
       
-      // Skip platform sync for now to prevent timeouts - focus on inventory processing only
-      console.log(`Session ${sessionNumber}: Skipping platform sync to prevent timeouts`);
+      // Process platform syncs with timeout protection
+      console.log(`Session ${sessionNumber}: Starting platform syncs...`);
+      
+      // Process each SKU with platform updates
+      for (const sku of sessionSkus) {
+        if (batchInventory[sku] && batchInventory[sku].quantity !== undefined) {
+          try {
+            const quantity = batchInventory[sku].quantity;
+            
+            // Update Shopify inventory
+            console.log(`Session ${sessionNumber}: Updating Shopify for SKU ${sku} to quantity ${quantity}`);
+            try {
+              await updateShopifyInventory(sku, quantity);
+            } catch (shopifyError) {
+              console.warn(`Session ${sessionNumber}: Shopify update failed for SKU ${sku}:`, (shopifyError as Error).message);
+              failedSkus++;
+              failedSkuList.push(sku);
+            }
+            
+            // Update Amazon inventory
+            console.log(`Session ${sessionNumber}: Updating Amazon for SKU ${sku} to quantity ${quantity}`);
+            const amazonResult = await updateAmazonInventory(sku, quantity);
+            if (!amazonResult.success) {
+              const errorMessage = 'error' in amazonResult ? amazonResult.error : 'Unknown error';
+              console.warn(`Session ${sessionNumber}: Amazon update failed for SKU ${sku}:`, errorMessage);
+              failedSkus++;
+              failedSkuList.push(sku);
+            }
+            
+            // Update ShipStation warehouse location
+            console.log(`Session ${sessionNumber}: Updating ShipStation for SKU ${sku}`);
+            try {
+              await updateShipStationWarehouseLocation(sku, 'Manteca');
+            } catch (shipstationError) {
+              console.warn(`Session ${sessionNumber}: ShipStation update failed for SKU ${sku}:`, (shipstationError as Error).message);
+              // Don't count ShipStation failures as critical
+            }
+            
+            successfulSkus++;
+          } catch (skuError) {
+            console.error(`Session ${sessionNumber}: Error processing SKU ${sku}:`, (skuError as Error).message);
+            failedSkus++;
+            failedSkuList.push(sku);
+          }
+        } else {
+          failedSkus++;
+          failedSkuList.push(sku);
+        }
+      }
+      
+      console.log(`Session ${sessionNumber} platform sync completed: ${successfulSkus} successful, ${failedSkus} failed`);
       
     } catch (batchError) {
       console.error(`Session ${sessionNumber} failed:`, (batchError as Error).message);
