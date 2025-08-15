@@ -51,6 +51,12 @@ export async function updateAmazonInventoryBulk(updates: Array<{sku: string, qua
             fulfillment_channel_code: "DEFAULT",
             quantity: update.quantity
           }
+        ],
+        handling_time: [
+          {
+            fulfillment_channel_code: "DEFAULT",
+            value: 2
+          }
         ]
       }
     }));
@@ -234,6 +240,12 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
                 fulfillment_channel_code: "DEFAULT", // For seller-fulfilled inventory
                 quantity: quantity
               }
+            ],
+            handling_time: [
+              {
+                fulfillment_channel_code: "DEFAULT",
+                value: 2
+              }
             ]
           }
         }
@@ -301,7 +313,7 @@ async function updateAmazonInventoryLegacy(sellingPartner: any, amazonSku: strin
 
     // 1. Generate feed content (tab-delimited, with required columns for POST_FLAT_FILE_INVLOADER_DATA)
     // Required columns: sku, quantity, handling-time
-    const feedContent = `sku	quantity	handling-time\n${amazonSku}	${quantity}	1\n`;
+    const feedContent = `sku	quantity	handling-time\n${amazonSku}	${quantity}	2\n`;
 
     // Log the feed content for debugging
     console.log('[Amazon Sync] Legacy feed content to upload:\n', feedContent);
