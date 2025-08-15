@@ -1,5 +1,16 @@
 {
   "version": 2,
+  "functions": {
+    "src/app/api/sync-session/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/sync/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/sync-session-recovery/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/sync",

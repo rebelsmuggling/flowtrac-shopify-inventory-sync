@@ -33,6 +33,23 @@ export async function POST(request: NextRequest) {
       
       console.log('Using base URL for session request:', baseUrl);
       
+      // First, check for and recover any stuck sessions
+      try {
+        console.log('Checking for stuck sessions before starting new sync...');
+        const recoveryResponse = await fetch(`${baseUrl}/api/sync-session-recovery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'recover' })
+        });
+        
+        const recoveryData = await recoveryResponse.json();
+        if (recoveryData.success && recoveryData.recovered) {
+          console.log('Recovered stuck session:', recoveryData.message);
+        }
+      } catch (recoveryError) {
+        console.warn('Session recovery check failed:', (recoveryError as Error).message);
+      }
+      
       // Start the session-based sync
       const sessionResponse = await fetch(`${baseUrl}/api/sync-session`, {
         method: 'POST',

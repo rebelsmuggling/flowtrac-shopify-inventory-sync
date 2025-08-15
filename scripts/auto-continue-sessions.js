@@ -9,6 +9,7 @@
  * Usage:
  *   node scripts/auto-continue-sessions.js
  *   node scripts/auto-continue-sessions.js --base-url=https://your-app.vercel.app
+ *   node scripts/auto-continue-sessions.js --max-retries=5 --retry-delay=10000
  */
 
 const https = require('https');
@@ -23,11 +24,21 @@ const BASE_URL = process.argv.includes('--base-url')
   ? process.argv[process.argv.indexOf('--base-url') + 1] 
   : DEFAULT_BASE_URL;
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000; // 5 seconds
+const MAX_RETRIES = process.argv.includes('--max-retries')
+  ? parseInt(process.argv[process.argv.indexOf('--max-retries') + 1])
+  : 5;
+
+const RETRY_DELAY = process.argv.includes('--retry-delay')
+  ? parseInt(process.argv[process.argv.indexOf('--retry-delay') + 1])
+  : 10000; // 10 seconds
+
+const REQUEST_TIMEOUT = 30000; // 30 seconds timeout for individual requests
 
 console.log(`Auto-continue sessions script starting...`);
 console.log(`Base URL: ${BASE_URL}`);
+console.log(`Max retries: ${MAX_RETRIES}`);
+console.log(`Retry delay: ${RETRY_DELAY}ms`);
+console.log(`Request timeout: ${REQUEST_TIMEOUT}ms`);
 
 async function makeRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
@@ -43,7 +54,8 @@ async function makeRequest(url, options = {}) {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
-      }
+      },
+      timeout: REQUEST_TIMEOUT // Add timeout to prevent hanging requests
     };
     
     if (options.body) {
@@ -77,6 +89,11 @@ async function makeRequest(url, options = {}) {
     
     req.on('error', (error) => {
       reject(error);
+    });
+    
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
     });
     
     if (options.body) {
@@ -147,9 +164,13 @@ async function sleep(ms) {
 
 async function main() {
   let retries = 0;
+  let consecutiveFailures = 0;
+  const maxConsecutiveFailures = 3;
   
   while (retries < MAX_RETRIES) {
     try {
+      console.log(`\n--- Attempt ${retries + 1}/${MAX_RETRIES} ---`);
+      
       // Check current session status
       const statusData = await checkSessionStatus();
       
@@ -208,6 +229,9 @@ async function main() {
             } else {
               console.log('✅ All sessions completed successfully!');
             }
+            
+            // Reset consecutive failures on success
+            consecutiveFailures = 0;
             return;
           } else {
             throw new Error(`Auto-continuation failed: ${autoContinueData.error}`);
@@ -222,17 +246,24 @@ async function main() {
         }
       }
       
+      // Reset consecutive failures on success
+      consecutiveFailures = 0;
       break; // Success, exit retry loop
       
     } catch (error) {
       retries++;
+      consecutiveFailures++;
       console.error(`Attempt ${retries}/${MAX_RETRIES} failed:`, error.message);
       
+      // If we have too many consecutive failures, increase the delay
+      const currentDelay = consecutiveFailures >= maxConsecutiveFailures ? RETRY_DELAY * 2 : RETRY_DELAY;
+      
       if (retries < MAX_RETRIES) {
-        console.log(`Retrying in ${RETRY_DELAY/1000} seconds...`);
-        await sleep(RETRY_DELAY);
+        console.log(`Retrying in ${currentDelay/1000} seconds... (consecutive failures: ${consecutiveFailures})`);
+        await sleep(currentDelay);
       } else {
         console.error('Max retries reached. Giving up.');
+        console.error('Last error:', error.message);
         process.exit(1);
       }
     }

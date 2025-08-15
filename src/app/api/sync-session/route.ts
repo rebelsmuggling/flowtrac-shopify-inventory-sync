@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
 import { createSyncSession, updateSyncSession, getSyncSession, deleteSyncSession, SyncSession } from '../../../lib/database';
 
-const BATCH_SIZE = 60; // Reduced batch size to avoid Vercel timeout (300 seconds)
+const BATCH_SIZE = 30; // Further reduced batch size to avoid Vercel timeout (300 seconds)
 
 // Extended interface for session results that aren't in the database
 interface ExtendedSyncSession extends SyncSession {
@@ -289,9 +289,9 @@ async function autoContinueSession() {
   console.log(`Auto-continuing session from batch ${session.current_batch} to completion`);
   
   let sessionsProcessed = 0;
-  const maxSessionsToProcess = 3; // Reduced from 10 to 3 for better timeout safety
+  const maxSessionsToProcess = 2; // Further reduced to 2 for better timeout safety
   const startTime = Date.now();
-  const maxTotalTime = 240000; // 4 minutes max (leaving 60s buffer for Vercel's 300s limit)
+  const maxTotalTime = 180000; // 3 minutes max (leaving 120s buffer for Vercel's 300s limit)
   
   try {
     while (session.status === 'in_progress' && sessionsProcessed < maxSessionsToProcess) {
@@ -342,7 +342,7 @@ async function autoContinueSession() {
       }
       
       // Add a small delay between sessions to prevent overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced from 2000ms to 1000ms
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased back to 2000ms for better stability
     }
     
     const endTime = Date.now();
@@ -503,7 +503,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         // Bulk Shopify sync with timeout
         if (shopifyUpdates.length > 0) {
           console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
-          const shopifyTimeoutMs = 90000; // 90 second timeout for Shopify bulk update
+          const shopifyTimeoutMs = 60000; // Reduced to 60 second timeout for Shopify bulk update
           
           try {
             const bulkResult = await Promise.race([
@@ -532,7 +532,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         // Bulk Amazon sync with timeout
         if (amazonUpdates.length > 0) {
           console.log(`Starting bulk Amazon update for ${amazonUpdates.length} items...`);
-          const amazonTimeoutMs = 60000; // 60 second timeout for Amazon bulk update
+          const amazonTimeoutMs = 45000; // Reduced to 45 second timeout for Amazon bulk update
           
           try {
             const amazonResult = await Promise.race([
@@ -580,7 +580,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         }
         
         // Wait for all ShipStation updates with timeout (Amazon is now handled separately with bulk updates)
-        const timeoutMs = 60000; // 60 second timeout for platform syncs
+        const timeoutMs = 45000; // Reduced to 45 second timeout for platform syncs
         
         if (shipstationPromises.length > 0) {
           console.log(`Waiting for ${shipstationPromises.length} ShipStation updates with ${timeoutMs}ms timeout...`);
@@ -677,7 +677,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         });
         
         // Set a reasonable timeout for the continuation
-        const continuationTimeout = 30000; // 30 seconds
+        const continuationTimeout = 15000; // Reduced to 15 seconds for faster failure detection
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Auto-continuation timeout')), continuationTimeout)
         );
