@@ -9,12 +9,19 @@
     },
     "src/app/api/sync-session-recovery/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/auto-continue/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/sync",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/auto-continue",
+      "schedule": "*/2 * * * *"
     }
   ]
 } 

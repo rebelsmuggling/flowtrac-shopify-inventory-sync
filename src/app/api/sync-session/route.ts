@@ -648,54 +648,50 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     
     console.log(`Session ${sessionNumber} completed. Has more sessions: ${hasMoreSessions}, Next available: ${nextSessionAvailable}`);
     
-    // Improved automatic continuation mechanism
+    // Improved automatic continuation mechanism - use external scheduler approach
     if (nextSessionAvailable) {
       const nextSessionNumber = sessionNumber + 1;
-      console.log(`Auto-triggering next session: ${nextSessionNumber}`);
+      console.log(`Auto-continuation needed for session ${nextSessionNumber}`);
+      console.log(`Session ${nextSessionNumber} will be triggered by external scheduler or manual intervention`);
+      console.log(`Use: curl -X POST ${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session -H "Content-Type: application/json" -d '{"action": "continue"}'`);
+      console.log(`Or run: node scripts/auto-continue-sessions.js`);
       
-      // Use a more robust approach for serverless environments
+      // Try to trigger auto-continuation using the auto-continue action
       try {
-        // Get the base URL for the current request
         const baseUrl = process.env.VERCEL_URL 
           ? `https://${process.env.VERCEL_URL}` 
           : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
         
-        console.log(`Using base URL for auto-continuation: ${baseUrl}`);
+        console.log(`Attempting auto-continuation via auto-continue action...`);
         
-        // Trigger next session with a timeout
-        const continuationPromise = fetch(`${baseUrl}/api/sync-session`, {
+        const autoContinuePromise = fetch(`${baseUrl}/api/sync-session`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'X-Auto-Continuation': 'true' // Flag to indicate this is an auto-continuation
+            'X-Auto-Continuation': 'true'
           },
           body: JSON.stringify({ 
-            action: 'continue',
-            auto_triggered: true,
-            source_session: sessionNumber
+            action: 'auto-continue'
           })
         });
         
-        // Set a reasonable timeout for the continuation
-        const continuationTimeout = 15000; // Reduced to 15 seconds for faster failure detection
+        const continuationTimeout = 10000; // 10 second timeout
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Auto-continuation timeout')), continuationTimeout)
         );
         
-        // Race between continuation and timeout
-        const continuationResult = await Promise.race([continuationPromise, timeoutPromise]);
+        const autoContinueResult = await Promise.race([autoContinuePromise, timeoutPromise]);
         
-        if (continuationResult.ok) {
-          const continuationData = await continuationResult.json();
-          console.log(`Auto-continuation successful for session ${nextSessionNumber}:`, continuationData.success);
+        if (autoContinueResult.ok) {
+          const autoContinueData = await autoContinueResult.json();
+          console.log(`Auto-continuation successful:`, autoContinueData.success);
         } else {
-          console.warn(`Auto-continuation failed for session ${nextSessionNumber}, will need manual trigger`);
+          console.warn(`Auto-continuation failed, will need external trigger`);
         }
         
-      } catch (continuationError) {
-        console.warn(`Auto-continuation error for session ${nextSessionNumber}:`, (continuationError as Error).message);
-        console.log(`Session ${nextSessionNumber} will need to be triggered manually or via external scheduler`);
-        console.log(`Use: curl -X POST ${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session -H "Content-Type: application/json" -d '{"action": "continue"}'`);
+      } catch (autoContinueError) {
+        console.warn(`Auto-continuation error:`, (autoContinueError as Error).message);
+        console.log(`External trigger needed - use auto-continue script or manual continuation`);
       }
     }
     
