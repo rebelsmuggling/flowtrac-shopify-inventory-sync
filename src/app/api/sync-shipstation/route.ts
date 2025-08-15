@@ -9,12 +9,90 @@ export async function POST(request: NextRequest) {
     // 1. Load mapping
     const { mapping } = await mappingService.getMappingFresh();
     
-    // 2. Get all products that have Shopify SKUs (ShipStation uses Shopify SKUs)
-    const shopifyProducts = mapping.products.filter(product => product.shopify_sku);
+    // 2. Collect all SKUs (simple and bundle components)
+    const skus = await mappingService.getMappedSkus();
     
-    console.log(`Found ${shopifyProducts.length} products with Shopify SKUs for ShipStation update`);
+    // 3. Fetch inventory data from database (includes bin information)
+    const { getFlowtracInventory } = await import('../../../lib/database');
+    const inventoryResult = await getFlowtracInventory(Array.from(skus), 'Manteca');
     
-    // 3. Update ShipStation warehouse location for each product
+    if (!inventoryResult.success) {
+      throw new Error(`Failed to get inventory from database: ${inventoryResult.error}`);
+    }
+    
+    // Convert database records to the expected format
+    const flowtracInventory: Record<string, { quantity: number, bins: string[], bin_breakdown?: Record<string, number> }> = {};
+    if (inventoryResult.data) {
+      for (const record of inventoryResult.data) {
+        flowtracInventory[record.sku] = {
+          quantity: record.quantity,
+          bins: record.bins || [],
+          bin_breakdown: record.bin_breakdown
+        };
+      }
+    }
+    
+    console.log('Fetched inventory from database', { 
+      recordsFound: inventoryResult.data?.length || 0,
+      totalSkus: Array.from(skus).length 
+    });
+    
+    // 4. Build ShipStation updates based on Flowtrac SKUs and bin locations
+    const shipstationUpdates: Array<{ flowtracSku: string, binLocation: string, productType: string, shopifySku?: string }> = [];
+    
+    for (const product of mapping.products) {
+      if (product.flowtrac_sku) {
+        // Simple product - use Flowtrac SKU and its bin location
+        const inventory = flowtracInventory[product.flowtrac_sku];
+        if (inventory && inventory.bins && inventory.bins.length > 0) {
+          // Use the first bin as the primary location
+          const primaryBin = inventory.bins[0];
+          shipstationUpdates.push({
+            flowtracSku: product.flowtrac_sku,
+            binLocation: primaryBin,
+            productType: 'Simple',
+            shopifySku: product.shopify_sku
+          });
+        } else if (inventory && inventory.quantity > 0) {
+          // Has inventory but no specific bins, use default location
+          shipstationUpdates.push({
+            flowtracSku: product.flowtrac_sku,
+            binLocation: 'Manteca',
+            productType: 'Simple',
+            shopifySku: product.shopify_sku
+          });
+        }
+      }
+      
+      if (Array.isArray(product.bundle_components)) {
+        // Bundle product - check each component's bin location
+        for (const component of product.bundle_components) {
+          const inventory = flowtracInventory[component.flowtrac_sku];
+          if (inventory && inventory.bins && inventory.bins.length > 0) {
+            // Use the first bin as the primary location
+            const primaryBin = inventory.bins[0];
+            shipstationUpdates.push({
+              flowtracSku: component.flowtrac_sku,
+              binLocation: primaryBin,
+              productType: 'Bundle Component',
+              shopifySku: product.shopify_sku
+            });
+          } else if (inventory && inventory.quantity > 0) {
+            // Has inventory but no specific bins, use default location
+            shipstationUpdates.push({
+              flowtracSku: component.flowtrac_sku,
+              binLocation: 'Manteca',
+              productType: 'Bundle Component',
+              shopifySku: product.shopify_sku
+            });
+          }
+        }
+      }
+    }
+    
+    console.log(`Prepared ${shipstationUpdates.length} ShipStation updates based on Flowtrac bin locations`);
+    
+    // 5. Update ShipStation warehouse locations for each Flowtrac SKU
     const results = {
       total: 0,
       successful: 0,
@@ -23,27 +101,26 @@ export async function POST(request: NextRequest) {
       updates: [] as any[]
     };
     
-    for (const product of shopifyProducts) {
-      if (!product.shopify_sku) continue;
-      
+    for (const update of shipstationUpdates) {
       results.total++;
       
       try {
-        await updateShipStationWarehouseLocation(product.shopify_sku, 'Manteca');
+        // Use Flowtrac SKU to update ShipStation (not Shopify SKU)
+        await updateShipStationWarehouseLocation(update.flowtracSku, update.binLocation);
         
         results.successful++;
         results.updates.push({
-          sku: product.shopify_sku,
-          flowtrac_sku: product.flowtrac_sku,
-          warehouse: 'Manteca',
-          type: product.bundle_components ? 'Bundle' : 'Simple'
+          flowtrac_sku: update.flowtracSku,
+          shopify_sku: update.shopifySku,
+          bin_location: update.binLocation,
+          type: update.productType
         });
         
-        console.log(`✅ ShipStation update successful: ${product.shopify_sku} → Manteca warehouse`);
+        console.log(`✅ ShipStation update successful: ${update.flowtracSku} → ${update.binLocation} (${update.productType})`);
         
       } catch (error) {
         results.failed++;
-        const errorMessage = `Failed to update ShipStation for ${product.shopify_sku}: ${(error as Error).message}`;
+        const errorMessage = `Failed to update ShipStation for ${update.flowtracSku}: ${(error as Error).message}`;
         results.errors.push(errorMessage);
         console.error(`❌ ${errorMessage}`);
       }
