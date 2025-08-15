@@ -36,7 +36,7 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
   console.log(`[ShipStation Sync] Updating warehouse locations for ${updates.length} SKUs using bulk method`);
   
   // Process in batches to avoid timeouts and rate limits
-  const BATCH_SIZE = 50; // Increased batch size for faster processing
+  const BATCH_SIZE = 100; // Maximum batch size for fastest processing
   const batches = [];
   for (let i = 0; i < updates.length; i += BATCH_SIZE) {
     batches.push(updates.slice(i, i + BATCH_SIZE));
@@ -68,8 +68,8 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
             success: true,
             error: null
           });
-          // Add small delay between requests to respect rate limits
-          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+          // Add minimal delay between requests to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 50)); // Minimal 50ms delay
         } catch (error) {
           productResults.push({
             sku: update.sku,
@@ -79,7 +79,7 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
             error: (error as Error).message
           });
           // Add delay even on error to maintain rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+          await new Promise(resolve => setTimeout(resolve, 50)); // Minimal 50ms delay
         }
       }
       
@@ -119,8 +119,8 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
             response: await res.json()
           });
           
-          // Add small delay between requests to respect rate limits
-          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+          // Add minimal delay between requests to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 50)); // Minimal 50ms delay
         } catch (error) {
           updateResults.push({
             sku: result.sku,
@@ -130,7 +130,7 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
             response: null
           });
           // Add delay even on error to maintain rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+          await new Promise(resolve => setTimeout(resolve, 50)); // Minimal 50ms delay
         }
       }
       
@@ -152,9 +152,9 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
       
       console.log(`[ShipStation Sync] Batch ${batchIndex + 1} completed: ${batchSuccessful.length} successful, ${batchFailed.length} failed`);
       
-      // 5. Add shorter delay between batches to complete within timeout
+      // 5. Add minimal delay between batches to complete within timeout
       if (batchIndex < batches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced to 500ms delay between batches
+        await new Promise(resolve => setTimeout(resolve, 200)); // Minimal 200ms delay between batches
       }
       
     } catch (error) {
