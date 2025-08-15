@@ -95,26 +95,23 @@ export async function updateShopifyInventoryBulk(updates: InventoryUpdate[]): Pr
 
   console.log(`[Shopify Debug] Starting bulk update for ${updates.length} items using GraphQL`);
 
-  // Process in batches of 250 (Shopify GraphQL limit from working app)
-  const BATCH_SIZE = 250;
-  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-    const batch = updates.slice(i, i + BATCH_SIZE);
-    
-    try {
-      const batchResult = await updateShopifyInventoryBatch(batch, locationId);
-      results.success += batchResult.success;
-      results.failed += batchResult.failed;
-      results.errors.push(...batchResult.errors);
-      
-      // Rate limiting: wait between batches (from working app)
-      if (i + BATCH_SIZE < updates.length) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5 second delay between batches
-      }
-    } catch (error: any) {
-      console.error(`[Shopify Debug] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error.message);
-      results.failed += batch.length;
-      results.errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
-    }
+  // Limit batch size to avoid GraphQL limits and timeouts
+  const MAX_BATCH_SIZE = 100;
+  if (updates.length > MAX_BATCH_SIZE) {
+    console.log(`[Shopify Debug] Limiting batch size from ${updates.length} to ${MAX_BATCH_SIZE} to avoid timeout`);
+    updates = updates.slice(0, MAX_BATCH_SIZE);
+  }
+
+  // Process all updates in one batch to avoid timeout
+  try {
+    const batchResult = await updateShopifyInventoryBatch(updates, locationId);
+    results.success = batchResult.success;
+    results.failed = batchResult.failed;
+    results.errors = batchResult.errors;
+  } catch (error: any) {
+    console.error(`[Shopify Debug] Bulk update failed:`, error.message);
+    results.failed = updates.length;
+    results.errors.push(`Bulk update failed: ${error.message}`);
   }
 
   console.log(`[Shopify Debug] Bulk update completed: ${results.success} successful, ${results.failed} failed`);
@@ -161,6 +158,7 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
             'Content-Type': 'application/json',
             'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
           },
+          timeout: 30000, // 30 second timeout to prevent hanging
         }
       );
 
