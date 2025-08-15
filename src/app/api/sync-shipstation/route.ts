@@ -38,28 +38,41 @@ export async function POST(request: NextRequest) {
     });
     
     // 4. Build ShipStation updates based on Flowtrac SKUs and bin locations
-    const shipstationUpdates: Array<{ flowtracSku: string, binLocation: string, productType: string, shopifySku?: string }> = [];
+    const shipstationUpdates: Array<{ flowtracSku: string, binLocation: string, productType: string, shopifySku?: string, quantity: number }> = [];
     
     for (const product of mapping.products) {
       if (product.flowtrac_sku) {
         // Simple product - use Flowtrac SKU and its bin location
         const inventory = flowtracInventory[product.flowtrac_sku];
-        if (inventory && inventory.bins && inventory.bins.length > 0) {
-          // Use the first bin as the primary location
-          const primaryBin = inventory.bins[0];
+        if (inventory && inventory.quantity > 0) {
+          if (inventory.bins && inventory.bins.length > 0) {
+            // Has inventory with specific bins - use the first bin as the primary location
+            const primaryBin = inventory.bins[0];
+            shipstationUpdates.push({
+              flowtracSku: product.flowtrac_sku,
+              binLocation: primaryBin,
+              productType: 'Simple',
+              shopifySku: product.shopify_sku,
+              quantity: inventory.quantity
+            });
+          } else {
+            // Has inventory but no specific bins, use default location
+            shipstationUpdates.push({
+              flowtracSku: product.flowtrac_sku,
+              binLocation: 'Manteca',
+              productType: 'Simple',
+              shopifySku: product.shopify_sku,
+              quantity: inventory.quantity
+            });
+          }
+        } else {
+          // Out of stock - set to OOS
           shipstationUpdates.push({
             flowtracSku: product.flowtrac_sku,
-            binLocation: primaryBin,
+            binLocation: 'OOS',
             productType: 'Simple',
-            shopifySku: product.shopify_sku
-          });
-        } else if (inventory && inventory.quantity > 0) {
-          // Has inventory but no specific bins, use default location
-          shipstationUpdates.push({
-            flowtracSku: product.flowtrac_sku,
-            binLocation: 'Manteca',
-            productType: 'Simple',
-            shopifySku: product.shopify_sku
+            shopifySku: product.shopify_sku,
+            quantity: 0
           });
         }
       }
@@ -68,22 +81,35 @@ export async function POST(request: NextRequest) {
         // Bundle product - check each component's bin location
         for (const component of product.bundle_components) {
           const inventory = flowtracInventory[component.flowtrac_sku];
-          if (inventory && inventory.bins && inventory.bins.length > 0) {
-            // Use the first bin as the primary location
-            const primaryBin = inventory.bins[0];
+          if (inventory && inventory.quantity > 0) {
+            if (inventory.bins && inventory.bins.length > 0) {
+              // Has inventory with specific bins - use the first bin as the primary location
+              const primaryBin = inventory.bins[0];
+              shipstationUpdates.push({
+                flowtracSku: component.flowtrac_sku,
+                binLocation: primaryBin,
+                productType: 'Bundle Component',
+                shopifySku: product.shopify_sku,
+                quantity: inventory.quantity
+              });
+            } else {
+              // Has inventory but no specific bins, use default location
+              shipstationUpdates.push({
+                flowtracSku: component.flowtrac_sku,
+                binLocation: 'Manteca',
+                productType: 'Bundle Component',
+                shopifySku: product.shopify_sku,
+                quantity: inventory.quantity
+              });
+            }
+          } else {
+            // Out of stock - set to OOS
             shipstationUpdates.push({
               flowtracSku: component.flowtrac_sku,
-              binLocation: primaryBin,
+              binLocation: 'OOS',
               productType: 'Bundle Component',
-              shopifySku: product.shopify_sku
-            });
-          } else if (inventory && inventory.quantity > 0) {
-            // Has inventory but no specific bins, use default location
-            shipstationUpdates.push({
-              flowtracSku: component.flowtrac_sku,
-              binLocation: 'Manteca',
-              productType: 'Bundle Component',
-              shopifySku: product.shopify_sku
+              shopifySku: product.shopify_sku,
+              quantity: 0
             });
           }
         }
@@ -113,10 +139,15 @@ export async function POST(request: NextRequest) {
           flowtrac_sku: update.flowtracSku,
           shopify_sku: update.shopifySku,
           bin_location: update.binLocation,
-          type: update.productType
+          type: update.productType,
+          quantity: update.quantity
         });
         
-        console.log(`✅ ShipStation update successful: ${update.flowtracSku} → ${update.binLocation} (${update.productType})`);
+        if (update.quantity > 0) {
+          console.log(`✅ ShipStation update successful: ${update.flowtracSku} → ${update.binLocation} (${update.productType}, qty: ${update.quantity})`);
+        } else {
+          console.log(`📦 ShipStation update successful: ${update.flowtracSku} → OOS (${update.productType}, out of stock)`);
+        }
         
       } catch (error) {
         results.failed++;
