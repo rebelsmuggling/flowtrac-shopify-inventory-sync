@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
 import { getFlowtracInventory } from '../../../lib/database';
 
+function extractIdFromGid(gid: string): string {
+  // e.g., gid://shopify/InventoryItem/53137749803317 -> 53137749803317
+  return gid.split('/').pop() || gid;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -77,7 +82,7 @@ export async function GET(request: NextRequest) {
       input: {
         quantities: [
           {
-            inventoryItemId: product.shopify_inventory_item_id,
+            inventoryItemId: extractIdFromGid(product.shopify_inventory_item_id),
             locationId: `gid://shopify/Location/${shopifyLocationId}`,
             quantity: inventoryRecord.quantity
           }

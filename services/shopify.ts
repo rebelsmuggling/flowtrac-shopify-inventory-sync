@@ -136,7 +136,7 @@ async function updateShopifyInventoryBatch(updates: InventoryUpdate[], locationI
 
   // Prepare the quantities array in the correct format
   const quantities = updates.map(update => ({
-    inventoryItemId: update.inventoryItemId,
+    inventoryItemId: extractIdFromGid(update.inventoryItemId),
     locationId: `gid://shopify/Location/${locationId}`,
     quantity: update.quantity
   }));

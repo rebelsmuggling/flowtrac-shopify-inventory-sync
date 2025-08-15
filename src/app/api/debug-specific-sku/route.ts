@@ -3,6 +3,11 @@ import { mappingService } from '../../../services/mapping';
 import { getFlowtracInventory } from '../../../lib/database';
 import axios from 'axios';
 
+function extractIdFromGid(gid: string): string {
+  // e.g., gid://shopify/InventoryItem/53137749803317 -> 53137749803317
+  return gid.split('/').pop() || gid;
+}
+
 const SHOPIFY_API_PASSWORD = process.env.SHOPIFY_API_PASSWORD;
 const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL;
 const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2023-10';
@@ -104,7 +109,7 @@ export async function GET(request: NextRequest) {
     const testVariables = {
       input: {
         quantities: [{
-          inventoryItemId: product.shopify_inventory_item_id,
+          inventoryItemId: extractIdFromGid(product.shopify_inventory_item_id),
           locationId: `gid://shopify/Location/${locationId}`,
           quantity: quantity
         }],
