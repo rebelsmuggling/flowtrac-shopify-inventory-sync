@@ -144,9 +144,9 @@ async function processSessionDirectly(session: any, sessionNumber: number) {
           }
         }
         
-        // Add to sync list if we have a quantity and platform SKUs
-        if (calculatedQuantity > 0) {
-          const syncKey = product.shopify_sku || product.amazon_sku || product.flowtrac_sku;
+        // Add to sync list if we have a quantity and platform SKUs (only finished goods, not components)
+        if (calculatedQuantity > 0 && (product.shopify_sku || product.amazon_sku)) {
+          const syncKey = product.shopify_sku || product.amazon_sku;
           if (syncKey) {
             finishedGoodsToSync.set(syncKey, {
               shopify_sku: product.shopify_sku,
