@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       if (timeSinceUpdate > stuckThreshold) {
         console.log(`Session appears stuck (${Math.round(timeSinceUpdate / 1000)}s since update), triggering continuation`);
         
-        // Trigger the next session by calling the sync-session endpoint
+        // Trigger auto-continuation by calling the sync-session endpoint with auto-continue action
         try {
           // Construct absolute URL for serverless environment
           const baseUrl = process.env.VERCEL_URL 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
               'User-Agent': 'Vercel-Cron-Auto-Continue'
             },
             body: JSON.stringify({ 
-              action: 'continue'
+              action: 'auto-continue'
             })
           });
           
@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
               message: 'Auto-continuation triggered successfully',
               action_taken: true,
               session_id: session.session_id,
-              next_batch: session.current_batch + 1,
+              sessions_processed: data.sessions_processed,
+              total_duration_ms: data.total_duration_ms,
+              final_status: data.final_status,
               time_since_update_ms: timeSinceUpdate
             });
           } else {
