@@ -1,80 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMapping } from '../../../lib/database';
+import { sql } from '@vercel/postgres';
 
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const sku = url.searchParams.get('sku');
-    
-    console.log('Testing mapping database...');
-    
-    const result = await getMapping();
-    
-    if (!result.success) {
-      return NextResponse.json({
-        success: false,
-        error: result.error,
-        message: 'Failed to get mapping from database'
+    const { searchParams } = new URL(request.url);
+    const sku = searchParams.get('sku');
+
+    // Get the latest mapping with version info
+    const result = await sql`
+      SELECT id, version, products, last_updated, updated_by 
+      FROM mapping 
+      ORDER BY version DESC, last_updated DESC 
+      LIMIT 1
+    `;
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ 
+        error: 'No mapping found in database',
+        databaseInfo: {
+          tableExists: false,
+          totalRecords: 0
+        }
       });
     }
-    
-    const mapping = result.data;
-    const totalProducts = mapping.products.length;
-    
-    console.log(`Found ${totalProducts} products in mapping`);
-    
-    // If a specific SKU was requested, search for it
+
+    const mapping = result.rows[0];
+    const products = mapping.products || [];
+
+    // Search for specific SKU if provided
+    let foundProduct = null;
     if (sku) {
-      const product = mapping.products.find((p: any) => 
-        p.flowtrac_sku === sku || p.shopify_sku === sku || p.amazon_sku === sku
+      foundProduct = products.find((p: any) => 
+        p.shopify_sku === sku || 
+        p.flowtrac_sku === sku || 
+        p.amazon_sku === sku
       );
-      
-      if (product) {
-        return NextResponse.json({
-          success: true,
-          sku,
-          product,
-          totalProducts,
-          message: 'Product found in mapping'
-        });
-      } else {
-        // Show some sample SKUs to help debug
-        const sampleSkus = mapping.products.slice(0, 5).map((p: any) => ({
-          shopify_sku: p.shopify_sku,
-          flowtrac_sku: p.flowtrac_sku,
-          amazon_sku: p.amazon_sku
-        }));
-        
-        return NextResponse.json({
-          success: false,
-          sku,
-          error: 'Product not found in mapping',
-          totalProducts,
-          sampleSkus,
-          message: 'Here are some sample SKUs from the mapping'
-        });
-      }
     }
-    
-    // Return summary
-    const sampleSkus = mapping.products.slice(0, 10).map((p: any) => ({
+
+    // Get some sample SKUs for verification
+    const sampleSkus = products.slice(0, 5).map((p: any) => ({
       shopify_sku: p.shopify_sku,
       flowtrac_sku: p.flowtrac_sku,
       amazon_sku: p.amazon_sku
     }));
-    
+
+    // Check if the specific SKU exists
+    const skuExists = sku ? products.some((p: any) => 
+      p.shopify_sku === sku || 
+      p.flowtrac_sku === sku || 
+      p.amazon_sku === sku
+    ) : null;
+
     return NextResponse.json({
-      success: true,
-      totalProducts,
-      sampleSkus,
-      message: 'Mapping loaded successfully'
+      databaseInfo: {
+        version: mapping.version,
+        lastUpdated: mapping.last_updated,
+        updatedBy: mapping.updated_by,
+        totalProducts: products.length,
+        tableExists: true
+      },
+      searchResults: {
+        sku: sku,
+        found: skuExists,
+        product: foundProduct
+      },
+      sampleSkus: sampleSkus,
+      totalProducts: products.length
     });
-    
+
   } catch (error) {
     console.error('Error testing mapping:', error);
-    return NextResponse.json({
-      success: false,
-      error: (error as Error).message
-    }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to test mapping',
+      details: (error as Error).message 
+    });
   }
 }
