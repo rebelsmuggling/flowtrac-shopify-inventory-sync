@@ -35,15 +35,13 @@ export async function GET(request: NextRequest) {
         
         // Trigger the next session by calling the sync-session endpoint
         try {
-          const baseUrl = process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}` 
-            : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-          
-          const response = await fetch(`${baseUrl}/api/sync-session`, {
+          // Use relative URL to avoid authentication issues
+          const response = await fetch('/api/sync-session', {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
-              'X-Cron-Auto-Continuation': 'true'
+              'X-Cron-Auto-Continuation': 'true',
+              'User-Agent': 'Vercel-Cron-Auto-Continue'
             },
             body: JSON.stringify({ 
               action: 'continue'
@@ -63,13 +61,14 @@ export async function GET(request: NextRequest) {
               time_since_update_ms: timeSinceUpdate
             });
           } else {
-            console.error('Auto-continuation failed:', response.status);
+            const errorText = await response.text();
+            console.error('Auto-continuation failed:', response.status, errorText);
             
             return NextResponse.json({
               success: false,
               message: 'Auto-continuation failed',
               action_taken: false,
-              error: `HTTP ${response.status}`
+              error: `HTTP ${response.status}: ${errorText}`
             });
           }
           

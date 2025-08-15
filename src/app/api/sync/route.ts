@@ -42,9 +42,14 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({ action: 'recover' })
         });
         
-        const recoveryData = await recoveryResponse.json();
-        if (recoveryData.success && recoveryData.recovered) {
-          console.log('Recovered stuck session:', recoveryData.message);
+        if (!recoveryResponse.ok) {
+          const errorText = await recoveryResponse.text();
+          console.warn(`Session recovery failed with status ${recoveryResponse.status}:`, errorText);
+        } else {
+          const recoveryData = await recoveryResponse.json();
+          if (recoveryData.success && recoveryData.recovered) {
+            console.log('Recovered stuck session:', recoveryData.message);
+          }
         }
       } catch (recoveryError) {
         console.warn('Session recovery check failed:', (recoveryError as Error).message);
@@ -56,6 +61,16 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'start' })
       });
+      
+      if (!sessionResponse.ok) {
+        const errorText = await sessionResponse.text();
+        console.error(`Session start failed with status ${sessionResponse.status}:`, errorText);
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to start session-based sync',
+          details: `HTTP ${sessionResponse.status}: ${errorText}`
+        });
+      }
       
       const sessionData = await sessionResponse.json();
       
@@ -76,6 +91,18 @@ export async function POST(request: NextRequest) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'auto-continue' })
         });
+        
+        if (!autoContinueResponse.ok) {
+          const errorText = await autoContinueResponse.text();
+          console.error(`Auto-continuation failed with status ${autoContinueResponse.status}:`, errorText);
+          return NextResponse.json({
+            success: false,
+            error: 'Auto-continuation failed',
+            details: `HTTP ${autoContinueResponse.status}: ${errorText}`,
+            session: sessionData.session,
+            useSessionMode: true
+          });
+        }
         
         const autoContinueData = await autoContinueResponse.json();
         
