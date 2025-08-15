@@ -201,6 +201,62 @@ export default function Home() {
     }
   };
 
+  const exportShopifyResults = () => {
+    if (!shopifyResult || !shopifyResult.results) return;
+    
+    const data = {
+      summary: {
+        message: shopifyResult.message,
+        successRate: shopifyResult.results.successRate,
+        successful: shopifyResult.results.successful,
+        total: shopifyResult.results.total,
+        failed: shopifyResult.results.failed,
+        timestamp: new Date().toISOString()
+      },
+      inventoryChanges: shopifyResult.results.inventoryChanges,
+      summary: shopifyResult.results.summary,
+      errors: shopifyResult.results.errors,
+      updates: shopifyResult.results.updates
+    };
+    
+    const csvContent = generateShopifyCSV(data);
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shopify-sync-results-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const generateShopifyCSV = (data: any) => {
+    const headers = [
+      'SKU',
+      'Flowtrac SKU',
+      'Quantity',
+      'Previous Quantity',
+      'Quantity Changed',
+      'Type',
+      'Processing Time (ms)',
+      'Timestamp'
+    ];
+    
+    const rows = data.updates.map((update: any) => [
+      update.sku || '',
+      update.flowtrac_sku || '',
+      update.quantity || 0,
+      update.previousQuantity || '',
+      update.quantityChanged ? 'Yes' : 'No',
+      update.type || '',
+      update.processingTime || 0,
+      update.timestamp || ''
+    ]);
+    
+    return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+  };
+
   const handleContinueSession = async () => {
     if (!syncSession) return;
     
@@ -1031,6 +1087,23 @@ export default function Home() {
                       <div style={{ color: "#28a745", fontWeight: "bold", marginBottom: 4 }}>
                         ✅ {shopifyResult.message}
                       </div>
+                      {shopifyResult.results?.updates && shopifyResult.results.updates.length > 0 && (
+                        <button
+                          onClick={exportShopifyResults}
+                          style={{
+                            backgroundColor: "#007bff",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "4px 8px",
+                            fontSize: "0.8rem",
+                            cursor: "pointer",
+                            marginBottom: 8
+                          }}
+                        >
+                          📊 Export Results
+                        </button>
+                      )}
                       <div style={{ color: "#6c757d" }}>
                         📊 Success Rate: {shopifyResult.results?.successRate}% ({shopifyResult.results?.successful}/{shopifyResult.results?.total})
                       </div>
