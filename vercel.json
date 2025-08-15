@@ -19,10 +19,5 @@
       "path": "/api/sync",
       "schedule": "*/30 * * * *"
     }
-    // Auto-continue cron job disabled
-    // {
-    //   "path": "/api/auto-continue",
-    //   "schedule": "*/2 * * * *"
-    // }
   ]
 } 
