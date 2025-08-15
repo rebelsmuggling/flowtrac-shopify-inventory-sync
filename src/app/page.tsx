@@ -254,7 +254,7 @@ export default function Home() {
       update.timestamp || ''
     ]);
     
-    return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    return [headers, ...rows].map(row => row.map((cell: any) => `"${cell}"`).join(',')).join('\n');
   };
 
   const handleContinueSession = async () => {
