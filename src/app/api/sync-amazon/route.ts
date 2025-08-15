@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
             console.log(`✅ Amazon update successful: ${product.amazon_sku} = ${calculatedQuantity} (Feed ID: ${amazonResult.feedId})`);
           } else {
             results.failed++;
-            const errorMessage = `Failed to update ${product.amazon_sku}: ${amazonResult.error || 'Unknown error'}`;
+            const errorMessage = `Failed to update ${product.amazon_sku}: ${'error' in amazonResult ? amazonResult.error : 'Unknown error'}`;
             results.errors.push(errorMessage);
             console.error(`❌ ${errorMessage}`);
           }
