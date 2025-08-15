@@ -141,6 +141,66 @@ export default function Home() {
     setShipstationSyncing(false);
   };
 
+  const handleStopShopifySync = async () => {
+    try {
+      const res = await fetch("/api/stop-shopify-sync", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setShopifySyncing(false);
+        setShopifyResult(null);
+        console.log('Shopify sync stopped');
+      } else {
+        console.error('Failed to stop Shopify sync:', data.error);
+      }
+    } catch (err) {
+      console.error('Error stopping Shopify sync:', (err as Error).message);
+    }
+  };
+
+  const handleStopAmazonSync = async () => {
+    try {
+      const res = await fetch("/api/stop-amazon-sync", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setAmazonSyncing(false);
+        setAmazonResult(null);
+        console.log('Amazon sync stopped');
+      } else {
+        console.error('Failed to stop Amazon sync:', data.error);
+      }
+    } catch (err) {
+      console.error('Error stopping Amazon sync:', (err as Error).message);
+    }
+  };
+
+  const handleStopShipStationSync = async () => {
+    try {
+      const res = await fetch("/api/stop-shipstation-sync", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setShipstationSyncing(false);
+        setShipstationResult(null);
+        console.log('ShipStation sync stopped');
+      } else {
+        console.error('Failed to stop ShipStation sync:', data.error);
+      }
+    } catch (err) {
+      console.error('Error stopping ShipStation sync:', (err as Error).message);
+    }
+  };
+
   const handleContinueSession = async () => {
     if (!syncSession) return;
     
@@ -773,57 +833,119 @@ export default function Home() {
           
           {/* Sync Buttons Row */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            <button
-              onClick={handleShopifySync}
-              disabled={shopifySyncing}
-              style={{
-                padding: "0.75rem 1.5rem",
-                fontSize: "1rem",
-                borderRadius: "6px",
-                background: shopifySyncing ? "#ccc" : "#95bf47",
-                color: "#fff",
-                border: "none",
-                cursor: shopifySyncing ? "not-allowed" : "pointer",
-                flex: 1,
-                minWidth: "140px",
-              }}
-            >
-              {shopifySyncing ? "🔄 Syncing..." : "🛍️ Shopify Sync"}
-            </button>
-            <button
-              onClick={handleAmazonSync}
-              disabled={amazonSyncing}
-              style={{
-                padding: "0.75rem 1.5rem",
-                fontSize: "1rem",
-                borderRadius: "6px",
-                background: amazonSyncing ? "#ccc" : "#ff9900",
-                color: "#fff",
-                border: "none",
-                cursor: amazonSyncing ? "not-allowed" : "pointer",
-                flex: 1,
-                minWidth: "140px",
-              }}
-            >
-              {amazonSyncing ? "🔄 Syncing..." : "📦 Amazon Sync"}
-            </button>
-            <button
-              onClick={handleShipStationSync}
-              disabled={shipstationSyncing}
-              style={{
-                padding: "0.75rem 1.5rem",
-                fontSize: "1rem",
-                borderRadius: "6px",
-                background: shipstationSyncing ? "#ccc" : "#17a2b8",
-                color: "#fff",
-                border: "none",
-                cursor: shipstationSyncing ? "not-allowed" : "pointer",
-                flex: 1,
-                minWidth: "140px",
-              }}
-            >
-              {shipstationSyncing ? "🔄 Syncing..." : "🚢 ShipStation Sync"}
-            </button>
+            {/* Shopify Sync/Stop Button */}
+            <div style={{ display: 'flex', gap: 4, flex: 1, minWidth: "140px" }}>
+              <button
+                onClick={handleShopifySync}
+                disabled={shopifySyncing}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  borderRadius: "6px",
+                  background: shopifySyncing ? "#ccc" : "#95bf47",
+                  color: "#fff",
+                  border: "none",
+                  cursor: shopifySyncing ? "not-allowed" : "pointer",
+                  flex: 1,
+                }}
+              >
+                {shopifySyncing ? "🔄 Syncing..." : "🛍️ Shopify Sync"}
+              </button>
+              {shopifySyncing && (
+                <button
+                  onClick={handleStopShopifySync}
+                  style={{
+                    padding: "0.75rem 0.5rem",
+                    fontSize: "0.9rem",
+                    borderRadius: "6px",
+                    background: "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    cursor: "pointer",
+                    minWidth: "60px",
+                  }}
+                  title="Stop Shopify Sync"
+                >
+                  ⏹️
+                </button>
+              )}
+            </div>
+            
+            {/* Amazon Sync/Stop Button */}
+            <div style={{ display: 'flex', gap: 4, flex: 1, minWidth: "140px" }}>
+              <button
+                onClick={handleAmazonSync}
+                disabled={amazonSyncing}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  borderRadius: "6px",
+                  background: amazonSyncing ? "#ccc" : "#ff9900",
+                  color: "#fff",
+                  border: "none",
+                  cursor: amazonSyncing ? "not-allowed" : "pointer",
+                  flex: 1,
+                }}
+              >
+                {amazonSyncing ? "🔄 Syncing..." : "📦 Amazon Sync"}
+              </button>
+              {amazonSyncing && (
+                <button
+                  onClick={handleStopAmazonSync}
+                  style={{
+                    padding: "0.75rem 0.5rem",
+                    fontSize: "0.9rem",
+                    borderRadius: "6px",
+                    background: "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    cursor: "pointer",
+                    minWidth: "60px",
+                  }}
+                  title="Stop Amazon Sync"
+                >
+                  ⏹️
+                </button>
+              )}
+            </div>
+            
+            {/* ShipStation Sync/Stop Button */}
+            <div style={{ display: 'flex', gap: 4, flex: 1, minWidth: "140px" }}>
+              <button
+                onClick={handleShipStationSync}
+                disabled={shipstationSyncing}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  borderRadius: "6px",
+                  background: shipstationSyncing ? "#ccc" : "#17a2b8",
+                  color: "#fff",
+                  border: "none",
+                  cursor: shipstationSyncing ? "not-allowed" : "pointer",
+                  flex: 1,
+                }}
+              >
+                {shipstationSyncing ? "🔄 Syncing..." : "🚢 ShipStation Sync"}
+              </button>
+              {shipstationSyncing && (
+                <button
+                  onClick={handleStopShipStationSync}
+                  style={{
+                    padding: "0.75rem 0.5rem",
+                    fontSize: "0.9rem",
+                    borderRadius: "6px",
+                    background: "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    cursor: "pointer",
+                    minWidth: "60px",
+                  }}
+                  title="Stop ShipStation Sync"
+                >
+                  ⏹️
+                </button>
+              )}
+            </div>
           </div>
           
           {/* Legacy Sync Button */}
