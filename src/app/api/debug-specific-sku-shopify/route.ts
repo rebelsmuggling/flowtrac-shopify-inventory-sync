@@ -29,6 +29,13 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    if (!product.shopify_inventory_item_id) {
+      return NextResponse.json({
+        success: false,
+        error: `No Shopify inventory item ID found for SKU: ${sku}`
+      });
+    }
+    
     // Get inventory from database
     const inventoryResult = await getFlowtracInventory([sku], 'Manteca');
     const inventoryRecord = inventoryResult.data?.find((record: any) => record.sku === sku);
