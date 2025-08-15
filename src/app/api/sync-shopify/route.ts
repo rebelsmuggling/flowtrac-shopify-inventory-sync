@@ -27,8 +27,12 @@ async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: s
   
   console.log(`Starting verification for ${updates.length} items...`);
   
+  // Limit verification to first 50 items to prevent timeouts
+  const itemsToVerify = updates.slice(0, 50);
+  console.log(`Verifying first ${itemsToVerify.length} items to prevent timeout...`);
+  
   // Process verification one by one to avoid GraphQL complexity issues
-  for (const update of updates) {
+  for (const update of itemsToVerify) {
     try {
       // Query individual inventory item
       const query = `
@@ -61,7 +65,7 @@ async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: s
             'Content-Type': 'application/json',
             'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
           },
-          timeout: 30000,
+          timeout: 10000, // Reduced timeout to 10 seconds per request
         }
       );
       
@@ -221,7 +225,20 @@ export async function POST(request: NextRequest) {
         
         // Verify that quantities were actually set in Shopify
         console.log('Verifying inventory updates...');
-        const verificationResults = await verifyShopifyInventoryUpdates(shopifyUpdates, locationId);
+        let verificationResults: Array<{ sku: string; expectedQuantity: number; actualQuantity: number; locationName: string }> = [];
+        
+        try {
+          verificationResults = await verifyShopifyInventoryUpdates(shopifyUpdates, locationId);
+        } catch (verificationError) {
+          console.error('Verification failed:', verificationError);
+          // Create empty verification results to prevent the sync from failing
+          verificationResults = shopifyUpdates.map(update => ({
+            sku: update.sku,
+            expectedQuantity: update.quantity,
+            actualQuantity: -1,
+            locationName: 'Verification Failed'
+          }));
+        }
         
         // Add successful updates to results with verification
         for (const update of shopifyUpdates) {
@@ -241,7 +258,11 @@ export async function POST(request: NextRequest) {
               actualQuantity: verification.actualQuantity,
               updateSuccessful: verification.actualQuantity === update.quantity,
               locationName: verification.locationName
-            } : null
+            } : {
+              actualQuantity: -1,
+              updateSuccessful: null,
+              locationName: 'Not Verified (Limited to 50 items)'
+            }
           });
         }
         
