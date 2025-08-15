@@ -205,7 +205,7 @@ export default function Home() {
     if (!shopifyResult || !shopifyResult.results) return;
     
     const data = {
-      summary: {
+      syncSummary: {
         message: shopifyResult.message,
         successRate: shopifyResult.results.successRate,
         successful: shopifyResult.results.successful,
