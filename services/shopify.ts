@@ -95,23 +95,35 @@ export async function updateShopifyInventoryBulk(updates: InventoryUpdate[]): Pr
 
   console.log(`[Shopify Debug] Starting bulk update for ${updates.length} items using GraphQL`);
 
-  // Limit batch size to avoid GraphQL limits and timeouts
+  // Process in batches to handle large numbers of items efficiently
   const MAX_BATCH_SIZE = 100;
-  if (updates.length > MAX_BATCH_SIZE) {
-    console.log(`[Shopify Debug] Limiting batch size from ${updates.length} to ${MAX_BATCH_SIZE} to avoid timeout`);
-    updates = updates.slice(0, MAX_BATCH_SIZE);
-  }
+  const totalBatches = Math.ceil(updates.length / MAX_BATCH_SIZE);
+  
+  console.log(`[Shopify Debug] Processing ${updates.length} items in ${totalBatches} batches of max ${MAX_BATCH_SIZE} each`);
 
-  // Process all updates in one batch to avoid timeout
-  try {
-    const batchResult = await updateShopifyInventoryBatch(updates, locationId);
-    results.success = batchResult.success;
-    results.failed = batchResult.failed;
-    results.errors = batchResult.errors;
-  } catch (error: any) {
-    console.error(`[Shopify Debug] Bulk update failed:`, error.message);
-    results.failed = updates.length;
-    results.errors.push(`Bulk update failed: ${error.message}`);
+  for (let i = 0; i < updates.length; i += MAX_BATCH_SIZE) {
+    const batch = updates.slice(i, i + MAX_BATCH_SIZE);
+    const batchNumber = Math.floor(i / MAX_BATCH_SIZE) + 1;
+    
+    console.log(`[Shopify Debug] Processing batch ${batchNumber}/${totalBatches} with ${batch.length} items`);
+    
+    try {
+      const batchResult = await updateShopifyInventoryBatch(batch, locationId);
+      results.success += batchResult.success;
+      results.failed += batchResult.failed;
+      results.errors.push(...batchResult.errors);
+      
+      console.log(`[Shopify Debug] Batch ${batchNumber} completed: ${batchResult.success} successful, ${batchResult.failed} failed`);
+      
+      // Small delay between batches to avoid rate limits (but much shorter than before)
+      if (i + MAX_BATCH_SIZE < updates.length) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // 0.1 second delay
+      }
+    } catch (error: any) {
+      console.error(`[Shopify Debug] Batch ${batchNumber} failed:`, error.message);
+      results.failed += batch.length;
+      results.errors.push(`Batch ${batchNumber}: ${error.message}`);
+    }
   }
 
   console.log(`[Shopify Debug] Bulk update completed: ${results.success} successful, ${results.failed} failed`);
