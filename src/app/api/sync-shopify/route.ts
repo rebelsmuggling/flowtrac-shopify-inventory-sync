@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
-import { updateShopifyInventory, updateShopifyInventoryBulk, enrichMappingWithShopifyVariantAndInventoryIds } from '../../../../services/shopify';
+import { updateShopifyInventory, updateShopifyInventoryBulk, enrichMappingWithShopifyVariantAndInventoryIds, getMantecaLocationId } from '../../../../services/shopify';
+import axios from 'axios';
+
+const SHOPIFY_API_PASSWORD = process.env.SHOPIFY_API_PASSWORD;
+const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL;
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2023-10';
+
+const shopifyGraphqlUrl = `https://${SHOPIFY_STORE_URL}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
 // Helper function to get current Shopify inventory for verification
 async function getShopifyInventoryLevel(sku: string): Promise<number | null> {
@@ -12,6 +19,100 @@ async function getShopifyInventoryLevel(sku: string): Promise<number | null> {
     console.error(`Failed to get Shopify inventory for ${sku}:`, error);
     return null;
   }
+}
+
+// Function to verify that inventory updates were actually set in Shopify
+async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: string; quantity: number; sku: string }>, locationId: string): Promise<Array<{ sku: string; expectedQuantity: number; actualQuantity: number; locationName: string }>> {
+  const verificationResults: Array<{ sku: string; expectedQuantity: number; actualQuantity: number; locationName: string }> = [];
+  
+  // Process verification in smaller batches to avoid rate limits
+  const BATCH_SIZE = 50;
+  
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const batch = updates.slice(i, i + BATCH_SIZE);
+    
+    // Create a query to get inventory levels for multiple items
+    const inventoryItemIds = batch.map(update => update.inventoryItemId);
+    const query = `
+      query GetInventoryLevels($inventoryItemIds: [ID!]!, $locationId: ID!) {
+        nodes(ids: $inventoryItemIds) {
+          ... on InventoryItem {
+            id
+            sku
+            inventoryLevel(locationId: $locationId) {
+              id
+              available
+              location {
+                id
+                name
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const variables = {
+      inventoryItemIds: inventoryItemIds,
+      locationId: `gid://shopify/Location/${locationId}`
+    };
+    
+    try {
+      const response = await axios.post(
+        shopifyGraphqlUrl,
+        { query, variables },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': SHOPIFY_API_PASSWORD,
+          },
+          timeout: 30000,
+        }
+      );
+      
+      const nodes = response.data.data?.nodes || [];
+      
+      for (const node of nodes) {
+        if (node && node.sku) {
+          const update = batch.find(u => u.inventoryItemId === node.id);
+          if (update) {
+            const actualQuantity = node.inventoryLevel?.available || 0;
+            const locationName = node.inventoryLevel?.location?.name || 'Unknown';
+            
+            verificationResults.push({
+              sku: update.sku,
+              expectedQuantity: update.quantity,
+              actualQuantity: actualQuantity,
+              locationName: locationName
+            });
+            
+            if (actualQuantity !== update.quantity) {
+              console.warn(`⚠️ Verification failed for ${update.sku}: expected ${update.quantity}, got ${actualQuantity}`);
+            }
+          }
+        }
+      }
+      
+      // Small delay between batches to avoid rate limits
+      if (i + BATCH_SIZE < updates.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+    } catch (error: any) {
+      console.error(`Verification batch failed:`, error.message);
+      // Add failed verifications with null values
+      for (const update of batch) {
+        verificationResults.push({
+          sku: update.sku,
+          expectedQuantity: update.quantity,
+          actualQuantity: -1, // -1 indicates verification failed
+          locationName: 'Verification Failed'
+        });
+      }
+    }
+  }
+  
+  return verificationResults;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,6 +154,9 @@ export async function POST(request: NextRequest) {
     
     // Reload mapping after enrichment using the mapping service (fresh data, no cache)
     const { mapping: updatedMapping } = await mappingService.getMappingFresh();
+    
+    // Get location ID for verification
+    const locationId = await getMantecaLocationId();
     
     // 5. Build shopifyInventory map (simple and bundle SKUs) - same logic as main sync
     const shopifyInventory: Record<string, number> = {};
@@ -119,9 +223,15 @@ export async function POST(request: NextRequest) {
         results.successful = bulkResult.success;
         results.failed += bulkResult.failed;
         
-        // Add successful updates to results
+        // Verify that quantities were actually set in Shopify
+        console.log('Verifying inventory updates...');
+        const verificationResults = await verifyShopifyInventoryUpdates(shopifyUpdates, locationId);
+        
+        // Add successful updates to results with verification
         for (const update of shopifyUpdates) {
           const product = updatedMapping.products.find((p: any) => p.shopify_sku === update.sku);
+          const verification = verificationResults.find((v: any) => v.sku === update.sku);
+          
           results.updates.push({
             sku: update.sku,
             flowtrac_sku: product?.flowtrac_sku,
@@ -130,8 +240,25 @@ export async function POST(request: NextRequest) {
             quantityChanged: null,
             type: product?.bundle_components ? 'Bundle' : 'Simple',
             processingTime: 0, // Bulk processing time is not per-item
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            verification: verification ? {
+              actualQuantity: verification.actualQuantity,
+              updateSuccessful: verification.actualQuantity === update.quantity,
+              locationName: verification.locationName
+            } : null
           });
+        }
+        
+        // Log verification summary
+        const successfulUpdates = verificationResults.filter((v: any) => v.actualQuantity === v.expectedQuantity).length;
+        const failedUpdates = verificationResults.length - successfulUpdates;
+        console.log(`Verification complete: ${successfulUpdates} successful, ${failedUpdates} failed`);
+        
+        if (failedUpdates > 0) {
+          const failedSkus = verificationResults
+            .filter((v: any) => v.actualQuantity !== v.expectedQuantity)
+            .map((v: any) => `${v.sku} (expected: ${v.expectedQuantity}, actual: ${v.actualQuantity})`);
+          console.error('Failed verifications:', failedSkus);
         }
         
         // Log any errors

@@ -240,7 +240,10 @@ export default function Home() {
       'Quantity Changed',
       'Type',
       'Processing Time (ms)',
-      'Timestamp'
+      'Timestamp',
+      'Actual Quantity (Verified)',
+      'Update Successful',
+      'Location Name'
     ];
     
     const rows = data.updates.map((update: any) => [
@@ -251,7 +254,10 @@ export default function Home() {
       update.quantityChanged ? 'Yes' : 'No',
       update.type || '',
       update.processingTime || 0,
-      update.timestamp || ''
+      update.timestamp || '',
+      update.verification?.actualQuantity !== undefined ? update.verification.actualQuantity : 'N/A',
+      update.verification?.updateSuccessful ? 'Yes' : 'No',
+      update.verification?.locationName || 'N/A'
     ]);
     
     return [headers, ...rows].map(row => row.map((cell: any) => `"${cell}"`).join(',')).join('\n');
