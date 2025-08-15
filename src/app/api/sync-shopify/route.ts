@@ -25,18 +25,15 @@ async function getShopifyInventoryLevel(sku: string): Promise<number | null> {
 async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: string; quantity: number; sku: string }>, locationId: string): Promise<Array<{ sku: string; expectedQuantity: number; actualQuantity: number; locationName: string }>> {
   const verificationResults: Array<{ sku: string; expectedQuantity: number; actualQuantity: number; locationName: string }> = [];
   
-  // Process verification in smaller batches to avoid rate limits
-  const BATCH_SIZE = 50;
+  console.log(`Starting verification for ${updates.length} items...`);
   
-  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-    const batch = updates.slice(i, i + BATCH_SIZE);
-    
-    // Create a query to get inventory levels for multiple items
-    const inventoryItemIds = batch.map(update => update.inventoryItemId);
-    const query = `
-      query GetInventoryLevels($inventoryItemIds: [ID!]!, $locationId: ID!) {
-        nodes(ids: $inventoryItemIds) {
-          ... on InventoryItem {
+  // Process verification one by one to avoid GraphQL complexity issues
+  for (const update of updates) {
+    try {
+      // Query individual inventory item
+      const query = `
+        query GetInventoryLevel($inventoryItemId: ID!, $locationId: ID!) {
+          inventoryItem(id: $inventoryItemId) {
             id
             sku
             inventoryLevel(locationId: $locationId) {
@@ -49,15 +46,13 @@ async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: s
             }
           }
         }
-      }
-    `;
-    
-    const variables = {
-      inventoryItemIds: inventoryItemIds,
-      locationId: `gid://shopify/Location/${locationId}`
-    };
-    
-    try {
+      `;
+      
+      const variables = {
+        inventoryItemId: update.inventoryItemId,
+        locationId: `gid://shopify/Location/${locationId}`
+      };
+      
       const response = await axios.post(
         shopifyGraphqlUrl,
         { query, variables },
@@ -70,48 +65,49 @@ async function verifyShopifyInventoryUpdates(updates: Array<{ inventoryItemId: s
         }
       );
       
-      const nodes = response.data.data?.nodes || [];
+      const inventoryItem = response.data.data?.inventoryItem;
       
-      for (const node of nodes) {
-        if (node && node.sku) {
-          const update = batch.find(u => u.inventoryItemId === node.id);
-          if (update) {
-            const actualQuantity = node.inventoryLevel?.available || 0;
-            const locationName = node.inventoryLevel?.location?.name || 'Unknown';
-            
-            verificationResults.push({
-              sku: update.sku,
-              expectedQuantity: update.quantity,
-              actualQuantity: actualQuantity,
-              locationName: locationName
-            });
-            
-            if (actualQuantity !== update.quantity) {
-              console.warn(`⚠️ Verification failed for ${update.sku}: expected ${update.quantity}, got ${actualQuantity}`);
-            }
-          }
-        }
-      }
-      
-      // Small delay between batches to avoid rate limits
-      if (i + BATCH_SIZE < updates.length) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-      
-    } catch (error: any) {
-      console.error(`Verification batch failed:`, error.message);
-      // Add failed verifications with null values
-      for (const update of batch) {
+      if (inventoryItem) {
+        const actualQuantity = inventoryItem.inventoryLevel?.available || 0;
+        const locationName = inventoryItem.inventoryLevel?.location?.name || 'Unknown';
+        
         verificationResults.push({
           sku: update.sku,
           expectedQuantity: update.quantity,
-          actualQuantity: -1, // -1 indicates verification failed
-          locationName: 'Verification Failed'
+          actualQuantity: actualQuantity,
+          locationName: locationName
+        });
+        
+        if (actualQuantity !== update.quantity) {
+          console.warn(`⚠️ Verification failed for ${update.sku}: expected ${update.quantity}, got ${actualQuantity}`);
+        } else {
+          console.log(`✅ Verification successful for ${update.sku}: ${actualQuantity}`);
+        }
+      } else {
+        console.error(`❌ No inventory item found for ${update.sku}`);
+        verificationResults.push({
+          sku: update.sku,
+          expectedQuantity: update.quantity,
+          actualQuantity: -1,
+          locationName: 'Item Not Found'
         });
       }
+      
+      // Small delay between queries to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+    } catch (error: any) {
+      console.error(`Verification failed for ${update.sku}:`, error.message);
+      verificationResults.push({
+        sku: update.sku,
+        expectedQuantity: update.quantity,
+        actualQuantity: -1,
+        locationName: 'Verification Failed'
+      });
     }
   }
   
+  console.log(`Verification completed for ${verificationResults.length} items`);
   return verificationResults;
 }
 
