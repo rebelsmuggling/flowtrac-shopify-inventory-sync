@@ -36,7 +36,7 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
   console.log(`[ShipStation Sync] Updating warehouse locations for ${updates.length} SKUs using bulk method`);
   
   // Process in batches to avoid timeouts and rate limits
-  const BATCH_SIZE = 10; // Reduced batch size to avoid rate limits
+  const BATCH_SIZE = 50; // Increased batch size for faster processing
   const batches = [];
   for (let i = 0; i < updates.length; i += BATCH_SIZE) {
     batches.push(updates.slice(i, i + BATCH_SIZE));
@@ -56,32 +56,32 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
     console.log(`[ShipStation Sync] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} SKUs) - ${progress}% complete`);
     
     try {
-             // 1. Fetch all products by SKU sequentially to avoid rate limits
-       const productResults = [];
-       for (const update of batch) {
-         try {
-           const product = await getShipStationProductBySku(update.sku);
-           productResults.push({
-             sku: update.sku,
-             product,
-             binLocation: update.binLocation,
-             success: true,
-             error: null
-           });
-           // Add small delay between requests to respect rate limits
-           await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-         } catch (error) {
-           productResults.push({
-             sku: update.sku,
-             product: null,
-             binLocation: update.binLocation,
-             success: false,
-             error: (error as Error).message
-           });
-           // Add delay even on error to maintain rate limiting
-           await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-         }
-       }
+      // 1. Fetch all products by SKU sequentially to avoid rate limits
+      const productResults = [];
+      for (const update of batch) {
+        try {
+          const product = await getShipStationProductBySku(update.sku);
+          productResults.push({
+            sku: update.sku,
+            product,
+            binLocation: update.binLocation,
+            success: true,
+            error: null
+          });
+          // Add small delay between requests to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+        } catch (error) {
+          productResults.push({
+            sku: update.sku,
+            product: null,
+            binLocation: update.binLocation,
+            success: false,
+            error: (error as Error).message
+          });
+          // Add delay even on error to maintain rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+        }
+      }
       
       // 2. Separate successful and failed lookups
       const successfulLookups = productResults.filter(result => result.success);
@@ -89,50 +89,50 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
       
       console.log(`[ShipStation Sync] Batch ${batchIndex + 1}: Successfully fetched ${successfulLookups.length} products, ${failedLookups.length} failed`);
       
-             // 3. Update all successful products sequentially to avoid rate limits
-       const updateResults = [];
-       for (const result of successfulLookups) {
-         try {
-           const updatedProduct = { ...result.product, warehouseLocation: result.binLocation };
-           const url = `${SHIPSTATION_API_BASE}/products/${result.product.productId}`;
-           
-           const res = await fetch(url, {
-             method: 'PUT',
-             headers: {
-               'Authorization': getAuthHeader(),
-               'Content-Type': 'application/json',
-               'Accept': 'application/json',
-             },
-             body: JSON.stringify(updatedProduct),
-           });
-           
-           if (!res.ok) {
-             const errorText = await res.text();
-             throw new Error(`ShipStation API error (update product): ${res.status} ${res.statusText} - ${errorText}`);
-           }
-           
-           updateResults.push({
-             sku: result.sku,
-             binLocation: result.binLocation,
-             success: true,
-             error: null,
-             response: await res.json()
-           });
-           
-           // Add small delay between requests to respect rate limits
-           await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-         } catch (error) {
-           updateResults.push({
-             sku: result.sku,
-             binLocation: result.binLocation,
-             success: false,
-             error: (error as Error).message,
-             response: null
-           });
-           // Add delay even on error to maintain rate limiting
-           await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-         }
-       }
+      // 3. Update all successful products sequentially to avoid rate limits
+      const updateResults = [];
+      for (const result of successfulLookups) {
+        try {
+          const updatedProduct = { ...result.product, warehouseLocation: result.binLocation };
+          const url = `${SHIPSTATION_API_BASE}/products/${result.product.productId}`;
+          
+          const res = await fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Authorization': getAuthHeader(),
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(updatedProduct),
+          });
+          
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`ShipStation API error (update product): ${res.status} ${res.statusText} - ${errorText}`);
+          }
+          
+          updateResults.push({
+            sku: result.sku,
+            binLocation: result.binLocation,
+            success: true,
+            error: null,
+            response: await res.json()
+          });
+          
+          // Add small delay between requests to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+        } catch (error) {
+          updateResults.push({
+            sku: result.sku,
+            binLocation: result.binLocation,
+            success: false,
+            error: (error as Error).message,
+            response: null
+          });
+          // Add delay even on error to maintain rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced to 100ms delay
+        }
+      }
       
       // 4. Add batch results to overall results
       const batchSuccessful = updateResults.filter(result => result.success);
@@ -152,10 +152,10 @@ export async function updateShipStationWarehouseLocationBulk(updates: Array<{sku
       
       console.log(`[ShipStation Sync] Batch ${batchIndex + 1} completed: ${batchSuccessful.length} successful, ${batchFailed.length} failed`);
       
-             // 5. Add longer delay between batches to avoid overwhelming the API
-       if (batchIndex < batches.length - 1) {
-         await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between batches
-       }
+      // 5. Add shorter delay between batches to complete within timeout
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced to 500ms delay between batches
+      }
       
     } catch (error) {
       console.error(`[ShipStation Sync] Batch ${batchIndex + 1} failed:`, error);
