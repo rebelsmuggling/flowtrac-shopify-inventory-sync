@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       total: 0,
       successful: 0,
       failed: 0,
-      skipped: 0,
       errors: [] as string[],
       updates: [] as any[]
     };
@@ -65,29 +64,29 @@ export async function POST(request: NextRequest) {
       results.total++;
       
       try {
-        if (quantity > 0) {
-          const amazonResult = await updateAmazonInventory(sku, quantity);
+        // Update Amazon for ALL items, including those with 0 quantity
+        const amazonResult = await updateAmazonInventory(sku, quantity);
+        
+        if (amazonResult.success) {
+          results.successful++;
+          results.updates.push({
+            sku: sku,
+            flowtrac_sku: product?.flowtrac_sku,
+            quantity: quantity,
+            type: product?.bundle_components ? 'Bundle' : 'Simple',
+            feedId: amazonResult.feedId
+          });
           
-          if (amazonResult.success) {
-            results.successful++;
-            results.updates.push({
-              sku: sku,
-              flowtrac_sku: product?.flowtrac_sku,
-              quantity: quantity,
-              type: product?.bundle_components ? 'Bundle' : 'Simple',
-              feedId: amazonResult.feedId
-            });
-            
-            console.log(`✅ Amazon update successful: ${sku} = ${quantity} (Feed ID: ${amazonResult.feedId})`);
+          if (quantity === 0) {
+            console.log(`📦 Amazon update successful: ${sku} = 0 (out of stock) (Feed ID: ${amazonResult.feedId})`);
           } else {
-            results.failed++;
-            const errorMessage = `Failed to update ${sku}: ${'error' in amazonResult ? amazonResult.error : 'Unknown error'}`;
-            results.errors.push(errorMessage);
-            console.error(`❌ ${errorMessage}`);
+            console.log(`✅ Amazon update successful: ${sku} = ${quantity} (Feed ID: ${amazonResult.feedId})`);
           }
         } else {
-          results.skipped++;
-          console.log(`⚠️ Skipping ${sku} - no inventory available`);
+          results.failed++;
+          const errorMessage = `Failed to update ${sku}: ${'error' in amazonResult ? amazonResult.error : 'Unknown error'}`;
+          results.errors.push(errorMessage);
+          console.error(`❌ ${errorMessage}`);
         }
         
       } catch (error) {
@@ -107,7 +106,6 @@ export async function POST(request: NextRequest) {
         total: results.total,
         successful: results.successful,
         failed: results.failed,
-        skipped: results.skipped,
         successRate: Math.round((results.successful / results.total) * 100),
         errors: results.errors,
         updates: results.updates
