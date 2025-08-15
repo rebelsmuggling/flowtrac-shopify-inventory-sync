@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
-import { updateShopifyInventory, enrichMappingWithShopifyVariantAndInventoryIds } from '../../../../services/shopify';
+import { updateShopifyInventory, updateShopifyInventoryBulk, enrichMappingWithShopifyVariantAndInventoryIds } from '../../../../services/shopify';
 
 // Helper function to get current Shopify inventory for verification
 async function getShopifyInventoryLevel(sku: string): Promise<number | null> {
@@ -54,7 +54,22 @@ export async function POST(request: NextRequest) {
     // Reload mapping after enrichment using the mapping service (fresh data, no cache)
     const { mapping: updatedMapping } = await mappingService.getMappingFresh();
     
-    // 5. Process each product and update Shopify
+    // 5. Build shopifyInventory map (simple and bundle SKUs) - same logic as main sync
+    const shopifyInventory: Record<string, number> = {};
+    for (const product of updatedMapping.products) {
+      if (Array.isArray(product.bundle_components) && product.shopify_sku) {
+        const quantities = product.bundle_components.map((comp: any) => {
+          const available = flowtracInventory[comp.flowtrac_sku]?.quantity || 0;
+          return Math.floor(available / comp.quantity);
+        });
+        shopifyInventory[product.shopify_sku] = quantities.length > 0 ? Math.min(...quantities) : 0;
+      } else if (product.shopify_sku && product.flowtrac_sku) {
+        shopifyInventory[product.shopify_sku] = flowtracInventory[product.flowtrac_sku]?.quantity || 0;
+      }
+    }
+
+    // 6. Prepare Shopify bulk updates
+    const shopifyUpdates: Array<{ inventoryItemId: string; quantity: number; sku: string }> = [];
     const results = {
       total: 0,
       successful: 0,
@@ -74,92 +89,61 @@ export async function POST(request: NextRequest) {
     
     const startTime = Date.now();
     
-    for (const product of updatedMapping.products) {
-      if (!product.shopify_sku) continue; // Skip products without Shopify SKU
-      
+    // Collect all Shopify updates
+    for (const [sku, quantity] of Object.entries(shopifyInventory)) {
+      const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
+      const inventoryItemId = product?.shopify_inventory_item_id;
       results.total++;
-      const productStartTime = Date.now();
-      let calculatedQuantity = 0;
-      let previousQuantity: number | null = null;
       
-      try {
-        if (Array.isArray(product.bundle_components) && product.bundle_components.length > 0) {
-          // Bundle product - calculate quantity from components
-          let minBundleQuantity = Infinity;
-          for (const component of product.bundle_components) {
-            const componentInventory = flowtracInventory[component.flowtrac_sku];
-            if (componentInventory && componentInventory.quantity !== undefined) {
-              const possibleBundles = Math.floor(componentInventory.quantity / component.quantity);
-              minBundleQuantity = Math.min(minBundleQuantity, possibleBundles);
-            } else {
-              minBundleQuantity = 0;
-              break;
-            }
-          }
-          calculatedQuantity = minBundleQuantity === Infinity ? 0 : minBundleQuantity;
-        } else if (product.flowtrac_sku) {
-          // Simple product - use Flowtrac quantity directly
-          const simpleInventory = flowtracInventory[product.flowtrac_sku];
-          if (simpleInventory && simpleInventory.quantity !== undefined) {
-            calculatedQuantity = simpleInventory.quantity;
-          }
-        }
-        
-        // Update Shopify if we have a quantity
-        if (calculatedQuantity > 0) {
-          // Get previous quantity for comparison (if available)
-          try {
-            previousQuantity = await getShopifyInventoryLevel(product.shopify_sku!);
-          } catch (error) {
-            console.log(`⚠️ Could not get previous inventory for ${product.shopify_sku}:`, (error as Error).message);
-          }
-          
-          // Check if we have the required inventory item ID
-          const inventoryItemId = product.shopify_inventory_item_id;
-          if (!inventoryItemId) {
-            results.failed++;
-            const errorMessage = `No shopify_inventory_item_id for SKU ${product.shopify_sku}`;
-            results.errors.push(errorMessage);
-            console.error(`❌ ${errorMessage}`);
-            continue;
-          }
-          
-          // Update Shopify inventory using inventory item ID
-          await updateShopifyInventory(inventoryItemId, calculatedQuantity);
-          
-          const productProcessingTime = Date.now() - productStartTime;
-          
-          results.successful++;
-          results.updates.push({
-            sku: product.shopify_sku,
-            flowtrac_sku: product.flowtrac_sku,
-            quantity: calculatedQuantity,
-            previousQuantity: previousQuantity,
-            quantityChanged: previousQuantity !== null ? previousQuantity !== calculatedQuantity : null,
-            type: product.bundle_components ? 'Bundle' : 'Simple',
-            processingTime: productProcessingTime,
-            timestamp: new Date().toISOString()
-          });
-          
-          if (previousQuantity !== null && previousQuantity !== calculatedQuantity) {
-            results.summary.productsWithChanges++;
-            console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${previousQuantity} → ${calculatedQuantity} (${productProcessingTime}ms)`);
-          } else if (previousQuantity !== null) {
-            results.summary.productsUnchanged++;
-            console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${calculatedQuantity} (unchanged, ${productProcessingTime}ms)`);
-          } else {
-            console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${calculatedQuantity} (${productProcessingTime}ms)`);
-          }
-        } else {
-          results.skipped++;
-          console.log(`⚠️ Skipping ${product.shopify_sku} - no inventory available`);
-        }
-        
-      } catch (error) {
+      if (!inventoryItemId) {
         results.failed++;
-        const errorMessage = `Failed to update ${product.shopify_sku}: ${(error as Error).message}`;
+        const errorMessage = `No shopify_inventory_item_id for SKU ${sku}`;
         results.errors.push(errorMessage);
         console.error(`❌ ${errorMessage}`);
+      } else if (quantity > 0) {
+        shopifyUpdates.push({ inventoryItemId, quantity, sku });
+      } else {
+        results.skipped++;
+        console.log(`⚠️ Skipping ${sku} - no inventory available`);
+      }
+    }
+    
+    // 7. Bulk Shopify sync
+    if (shopifyUpdates.length > 0) {
+      try {
+        console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
+        const bulkResult = await updateShopifyInventoryBulk(shopifyUpdates);
+        console.log(`Bulk Shopify update completed: ${bulkResult.success} successful, ${bulkResult.failed} failed`);
+        
+        // Mark successful updates
+        results.successful = bulkResult.success;
+        results.failed += bulkResult.failed;
+        
+        // Add successful updates to results
+        for (const update of shopifyUpdates) {
+          const product = updatedMapping.products.find((p: any) => p.shopify_sku === update.sku);
+          results.updates.push({
+            sku: update.sku,
+            flowtrac_sku: product?.flowtrac_sku,
+            quantity: update.quantity,
+            previousQuantity: null, // We don't have previous quantities in bulk mode
+            quantityChanged: null,
+            type: product?.bundle_components ? 'Bundle' : 'Simple',
+            processingTime: 0, // Bulk processing time is not per-item
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // Log any errors
+        if (bulkResult.errors.length > 0) {
+          console.error('Shopify bulk update errors:', bulkResult.errors);
+          results.errors.push(...bulkResult.errors);
+        }
+        
+      } catch (err: any) {
+        console.error('Bulk Shopify update failed:', err.message);
+        results.failed = shopifyUpdates.length;
+        results.errors.push(`Bulk update failed: ${err.message}`);
       }
     }
     
