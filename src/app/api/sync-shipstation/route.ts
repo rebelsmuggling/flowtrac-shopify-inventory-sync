@@ -72,33 +72,27 @@ export async function POST(request: NextRequest) {
       const bulkResult = await updateShipStationWarehouseLocationBulk(bulkUpdates);
       results.bulkResult = bulkResult;
       
-      if (bulkResult.success) {
-        results.successful = bulkResult.successful;
-        results.failed = bulkResult.failed;
-        
-        // Add successful updates to results
-        for (const successResult of bulkResult.results.successful) {
-          const originalUpdate = shipstationUpdates.find(u => u.sku === successResult.sku);
-          results.updates.push({
-            flowtrac_sku: successResult.sku,
-            bin_location: successResult.binLocation,
-            quantity: originalUpdate?.quantity || 0
-          });
-        }
-        
-        // Add failed updates to errors
-        for (const failedResult of bulkResult.results.failed) {
-          const errorMessage = `Failed to update ShipStation for ${failedResult.sku}: ${failedResult.error}`;
-          results.errors.push(errorMessage);
-        }
-        
-        console.log(`✅ Bulk ShipStation update completed: ${results.successful}/${results.total} successful`);
-        
-      } else {
-        results.failed = results.total;
-        results.errors.push(`Bulk update failed: ${bulkResult.error}`);
-        console.error(`❌ Bulk ShipStation update failed: ${bulkResult.error}`);
+      // The bulk function always returns success: true, but may have failed items
+      results.successful = bulkResult.successful;
+      results.failed = bulkResult.failed;
+      
+      // Add successful updates to results
+      for (const successResult of bulkResult.results.successful) {
+        const originalUpdate = shipstationUpdates.find(u => u.sku === successResult.sku);
+        results.updates.push({
+          flowtrac_sku: successResult.sku,
+          bin_location: successResult.binLocation,
+          quantity: originalUpdate?.quantity || 0
+        });
       }
+      
+      // Add failed updates to errors
+      for (const failedResult of bulkResult.results.failed) {
+        const errorMessage = `Failed to update ShipStation for ${failedResult.sku}: ${failedResult.error}`;
+        results.errors.push(errorMessage);
+      }
+      
+      console.log(`✅ Bulk ShipStation update completed: ${results.successful}/${results.total} successful`);
       
     } catch (error) {
       results.failed = results.total;
