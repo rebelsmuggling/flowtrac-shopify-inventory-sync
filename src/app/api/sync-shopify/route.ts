@@ -3,6 +3,18 @@ import { mappingService } from '../../../services/mapping';
 import { updateShopifyInventory } from '../../../../services/shopify';
 import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
 
+// Helper function to get current Shopify inventory for verification
+async function getShopifyInventoryLevel(sku: string): Promise<number | null> {
+  try {
+    // This would need to be implemented in the Shopify service
+    // For now, we'll return null and add this functionality later
+    return null;
+  } catch (error) {
+    console.error(`Failed to get Shopify inventory for ${sku}:`, error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Shopify-only sync started');
@@ -26,15 +38,28 @@ export async function POST(request: NextRequest) {
       total: 0,
       successful: 0,
       failed: 0,
+      skipped: 0,
       errors: [] as string[],
-      updates: [] as any[]
+      updates: [] as any[],
+      summary: {
+        startTime: new Date().toISOString(),
+        endTime: null as string | null,
+        totalProcessingTime: 0,
+        averageTimePerProduct: 0,
+        productsWithChanges: 0,
+        productsUnchanged: 0
+      }
     };
+    
+    const startTime = Date.now();
     
     for (const product of mapping.products) {
       if (!product.shopify_sku) continue; // Skip products without Shopify SKU
       
       results.total++;
+      const productStartTime = Date.now();
       let calculatedQuantity = 0;
+      let previousQuantity: number | null = null;
       
       try {
         if (Array.isArray(product.bundle_components) && product.bundle_components.length > 0) {
@@ -61,18 +86,41 @@ export async function POST(request: NextRequest) {
         
         // Update Shopify if we have a quantity
         if (calculatedQuantity > 0) {
+          // Get previous quantity for comparison (if available)
+          try {
+            previousQuantity = await getShopifyInventoryLevel(product.shopify_sku!);
+          } catch (error) {
+            console.log(`⚠️ Could not get previous inventory for ${product.shopify_sku}:`, (error as Error).message);
+          }
+          
+          // Update Shopify inventory
           await updateShopifyInventory(product.shopify_sku!, calculatedQuantity);
+          
+          const productProcessingTime = Date.now() - productStartTime;
           
           results.successful++;
           results.updates.push({
             sku: product.shopify_sku,
             flowtrac_sku: product.flowtrac_sku,
             quantity: calculatedQuantity,
-            type: product.bundle_components ? 'Bundle' : 'Simple'
+            previousQuantity: previousQuantity,
+            quantityChanged: previousQuantity !== null ? previousQuantity !== calculatedQuantity : null,
+            type: product.bundle_components ? 'Bundle' : 'Simple',
+            processingTime: productProcessingTime,
+            timestamp: new Date().toISOString()
           });
           
-          console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${calculatedQuantity}`);
+          if (previousQuantity !== null && previousQuantity !== calculatedQuantity) {
+            results.summary.productsWithChanges++;
+            console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${previousQuantity} → ${calculatedQuantity} (${productProcessingTime}ms)`);
+          } else if (previousQuantity !== null) {
+            results.summary.productsUnchanged++;
+            console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${calculatedQuantity} (unchanged, ${productProcessingTime}ms)`);
+          } else {
+            console.log(`✅ Shopify update successful: ${product.shopify_sku} = ${calculatedQuantity} (${productProcessingTime}ms)`);
+          }
         } else {
+          results.skipped++;
           console.log(`⚠️ Skipping ${product.shopify_sku} - no inventory available`);
         }
         
@@ -84,7 +132,16 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log(`Shopify sync completed: ${results.successful}/${results.total} successful`);
+    const endTime = Date.now();
+    const totalProcessingTime = endTime - startTime;
+    
+    // Calculate final summary
+    results.summary.endTime = new Date().toISOString();
+    results.summary.totalProcessingTime = totalProcessingTime;
+    results.summary.averageTimePerProduct = results.total > 0 ? Math.round(totalProcessingTime / results.total) : 0;
+    
+    console.log(`Shopify sync completed: ${results.successful}/${results.total} successful in ${totalProcessingTime}ms`);
+    console.log(`Summary: ${results.summary.productsWithChanges} changed, ${results.summary.productsUnchanged} unchanged, ${results.skipped} skipped`);
     
     return NextResponse.json({
       success: true,
@@ -93,9 +150,17 @@ export async function POST(request: NextRequest) {
         total: results.total,
         successful: results.successful,
         failed: results.failed,
+        skipped: results.skipped,
         successRate: Math.round((results.successful / results.total) * 100),
         errors: results.errors,
-        updates: results.updates
+        updates: results.updates,
+        summary: results.summary,
+        inventoryChanges: {
+          productsWithChanges: results.summary.productsWithChanges,
+          productsUnchanged: results.summary.productsUnchanged,
+          changePercentage: results.summary.productsWithChanges > 0 ? 
+            Math.round((results.summary.productsWithChanges / results.successful) * 100) : 0
+        }
       }
     });
     

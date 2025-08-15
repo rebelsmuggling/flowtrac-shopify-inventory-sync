@@ -912,6 +912,16 @@ export default function Home() {
                       <div style={{ color: "#6c757d" }}>
                         📊 Success Rate: {shopifyResult.results?.successRate}% ({shopifyResult.results?.successful}/{shopifyResult.results?.total})
                       </div>
+                      {shopifyResult.results?.inventoryChanges && (
+                        <div style={{ color: "#6c757d", fontSize: "0.8rem", marginTop: 4 }}>
+                          📈 Changes: {shopifyResult.results.inventoryChanges.productsWithChanges} updated, {shopifyResult.results.inventoryChanges.productsUnchanged} unchanged ({shopifyResult.results.inventoryChanges.changePercentage}% changed)
+                        </div>
+                      )}
+                      {shopifyResult.results?.summary && (
+                        <div style={{ color: "#6c757d", fontSize: "0.8rem", marginTop: 2 }}>
+                          ⏱️ Time: {shopifyResult.results.summary.totalProcessingTime}ms ({shopifyResult.results.summary.averageTimePerProduct}ms avg)
+                        </div>
+                      )}
                       {shopifyResult.results?.errors?.length > 0 && (
                         <details style={{ marginTop: 8 }}>
                           <summary style={{ cursor: "pointer", color: "#dc3545" }}>
@@ -925,6 +935,51 @@ export default function Home() {
                               <li>... and {shopifyResult.results.errors.length - 3} more</li>
                             )}
                           </ul>
+                        </details>
+                      )}
+                      {shopifyResult.results?.updates && shopifyResult.results.updates.length > 0 && (
+                        <details style={{ marginTop: 8 }}>
+                          <summary style={{ cursor: "pointer", color: "#95bf47" }}>
+                            📋 View {shopifyResult.results.updates.length} product updates
+                          </summary>
+                          <div style={{ fontSize: "0.8rem", margin: "4px 0 0 0", maxHeight: "200px", overflowY: "auto" }}>
+                            {shopifyResult.results.updates.slice(0, 10).map((update: any, index: number) => (
+                              <div key={index} style={{ 
+                                padding: "4px 0", 
+                                borderBottom: "1px solid #eee",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center"
+                              }}>
+                                <div>
+                                  <strong>{update.sku}</strong>
+                                  {update.previousQuantity !== null && update.quantityChanged && (
+                                    <span style={{ color: "#28a745", marginLeft: 8 }}>
+                                      {update.previousQuantity} → {update.quantity}
+                                    </span>
+                                  )}
+                                  {update.previousQuantity !== null && !update.quantityChanged && (
+                                    <span style={{ color: "#6c757d", marginLeft: 8 }}>
+                                      {update.quantity} (unchanged)
+                                    </span>
+                                  )}
+                                  {update.previousQuantity === null && (
+                                    <span style={{ color: "#6c757d", marginLeft: 8 }}>
+                                      {update.quantity}
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ color: "#6c757d", fontSize: "0.7rem" }}>
+                                  {update.processingTime}ms
+                                </div>
+                              </div>
+                            ))}
+                            {shopifyResult.results.updates.length > 10 && (
+                              <div style={{ color: "#6c757d", fontSize: "0.7rem", padding: "4px 0" }}>
+                                ... and {shopifyResult.results.updates.length - 10} more products
+                              </div>
+                            )}
+                          </div>
                         </details>
                       )}
                     </div>
