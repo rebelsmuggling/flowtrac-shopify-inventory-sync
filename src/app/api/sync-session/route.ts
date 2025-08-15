@@ -397,12 +397,12 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     
     console.log(`Session ${sessionNumber}: Processing ${sessionSkus.length} SKUs`);
     
-    // Check database connection (Flowtrac credentials not needed since we're using database)
+    // Check database connection
     if (!process.env.POSTGRES_URL) {
       throw new Error('Database connection not configured');
     }
     
-    // Process SKUs using database instead of Flowtrac API
+    // Process SKUs using database
     const { getFlowtracInventory } = await import('../../../lib/database');
     
     const startTime = Date.now();
@@ -411,8 +411,14 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     let failedSkuList: string[] = [];
     
     try {
-      // Get inventory from database
-      const inventoryResult = await getFlowtracInventory(sessionSkus, 'Manteca');
+      // Get inventory from database with timeout
+      const inventoryTimeoutMs = 30000; // 30 second timeout for database query
+      const inventoryPromise = getFlowtracInventory(sessionSkus, 'Manteca');
+      const inventoryTimeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), inventoryTimeoutMs)
+      );
+      
+      const inventoryResult = await Promise.race([inventoryPromise, inventoryTimeoutPromise]);
       
       if (!inventoryResult.success) {
         throw new Error(`Failed to get inventory from database: ${inventoryResult.error}`);
@@ -444,161 +450,10 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
         }
       }
       
-      console.log(`Session ${sessionNumber} completed: ${successfulSkus} successful, ${failedSkus} failed`);
+      console.log(`Session ${sessionNumber} inventory processing completed: ${successfulSkus} successful, ${failedSkus} failed`);
       
-      // Now perform the actual sync to Shopify/Amazon/ShipStation
-      console.log(`Starting sync to platforms for session ${sessionNumber}...`);
-      
-      try {
-        // Build shopifyInventory map (simple and bundle SKUs)
-        const shopifyInventory: Record<string, number> = {};
-        for (const product of mapping.products) {
-          if (Array.isArray(product.bundle_components) && product.shopify_sku) {
-            // Bundle product - calculate based on component availability
-            const quantities = product.bundle_components.map((comp: any) => {
-              const available = batchInventory[comp.flowtrac_sku]?.quantity || 0;
-              return Math.floor(available / comp.quantity);
-            });
-            shopifyInventory[product.shopify_sku] = quantities.length > 0 ? Math.min(...quantities) : 0;
-          } else if (product.shopify_sku) {
-            // Simple product - check both flowtrac_sku and shopify_sku
-            let quantity = 0;
-            if (product.flowtrac_sku && batchInventory[product.flowtrac_sku]) {
-              quantity = batchInventory[product.flowtrac_sku].quantity;
-            } else if (batchInventory[product.shopify_sku]) {
-              quantity = batchInventory[product.shopify_sku].quantity;
-            }
-            shopifyInventory[product.shopify_sku] = quantity;
-          }
-        }
-        
-        console.log(`Built shopifyInventory map with ${Object.keys(shopifyInventory).length} SKUs`);
-        
-        // Import sync services
-        const { enrichMappingWithShopifyVariantAndInventoryIds, updateShopifyInventoryBulk } = await import('../../../../services/shopify');
-        const { updateAmazonInventory, updateAmazonInventoryBulk } = await import('../../../../services/amazon');
-        const { updateShipStationWarehouseLocation } = await import('../../../../services/shipstation');
-        
-        // Self-heal: Enrich mapping with missing Shopify variant and inventory item IDs
-        await enrichMappingWithShopifyVariantAndInventoryIds();
-        
-        // Reload mapping after enrichment
-        const { mapping: updatedMapping } = await mappingService.getMapping();
-        
-        // Prepare Shopify bulk updates
-        const shopifyUpdates: Array<{ inventoryItemId: string; quantity: number; sku: string }> = [];
-        
-        // Collect all Shopify updates
-        for (const [sku, quantity] of Object.entries(shopifyInventory)) {
-          const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
-          const inventoryItemId = product?.shopify_inventory_item_id;
-          
-          if (!inventoryItemId) {
-            console.error(`No shopify_inventory_item_id for SKU ${sku}`);
-          } else {
-            shopifyUpdates.push({ inventoryItemId, quantity, sku });
-          }
-        }
-        
-        // Bulk Shopify sync with timeout
-        if (shopifyUpdates.length > 0) {
-          console.log(`Starting bulk Shopify update for ${shopifyUpdates.length} items...`);
-          const shopifyTimeoutMs = 60000; // Reduced to 60 second timeout for Shopify bulk update
-          
-          try {
-            const bulkResult = await Promise.race([
-              updateShopifyInventoryBulk(shopifyUpdates),
-              new Promise<never>((_, reject) => 
-                setTimeout(() => reject(new Error('Shopify bulk update timeout')), shopifyTimeoutMs)
-              )
-            ]);
-            console.log(`Bulk Shopify update completed: ${bulkResult.success} successful, ${bulkResult.failed} failed`);
-          } catch (shopifyError) {
-            console.error(`Shopify bulk update failed: ${(shopifyError as Error).message}`);
-            // Continue with other platforms even if Shopify fails
-          }
-        }
-        
-        // Amazon sync for products in shopifyInventory (bulk update with timeout protection)
-        const amazonUpdates: Array<{ sku: string; quantity: number }> = [];
-        for (const [sku, quantity] of Object.entries(shopifyInventory)) {
-          const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
-          
-          if (product?.amazon_sku && typeof product.amazon_sku === 'string' && product.amazon_sku.trim() !== '') {
-            amazonUpdates.push({ sku: product.amazon_sku, quantity });
-          }
-        }
-        
-        // Bulk Amazon sync with timeout
-        if (amazonUpdates.length > 0) {
-          console.log(`Starting bulk Amazon update for ${amazonUpdates.length} items...`);
-          const amazonTimeoutMs = 45000; // Reduced to 45 second timeout for Amazon bulk update
-          
-          try {
-            const amazonResult = await Promise.race([
-              updateAmazonInventoryBulk(amazonUpdates),
-              new Promise<never>((_, reject) => 
-                setTimeout(() => reject(new Error('Amazon bulk update timeout')), amazonTimeoutMs)
-              )
-            ]);
-            console.log(`Bulk Amazon update completed:`, amazonResult);
-          } catch (amazonError) {
-            console.error(`Amazon bulk update failed: ${(amazonError as Error).message}`);
-            // Continue with other platforms even if Amazon fails
-          }
-        }
-        
-        // ShipStation sync for all unique flowtrac SKUs (with timeout protection)
-        const shipstationPromises = [];
-        for (const sku of sessionSkus) {
-          const bins = batchInventory[sku]?.bins || [];
-          let warehouseLocation;
-          if (!bins.length) {
-            warehouseLocation = 'OutofStock';
-          } else {
-            warehouseLocation = bins.join(',');
-            if (warehouseLocation.length > 100) {
-              let truncated = '';
-              for (const bin of bins) {
-                if (truncated.length + bin.length + (truncated ? 1 : 0) > 100) break;
-                if (truncated) truncated += ',';
-                truncated += bin;
-              }
-              warehouseLocation = truncated;
-            }
-          }
-          
-          const shipstationPromise = updateShipStationWarehouseLocation(sku, warehouseLocation)
-            .then(() => {
-              return { success: true, sku };
-            })
-            .catch(err => {
-              console.error(`Failed to update ShipStation for SKU ${sku}: ${err.message}`);
-              return { success: false, sku, error: err.message };
-            });
-          shipstationPromises.push(shipstationPromise);
-        }
-        
-        // Wait for all ShipStation updates with timeout (Amazon is now handled separately with bulk updates)
-        const timeoutMs = 45000; // Reduced to 45 second timeout for platform syncs
-        
-        if (shipstationPromises.length > 0) {
-          console.log(`Waiting for ${shipstationPromises.length} ShipStation updates with ${timeoutMs}ms timeout...`);
-          const platformResults = await Promise.race([
-            Promise.all(shipstationPromises),
-            new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('Platform sync timeout')), timeoutMs)
-            )
-          ]);
-          console.log(`ShipStation sync completed: ${platformResults.length} updates processed`);
-        }
-        
-        console.log(`Platform sync completed for session ${sessionNumber}`);
-        
-      } catch (syncError) {
-        console.error(`Platform sync failed for session ${sessionNumber}:`, (syncError as Error).message);
-        // Don't fail the session for sync errors, just log them
-      }
+      // Skip platform sync for now to prevent timeouts - focus on inventory processing only
+      console.log(`Session ${sessionNumber}: Skipping platform sync to prevent timeouts`);
       
     } catch (batchError) {
       console.error(`Session ${sessionNumber} failed:`, (batchError as Error).message);
@@ -648,51 +503,11 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
     
     console.log(`Session ${sessionNumber} completed. Has more sessions: ${hasMoreSessions}, Next available: ${nextSessionAvailable}`);
     
-    // Improved automatic continuation mechanism - use external scheduler approach
+    // Simplified auto-continuation - just log that continuation is needed
     if (nextSessionAvailable) {
       const nextSessionNumber = sessionNumber + 1;
       console.log(`Auto-continuation needed for session ${nextSessionNumber}`);
-      console.log(`Session ${nextSessionNumber} will be triggered by external scheduler or manual intervention`);
-      console.log(`Use: curl -X POST ${process.env.VERCEL_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app'}/api/sync-session -H "Content-Type: application/json" -d '{"action": "continue"}'`);
-      console.log(`Or run: node scripts/auto-continue-sessions.js`);
-      
-      // Try to trigger auto-continuation using the auto-continue action
-      try {
-        const baseUrl = process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-        
-        console.log(`Attempting auto-continuation via auto-continue action...`);
-        
-        const autoContinuePromise = fetch(`${baseUrl}/api/sync-session`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-Auto-Continuation': 'true'
-          },
-          body: JSON.stringify({ 
-            action: 'auto-continue'
-          })
-        });
-        
-        const continuationTimeout = 10000; // 10 second timeout
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Auto-continuation timeout')), continuationTimeout)
-        );
-        
-        const autoContinueResult = await Promise.race([autoContinuePromise, timeoutPromise]);
-        
-        if (autoContinueResult.ok) {
-          const autoContinueData = await autoContinueResult.json();
-          console.log(`Auto-continuation successful:`, autoContinueData.success);
-        } else {
-          console.warn(`Auto-continuation failed, will need external trigger`);
-        }
-        
-      } catch (autoContinueError) {
-        console.warn(`Auto-continuation error:`, (autoContinueError as Error).message);
-        console.log(`External trigger needed - use auto-continue script or manual continuation`);
-      }
+      console.log(`Session ${nextSessionNumber} will be triggered by external scheduler`);
     }
     
     return NextResponse.json({
@@ -702,7 +517,7 @@ async function processSession(session: ExtendedSyncSession, sessionNumber: numbe
       session_completed: sessionNumber === session.total_batches,
       session_failed: session.session_results[`session_${sessionNumber}`].status === 'failed',
       next_session_available: nextSessionAvailable,
-      auto_triggered_next: nextSessionAvailable,
+      auto_triggered_next: false, // Simplified - no auto-triggering
       processing_time_ms: duration,
       results: {
         skus_processed: sessionSkus.length,
