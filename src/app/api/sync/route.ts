@@ -82,72 +82,17 @@ export async function POST(request: NextRequest) {
         });
       }
       
-      // Use the new auto-continue action for better session management
-      console.log('Starting auto-continuation for all remaining sessions...');
+      // Note: Auto-continuation is now handled by the separate /api/auto-continue cron job
+      // which runs every 2 minutes and processes sessions directly without HTTP requests
+      console.log('Session started successfully. Auto-continuation will be handled by the dedicated cron job.');
       
-      try {
-        const autoContinueResponse = await fetch(`${baseUrl}/api/sync-session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'auto-continue' })
-        });
-        
-        if (!autoContinueResponse.ok) {
-          const errorText = await autoContinueResponse.text();
-          console.error(`Auto-continuation failed with status ${autoContinueResponse.status}:`, errorText);
-          return NextResponse.json({
-            success: false,
-            error: 'Auto-continuation failed',
-            details: `HTTP ${autoContinueResponse.status}: ${errorText}`,
-            session: sessionData.session,
-            useSessionMode: true
-          });
-        }
-        
-        const autoContinueData = await autoContinueResponse.json();
-        
-        if (autoContinueData.success) {
-          console.log(`Auto-continuation completed successfully!`);
-          console.log(`Sessions processed: ${autoContinueData.sessions_processed}`);
-          console.log(`Total duration: ${autoContinueData.total_duration_ms}ms`);
-          console.log(`Final status: ${autoContinueData.final_status}`);
-          
-          return NextResponse.json({
-            success: true,
-            message: `Session-based sync completed successfully with auto-continuation.`,
-            session: sessionData.session,
-            useSessionMode: true,
-            auto_continuation: {
-              sessions_processed: autoContinueData.sessions_processed,
-              total_duration_ms: autoContinueData.total_duration_ms,
-              final_status: autoContinueData.final_status
-            },
-            note: `All sessions were processed automatically using the improved auto-continuation mechanism`
-          });
-        } else {
-          console.error(`Auto-continuation failed: ${autoContinueData.error}`);
-          
-          return NextResponse.json({
-            success: false,
-            error: 'Auto-continuation failed',
-            details: autoContinueData.error,
-            session: sessionData.session,
-            useSessionMode: true,
-            note: `Session started but auto-continuation failed. You may need to manually continue or use the auto-continue script.`
-          });
-        }
-      } catch (autoContinueError) {
-        console.error('Error during auto-continuation:', autoContinueError);
-        
-        return NextResponse.json({
-          success: true,
-          message: `Session-based sync started but auto-continuation encountered an error.`,
-          session: sessionData.session,
-          useSessionMode: true,
-          auto_continuation_error: (autoContinueError as Error).message,
-          note: `Session is ready for manual continuation or use the auto-continue script: node scripts/auto-continue-sessions.js`
-        });
-      }
+      return NextResponse.json({
+        success: true,
+        message: `Session-based sync started successfully.`,
+        session: sessionData.session,
+        useSessionMode: true,
+        note: `Auto-continuation is handled by the dedicated /api/auto-continue cron job that runs every 2 minutes.`
+      });
       
 
     }
