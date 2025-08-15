@@ -51,12 +51,6 @@ export async function updateAmazonInventoryBulk(updates: Array<{sku: string, qua
             fulfillment_channel_code: "DEFAULT",
             quantity: update.quantity
           }
-        ],
-        handling_time: [
-          {
-            fulfillment_channel_code: "DEFAULT",
-            value: 2
-          }
         ]
       }
     }));
@@ -239,12 +233,6 @@ export async function updateAmazonInventory(amazonSku: string, quantity: number)
               {
                 fulfillment_channel_code: "DEFAULT", // For seller-fulfilled inventory
                 quantity: quantity
-              }
-            ],
-            handling_time: [
-              {
-                fulfillment_channel_code: "DEFAULT",
-                value: 2
               }
             ]
           }
