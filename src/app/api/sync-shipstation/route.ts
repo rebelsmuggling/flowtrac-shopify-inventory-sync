@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateShipStationWarehouseLocation } from '../../../../services/shipstation';
+import { updateShipStationWarehouseLocationBulk } from '../../../../services/shipstation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     });
     
     // 2. Build ShipStation updates directly from Flowtrac inventory data
-    const shipstationUpdates: Array<{ flowtracSku: string, binLocation: string, quantity: number }> = [];
+    const shipstationUpdates: Array<{ sku: string, binLocation: string, quantity: number }> = [];
     
     if (inventoryResult.data) {
       for (const record of inventoryResult.data) {
@@ -27,14 +27,14 @@ export async function POST(request: NextRequest) {
             // Has inventory with specific bins - use the first bin as the primary location
             const primaryBin = record.bins[0];
             shipstationUpdates.push({
-              flowtracSku: record.sku,
+              sku: record.sku,
               binLocation: primaryBin,
               quantity: record.quantity
             });
           } else {
             // Has inventory but no specific bins, use default location
             shipstationUpdates.push({
-              flowtracSku: record.sku,
+              sku: record.sku,
               binLocation: 'Manteca',
               quantity: record.quantity
             });
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         } else {
           // Out of stock - set to OOS
           shipstationUpdates.push({
-            flowtracSku: record.sku,
+            sku: record.sku,
             binLocation: 'OOS',
             quantity: 0
           });
@@ -52,41 +52,59 @@ export async function POST(request: NextRequest) {
     
     console.log(`Prepared ${shipstationUpdates.length} ShipStation updates based on Flowtrac inventory data`);
     
-    // 3. Update ShipStation warehouse locations for each Flowtrac SKU
+    // 3. Submit all updates in a single bulk operation
     const results = {
-      total: 0,
+      total: shipstationUpdates.length,
       successful: 0,
       failed: 0,
       errors: [] as string[],
-      updates: [] as any[]
+      updates: [] as any[],
+      bulkResult: null as any
     };
     
-    for (const update of shipstationUpdates) {
-      results.total++;
+    try {
+      // Prepare bulk update data (only need sku and binLocation for the API call)
+      const bulkUpdates = shipstationUpdates.map(update => ({
+        sku: update.sku,
+        binLocation: update.binLocation
+      }));
       
-      try {
-        // Use Flowtrac SKU to update ShipStation
-        await updateShipStationWarehouseLocation(update.flowtracSku, update.binLocation);
+      const bulkResult = await updateShipStationWarehouseLocationBulk(bulkUpdates);
+      results.bulkResult = bulkResult;
+      
+      if (bulkResult.success) {
+        results.successful = bulkResult.successful;
+        results.failed = bulkResult.failed;
         
-        results.successful++;
-        results.updates.push({
-          flowtrac_sku: update.flowtracSku,
-          bin_location: update.binLocation,
-          quantity: update.quantity
-        });
-        
-        if (update.quantity > 0) {
-          console.log(`✅ ShipStation update successful: ${update.flowtracSku} → ${update.binLocation} (qty: ${update.quantity})`);
-        } else {
-          console.log(`📦 ShipStation update successful: ${update.flowtracSku} → OOS (out of stock)`);
+        // Add successful updates to results
+        for (const successResult of bulkResult.results.successful) {
+          const originalUpdate = shipstationUpdates.find(u => u.sku === successResult.sku);
+          results.updates.push({
+            flowtrac_sku: successResult.sku,
+            bin_location: successResult.binLocation,
+            quantity: originalUpdate?.quantity || 0
+          });
         }
         
-      } catch (error) {
-        results.failed++;
-        const errorMessage = `Failed to update ShipStation for ${update.flowtracSku}: ${(error as Error).message}`;
-        results.errors.push(errorMessage);
-        console.error(`❌ ${errorMessage}`);
+        // Add failed updates to errors
+        for (const failedResult of bulkResult.results.failed) {
+          const errorMessage = `Failed to update ShipStation for ${failedResult.sku}: ${failedResult.error}`;
+          results.errors.push(errorMessage);
+        }
+        
+        console.log(`✅ Bulk ShipStation update completed: ${results.successful}/${results.total} successful`);
+        
+      } else {
+        results.failed = results.total;
+        results.errors.push(`Bulk update failed: ${bulkResult.error}`);
+        console.error(`❌ Bulk ShipStation update failed: ${bulkResult.error}`);
       }
+      
+    } catch (error) {
+      results.failed = results.total;
+      const errorMessage = `Bulk ShipStation update failed: ${(error as Error).message}`;
+      results.errors.push(errorMessage);
+      console.error(`❌ ${errorMessage}`);
     }
     
     console.log(`ShipStation sync completed: ${results.successful}/${results.total} successful`);
@@ -100,7 +118,8 @@ export async function POST(request: NextRequest) {
         failed: results.failed,
         successRate: Math.round((results.successful / results.total) * 100),
         errors: results.errors,
-        updates: results.updates
+        updates: results.updates,
+        bulkResult: results.bulkResult
       }
     });
     
