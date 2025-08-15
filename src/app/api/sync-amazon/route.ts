@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
-import { updateAmazonInventory } from '../../../../services/amazon';
+import { updateAmazonInventoryBulk } from '../../../../services/amazon';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,65 +50,91 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Process each product and update Amazon
+    // 5. Prepare bulk update data
+    const bulkUpdates = Object.entries(amazonInventory).map(([sku, quantity]) => ({
+      sku,
+      quantity
+    }));
+
+    console.log(`Preparing bulk Amazon update for ${bulkUpdates.length} SKUs`);
+
+    // 6. Submit all SKUs in a single bulk update
     const results = {
-      total: 0,
+      total: bulkUpdates.length,
       successful: 0,
       failed: 0,
       errors: [] as string[],
-      updates: [] as any[]
+      updates: [] as any[],
+      bulkResult: null as any
     };
     
-    for (const [sku, quantity] of Object.entries(amazonInventory)) {
-      const product = mapping.products.find((p: any) => p.amazon_sku === sku);
-      results.total++;
+    try {
+      const bulkResult = await updateAmazonInventoryBulk(bulkUpdates);
+      results.bulkResult = bulkResult;
       
-      try {
-        // Update Amazon for ALL items, including those with 0 quantity
-        const amazonResult = await updateAmazonInventory(sku, quantity);
+      if (bulkResult.success) {
+        results.successful = bulkUpdates.length;
+        console.log(`✅ Bulk Amazon update successful for ${bulkUpdates.length} SKUs (Feed ID: ${bulkResult.feedId})`);
         
-        if (amazonResult.success) {
-          results.successful++;
+        // Add individual update records for tracking
+        for (const update of bulkUpdates) {
+          const product = mapping.products.find((p: any) => p.amazon_sku === update.sku);
           results.updates.push({
-            sku: sku,
+            sku: update.sku,
             flowtrac_sku: product?.flowtrac_sku,
-            quantity: quantity,
+            quantity: update.quantity,
             type: product?.bundle_components ? 'Bundle' : 'Simple',
-            feedId: amazonResult.feedId
+            feedId: bulkResult.feedId,
+            method: 'bulk_update'
           });
-          
-          if (quantity === 0) {
-            console.log(`📦 Amazon update successful: ${sku} = 0 (out of stock) (Feed ID: ${amazonResult.feedId})`);
-          } else {
-            console.log(`✅ Amazon update successful: ${sku} = ${quantity} (Feed ID: ${amazonResult.feedId})`);
+        }
+      } else {
+        // Bulk failed, check if individual fallback was attempted
+        if (bulkResult.results) {
+          console.log(`⚠️ Bulk update failed, individual fallback results: ${bulkResult.results.length} items`);
+          for (const result of bulkResult.results) {
+            if (result.success) {
+              results.successful++;
+              const product = mapping.products.find((p: any) => p.amazon_sku === result.sku);
+              results.updates.push({
+                sku: result.sku,
+                flowtrac_sku: product?.flowtrac_sku,
+                quantity: bulkUpdates.find(u => u.sku === result.sku)?.quantity,
+                type: product?.bundle_components ? 'Bundle' : 'Simple',
+                feedId: result.feedId,
+                method: 'individual_fallback'
+              });
+            } else {
+              results.failed++;
+              const errorMessage = `Failed to update ${result.sku}: ${result.error}`;
+              results.errors.push(errorMessage);
+            }
           }
         } else {
-          results.failed++;
-          const errorMessage = `Failed to update ${sku}: ${'error' in amazonResult ? amazonResult.error : 'Unknown error'}`;
-          results.errors.push(errorMessage);
-          console.error(`❌ ${errorMessage}`);
+          results.failed = bulkUpdates.length;
+          results.errors.push(`Bulk update failed: ${bulkResult.error}`);
         }
-        
-      } catch (error) {
-        results.failed++;
-        const errorMessage = `Failed to update ${sku}: ${(error as Error).message}`;
-        results.errors.push(errorMessage);
-        console.error(`❌ ${errorMessage}`);
       }
+      
+    } catch (error) {
+      results.failed = bulkUpdates.length;
+      const errorMessage = `Bulk Amazon update failed: ${(error as Error).message}`;
+      results.errors.push(errorMessage);
+      console.error(`❌ ${errorMessage}`);
     }
     
     console.log(`Amazon sync completed: ${results.successful}/${results.total} successful`);
     
     return NextResponse.json({
       success: true,
-      message: `Amazon sync completed: ${results.successful}/${results.total} products updated successfully`,
+      message: `Amazon sync completed: ${results.successful}/${results.total} successful`,
       results: {
         total: results.total,
         successful: results.successful,
         failed: results.failed,
-        successRate: Math.round((results.successful / results.total) * 100),
         errors: results.errors,
-        updates: results.updates
+        updates: results.updates,
+        bulkResult: results.bulkResult
       }
     });
     
