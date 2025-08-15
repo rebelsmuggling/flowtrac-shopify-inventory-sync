@@ -74,7 +74,6 @@ export async function POST(request: NextRequest) {
       total: 0,
       successful: 0,
       failed: 0,
-      skipped: 0,
       errors: [] as string[],
       updates: [] as any[],
       summary: {
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
     
     const startTime = Date.now();
     
-    // Collect all Shopify updates
+    // Collect all Shopify updates (including 0 quantities)
     for (const [sku, quantity] of Object.entries(shopifyInventory)) {
       const product = updatedMapping.products.find((p: any) => p.shopify_sku === sku);
       const inventoryItemId = product?.shopify_inventory_item_id;
@@ -100,11 +99,12 @@ export async function POST(request: NextRequest) {
         const errorMessage = `No shopify_inventory_item_id for SKU ${sku}`;
         results.errors.push(errorMessage);
         console.error(`❌ ${errorMessage}`);
-      } else if (quantity > 0) {
-        shopifyUpdates.push({ inventoryItemId, quantity, sku });
       } else {
-        results.skipped++;
-        console.log(`⚠️ Skipping ${sku} - no inventory available`);
+        // Include ALL items, including those with 0 quantity
+        shopifyUpdates.push({ inventoryItemId, quantity, sku });
+        if (quantity === 0) {
+          console.log(`📦 Setting ${sku} to 0 quantity (out of stock)`);
+        }
       }
     }
     
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     results.summary.averageTimePerProduct = results.total > 0 ? Math.round(totalProcessingTime / results.total) : 0;
     
     console.log(`Shopify sync completed: ${results.successful}/${results.total} successful in ${totalProcessingTime}ms`);
-    console.log(`Summary: ${results.summary.productsWithChanges} changed, ${results.summary.productsUnchanged} unchanged, ${results.skipped} skipped`);
+    console.log(`Summary: ${results.summary.productsWithChanges} changed, ${results.summary.productsUnchanged} unchanged`);
     
     return NextResponse.json({
       success: true,
@@ -165,7 +165,6 @@ export async function POST(request: NextRequest) {
         total: results.total,
         successful: results.successful,
         failed: results.failed,
-        skipped: results.skipped,
         successRate: Math.round((results.successful / results.total) * 100),
         errors: results.errors,
         updates: results.updates,
