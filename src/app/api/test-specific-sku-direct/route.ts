@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         variables: {
           input: {
             quantities: [{
-              inventoryItemId: product.shopify_inventory_item_id,
+              inventoryItemId: extractIdFromGid(product.shopify_inventory_item_id),
               locationId: `gid://shopify/Location/${locationId}`,
               quantity: databaseQuantity
             }],
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         variables: {
           input: {
             quantities: [{
-              inventoryItemId: product.shopify_inventory_item_id,
+              inventoryItemId: extractIdFromGid(product.shopify_inventory_item_id),
               locationId: `gid://shopify/Location/${locationId}`,
               quantity: databaseQuantity
             }],
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         variables: {
           input: {
             quantities: [{
-              inventoryItemId: product.shopify_inventory_item_id,
+              inventoryItemId: extractIdFromGid(product.shopify_inventory_item_id),
               locationId: `gid://shopify/Location/${locationId}`,
               quantity: databaseQuantity
             }],
