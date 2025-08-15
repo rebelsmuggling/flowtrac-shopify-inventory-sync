@@ -35,8 +35,12 @@ export async function GET(request: NextRequest) {
         
         // Trigger the next session by calling the sync-session endpoint
         try {
-          // Use relative URL to avoid authentication issues
-          const response = await fetch('/api/sync-session', {
+          // Construct absolute URL for serverless environment
+          const baseUrl = process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}` 
+            : process.env.NEXT_PUBLIC_APP_URL || 'https://flowtrac-shopify-inventory-sync.vercel.app';
+          
+          const response = await fetch(`${baseUrl}/api/sync-session`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
