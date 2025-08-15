@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mappingService } from '../../../services/mapping';
-import { updateShopifyInventory } from '../../../../services/shopify';
-import { fetchFlowtracInventoryWithBins } from '../../../../services/flowtrac';
+import { updateShopifyInventory, enrichMappingWithShopifyVariantAndInventoryIds } from '../../../../services/shopify';
 
 // Helper function to get current Shopify inventory for verification
 async function getShopifyInventoryLevel(sku: string): Promise<number | null> {
@@ -22,18 +21,40 @@ export async function POST(request: NextRequest) {
     // 1. Load mapping
     const { mapping } = await mappingService.getMappingFresh();
     
-    // 2. Get all SKUs that have Shopify SKUs
-    const shopifySkus = mapping.products
-      .filter(product => product.shopify_sku && product.flowtrac_sku)
-      .map(product => product.flowtrac_sku!)
-      .filter((sku): sku is string => Boolean(sku));
+    // 2. Collect all SKUs (simple and bundle components)
+    const skus = await mappingService.getMappedSkus();
     
-    console.log(`Found ${shopifySkus.length} products with Shopify SKUs`);
+    // 3. Fetch inventory data from database (instead of Flowtrac directly)
+    const { getFlowtracInventory } = await import('../../../lib/database');
+    const inventoryResult = await getFlowtracInventory(Array.from(skus), 'Manteca');
     
-    // 3. Fetch Flowtrac inventory for these SKUs
-    const flowtracInventory = await fetchFlowtracInventoryWithBins(shopifySkus);
+    if (!inventoryResult.success) {
+      throw new Error(`Failed to get inventory from database: ${inventoryResult.error}`);
+    }
     
-    // 4. Process each product and update Shopify
+    // Convert database records to the expected format
+    const flowtracInventory: Record<string, { quantity: number, bins: string[] }> = {};
+    if (inventoryResult.data) {
+      for (const record of inventoryResult.data) {
+        flowtracInventory[record.sku] = {
+          quantity: record.quantity,
+          bins: record.bins || []
+        };
+      }
+    }
+    
+    console.log('Fetched inventory from database', { 
+      recordsFound: inventoryResult.data?.length || 0,
+      totalSkus: Array.from(skus).length 
+    });
+
+    // 4. Self-heal: Enrich mapping with missing Shopify variant and inventory item IDs
+    await enrichMappingWithShopifyVariantAndInventoryIds();
+    
+    // Reload mapping after enrichment using the mapping service (fresh data, no cache)
+    const { mapping: updatedMapping } = await mappingService.getMappingFresh();
+    
+    // 5. Process each product and update Shopify
     const results = {
       total: 0,
       successful: 0,
@@ -53,7 +74,7 @@ export async function POST(request: NextRequest) {
     
     const startTime = Date.now();
     
-    for (const product of mapping.products) {
+    for (const product of updatedMapping.products) {
       if (!product.shopify_sku) continue; // Skip products without Shopify SKU
       
       results.total++;
@@ -93,8 +114,18 @@ export async function POST(request: NextRequest) {
             console.log(`⚠️ Could not get previous inventory for ${product.shopify_sku}:`, (error as Error).message);
           }
           
-          // Update Shopify inventory
-          await updateShopifyInventory(product.shopify_sku!, calculatedQuantity);
+          // Check if we have the required inventory item ID
+          const inventoryItemId = product.shopify_inventory_item_id;
+          if (!inventoryItemId) {
+            results.failed++;
+            const errorMessage = `No shopify_inventory_item_id for SKU ${product.shopify_sku}`;
+            results.errors.push(errorMessage);
+            console.error(`❌ ${errorMessage}`);
+            continue;
+          }
+          
+          // Update Shopify inventory using inventory item ID
+          await updateShopifyInventory(inventoryItemId, calculatedQuantity);
           
           const productProcessingTime = Date.now() - productStartTime;
           
