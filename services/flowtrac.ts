@@ -89,12 +89,18 @@ export async function fetchFlowtracInventory(skus: string[]): Promise<Record<str
   let mappingUpdated = false;
   // 4. Ensure all SKUs have product_id, self-heal if missing
   const skuToPidForQuery: Record<string, string> = {};
+  const ENABLE_SELF_HEALING = process.env.ENABLE_FLOWTRAC_SELF_HEALING === 'true';
+  
   for (const sku of skus) {
     let pid = await getProductIdForSku(sku);
     if (!pid) {
       pid = skuToProductId[sku];
       if (pid) {
-        if (await setProductIdForSku(sku, pid)) mappingUpdated = true;
+        if (ENABLE_SELF_HEALING) {
+          if (await setProductIdForSku(sku, pid)) mappingUpdated = true;
+        } else {
+          console.log(`⚠️ SKU '${sku}' missing flowtrac_product_id but self-healing disabled (set ENABLE_FLOWTRAC_SELF_HEALING=true to enable)`);
+        }
       } else {
         throw new Error(`SKU '${sku}' not found in Flowtrac products.`);
       }
