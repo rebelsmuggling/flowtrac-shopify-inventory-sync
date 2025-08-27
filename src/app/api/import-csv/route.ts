@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     // Parse CSV header
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const requiredHeaders = ['shopify_sku', 'flowtrac_sku', 'product_name'];
+    const optionalHeaders = ['season', 'amazon_sku', 'bundle_components'];
     const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
     
     if (missingHeaders.length > 0) {
@@ -53,6 +54,11 @@ export async function POST(request: NextRequest) {
         }
       }
       
+      // Ensure season is included if present
+      if (!product.season && headers.includes('season')) {
+        product.season = '';
+      }
+      
       newProducts.push(product);
     }
 
@@ -84,11 +90,13 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'CSV Import endpoint',
-    instructions: 'Upload a CSV file with columns: shopify_sku, flowtrac_sku, product_name, [bundle_components]',
+    instructions: 'Upload a CSV file with columns: shopify_sku, flowtrac_sku, product_name, season, amazon_sku, [bundle_components]',
     example: {
       shopify_sku: 'IC-KOOL-0045',
       flowtrac_sku: 'IC-KOOL-0045',
       product_name: 'Kool Aid Cherry',
+      season: 'Summer',
+      amazon_sku: 'IC-KOOL-0045-AMZ',
       bundle_components: '[]'
     }
   });

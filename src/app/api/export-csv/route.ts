@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     console.log(`Using ${source} mapping data for CSV export`);
     
     // Convert to CSV format
-    const headers = ['shopify_sku', 'flowtrac_sku', 'product_name', 'bundle_components'];
+    const headers = ['shopify_sku', 'flowtrac_sku', 'product_name', 'season', 'amazon_sku', 'bundle_components'];
     const csvRows = [headers.join(',')];
     
     mapping.products.forEach((product: any) => {
@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
         product.shopify_sku || '',
         product.flowtrac_sku || '',
         product.product_name || '',
+        product.season || '',
+        product.amazon_sku || '',
         product.bundle_components ? JSON.stringify(product.bundle_components) : '[]'
       ];
       csvRows.push(row.join(','));

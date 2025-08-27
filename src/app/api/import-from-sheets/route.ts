@@ -78,6 +78,9 @@ export async function POST(request: NextRequest) {
           case 'amazon_sku':
             product.amazon_sku = value;
             break;
+          case 'season':
+            product.season = value;
+            break;
           case 'shopify_variant_id':
             product.shopify_variant_id = value;
             break;
