@@ -677,6 +677,20 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Add browser console logging
+    console.log('🚀 Starting CSV import...');
+    console.log('📁 File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
+    
+    // Test console logging
+    console.log('🧪 Console logging test - if you see this, logging is working!');
+    console.warn('⚠️ Warning test - you should see this too!');
+    console.error('💥 Error test - and this!');
+
     setImportingFromSheets(true);
     setSheetsResult(null);
     setImportedMapping(null);
@@ -685,20 +699,33 @@ export default function Home() {
     formData.append('file', file);
 
     try {
+      console.log('📤 Sending file to API...');
       const res = await fetch("/api/import-from-sheets", { 
         method: "POST",
         body: formData
       });
+      
+      console.log('📥 API response received:', {
+        status: res.status,
+        statusText: res.statusText,
+        headers: Object.fromEntries(res.headers.entries())
+      });
+      
       const data = await res.json();
+      console.log('📊 API response data:', data);
+      
       if (data.success) {
+        console.log(`✅ Import successful: ${data.productCount} products imported`);
         setSheetsResult(`✅ ${data.message}`);
         setImportedMapping(data.mapping);
         // Refresh mapping data after import
         loadMappingData();
       } else {
+        console.error(`❌ Import failed: ${data.error}`);
         setSheetsResult(`❌ Import failed: ${data.error}`);
       }
     } catch (err) {
+      console.error('💥 Import error:', err);
       setSheetsResult("❌ Import failed: " + (err as Error).message);
     }
     setImportingFromSheets(false);
@@ -1691,6 +1718,30 @@ export default function Home() {
             )}
           </div>
         )}
+
+        {/* --- Console Test Button --- */}
+        <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
+          <button
+            onClick={() => {
+              console.log('🧪 Test button clicked!');
+              console.warn('⚠️ Warning test!');
+              console.error('💥 Error test!');
+              alert('Check the console for test messages!');
+            }}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "1rem",
+              borderRadius: "6px",
+              background: "#6f42c1",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              marginBottom: 16
+            }}
+          >
+            🧪 Test Console Logging
+          </button>
+        </div>
 
         {/* --- Google Sheets Integration --- */}
         <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>

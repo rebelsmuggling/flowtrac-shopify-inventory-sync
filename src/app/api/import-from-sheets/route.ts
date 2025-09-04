@@ -17,6 +17,37 @@ export async function POST(request: NextRequest) {
     const csvContent = await file.text();
     const lines = csvContent.split('\n').filter(line => line.trim());
     
+    console.log(`Processing file: ${file.name}, size: ${file.size} bytes`);
+    console.log(`Total lines in CSV: ${csvContent.split('\n').length}`);
+    console.log(`Filtered lines (non-empty): ${lines.length}`);
+    
+    // Check for potential CSV format issues
+    if (lines.length > 0) {
+      console.log(`First line length: ${lines[0].length}`);
+      console.log(`Last line length: ${lines[lines.length - 1].length}`);
+      console.log(`Sample first line: ${lines[0].substring(0, 100)}...`);
+      if (lines.length > 1) {
+        console.log(`Sample last line: ${lines[lines.length - 1].substring(0, 100)}...`);
+      }
+      
+      // Check for potential line ending issues
+      const rawLines = csvContent.split('\n');
+      const windowsLines = csvContent.split('\r\n');
+      const macLines = csvContent.split('\r');
+      
+      console.log(`Raw split by \\n: ${rawLines.length}`);
+      console.log(`Split by \\r\\n (Windows): ${windowsLines.length}`);
+      console.log(`Split by \\r (Mac): ${macLines.length}`);
+      
+      // Check for hidden characters
+      if (lines.length > 0) {
+        const firstLine = lines[0];
+        const lastLine = lines[lines.length - 1];
+        console.log(`First line char codes: ${Array.from(firstLine).map(c => c.charCodeAt(0)).slice(0, 10).join(', ')}`);
+        console.log(`Last line char codes: ${Array.from(lastLine).map(c => c.charCodeAt(0)).slice(0, 10).join(', ')}`);
+      }
+    }
+
     if (lines.length < 2) {
       return NextResponse.json({ 
         success: false, 
@@ -54,9 +85,15 @@ export async function POST(request: NextRequest) {
     const header = parseCSVLine(lines[0]);
     const products = [];
 
+    console.log(`Header columns: ${header.length}`);
+    console.log(`Starting to process ${lines.length - 1} data rows`);
+
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
-      if (values.length < header.length) continue; // Skip incomplete rows
+      if (values.length < header.length) {
+        console.log(`Skipping incomplete row ${i}: expected ${header.length} columns, got ${values.length}`);
+        continue; // Skip incomplete rows
+      }
       
       const product: any = {};
       
@@ -111,8 +148,14 @@ export async function POST(request: NextRequest) {
       // Only add products that have at least a Shopify SKU or Flowtrac SKU
       if (product.shopify_sku || product.flowtrac_sku) {
         products.push(product);
+        if (products.length % 100 === 0) {
+          console.log(`Processed ${products.length} products so far...`);
+        }
       }
     }
+
+    console.log(`Final product count: ${products.length}`);
+    console.log(`Total lines processed: ${lines.length}`);
 
     // Save to database
     const mapping = { products };
