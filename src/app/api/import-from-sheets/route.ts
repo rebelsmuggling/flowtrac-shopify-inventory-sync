@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateMapping } from '../../../lib/database';
 
+// Define interface for bundle components
+interface BundleComponent {
+  flowtrac_sku: string;
+  quantity: number;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -129,7 +135,7 @@ export async function POST(request: NextRequest) {
               try {
                 // Parse simple format: "SKU1:2; SKU2:1; SKU3:3"
                 const components = value.split(';').map(comp => comp.trim()).filter(comp => comp);
-                const bundleComponents = components.map(comp => {
+                const bundleComponents: BundleComponent[] = components.map(comp => {
                   const [flowtrac_sku, quantity] = comp.split(':').map(s => s.trim());
                   return {
                     flowtrac_sku,
@@ -162,7 +168,7 @@ export async function POST(request: NextRequest) {
           console.log(`📦 Row ${i}: Bundle product with ${product.bundle_components.length} components`);
           console.log(`   Shopify SKU: ${hasShopifySku ? product.shopify_sku : '(none)'}`);
           console.log(`   Flowtrac SKU: ${hasFlowtracSku ? product.flowtrac_sku : '(none)'}`);
-          console.log(`   Bundle Components: ${product.bundle_components.map(c => `${c.flowtrac_sku}:${c.quantity}`).join(', ')}`);
+          console.log(`   Bundle Components: ${product.bundle_components.map((c: BundleComponent) => `${c.flowtrac_sku}:${c.quantity}`).join(', ')}`);
         }
       } else {
         // Log skipped rows for debugging
