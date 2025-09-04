@@ -145,12 +145,35 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Only add products that have at least a Shopify SKU or Flowtrac SKU
-      if (product.shopify_sku || product.flowtrac_sku) {
+      // Check if this row has valid mapping data
+      const hasShopifySku = product.shopify_sku && product.shopify_sku.trim();
+      const hasFlowtracSku = product.flowtrac_sku && product.flowtrac_sku.trim();
+      const hasBundleComponents = product.bundle_components && product.bundle_components.length > 0;
+      
+      // Accept rows with: Shopify SKU, Flowtrac SKU, OR Bundle Components
+      if (hasShopifySku || hasFlowtracSku || hasBundleComponents) {
         products.push(product);
         if (products.length % 100 === 0) {
           console.log(`Processed ${products.length} products so far...`);
         }
+        
+        // Log bundle component details for debugging
+        if (hasBundleComponents) {
+          console.log(`📦 Row ${i}: Bundle product with ${product.bundle_components.length} components`);
+          console.log(`   Shopify SKU: ${hasShopifySku ? product.shopify_sku : '(none)'}`);
+          console.log(`   Flowtrac SKU: ${hasFlowtracSku ? product.flowtrac_sku : '(none)'}`);
+          console.log(`   Bundle Components: ${product.bundle_components.map(c => `${c.flowtrac_sku}:${c.quantity}`).join(', ')}`);
+        }
+      } else {
+        // Log skipped rows for debugging
+        console.log(`⚠️ Skipping row ${i}: No Shopify SKU, Flowtrac SKU, or Bundle Components found`);
+        console.log(`   Row data:`, {
+          shopify_sku: product.shopify_sku || '(empty)',
+          flowtrac_sku: product.flowtrac_sku || '(empty)',
+          product_name: product.product_name || '(empty)',
+          amazon_sku: product.amazon_sku || '(empty)',
+          bundle_components: product.bundle_components ? `${product.bundle_components.length} components` : '(none)'
+        });
       }
     }
 
