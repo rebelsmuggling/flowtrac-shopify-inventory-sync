@@ -22,7 +22,6 @@ export default function Home() {
   const [exporting, setExporting] = useState(false);
   const [exportingToSheets, setExportingToSheets] = useState(false);
   const [importingFromSheets, setImportingFromSheets] = useState(false);
-  const [migrating, setMigrating] = useState(false);
   const [sheetsResult, setSheetsResult] = useState<string | null>(null);
   const [importedMapping, setImportedMapping] = useState<any>(null);
   const [mappingData, setMappingData] = useState<any>(null);
@@ -670,25 +669,6 @@ export default function Home() {
   };
 
 
-  const handleMigrateBundleFormat = async () => {
-    setMigrating(true);
-    setSheetsResult(null);
-    
-    try {
-      const res = await fetch("/api/migrate-bundle-format", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        setSheetsResult(`✅ ${data.message}`);
-        // Refresh mapping data after migration
-        loadMappingData();
-      } else {
-        setSheetsResult(`❌ Migration failed: ${data.error}`);
-      }
-    } catch (err) {
-      setSheetsResult("❌ Migration failed: " + (err as Error).message);
-    }
-    setMigrating(false);
-  };
 
   const handleExportInventoryCSV = async () => {
     setExportingInventory(true);
@@ -1520,22 +1500,6 @@ export default function Home() {
           </div>
           
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <button
-              onClick={handleMigrateBundleFormat}
-              disabled={migrating}
-              style={{
-                padding: "0.5rem 1rem",
-                fontSize: "1rem",
-                borderRadius: "6px",
-                background: migrating ? "#ccc" : "#dc3545",
-                color: "#fff",
-                border: "none",
-                cursor: migrating ? "not-allowed" : "pointer",
-                flex: 1,
-              }}
-            >
-              {migrating ? "Migrating..." : "🔄 Migrate Old Format"}
-            </button>
             <button
               onClick={async () => {
                 if (confirm('⚠️ This will clear ALL stored Flowtrac product IDs. The system will need to fetch them fresh from Flowtrac on the next sync. Continue?')) {
