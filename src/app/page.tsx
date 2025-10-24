@@ -37,10 +37,8 @@ export default function Home() {
   
   // Separate sync states
   const [shopifySyncing, setShopifySyncing] = useState(false);
-  const [amazonSyncing, setAmazonSyncing] = useState(false);
   const [shipstationSyncing, setShipstationSyncing] = useState(false);
   const [shopifyResult, setShopifyResult] = useState<any>(null);
-  const [amazonResult, setAmazonResult] = useState<any>(null);
   const [shipstationResult, setShipstationResult] = useState<any>(null);
 
   const handleSync = async () => {
@@ -97,27 +95,6 @@ export default function Home() {
     setShopifySyncing(false);
   };
 
-  const handleAmazonSync = async () => {
-    setAmazonSyncing(true);
-    setAmazonResult(null);
-    
-    try {
-      const res = await fetch("/api/sync-amazon", { 
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setAmazonResult(data);
-      } else {
-        setAmazonResult({ error: data.error || 'Unknown error' });
-      }
-    } catch (err) {
-      setAmazonResult({ error: (err as Error).message });
-    }
-    setAmazonSyncing(false);
-  };
 
   const handleShipStationSync = async () => {
     setShipstationSyncing(true);
@@ -161,25 +138,6 @@ export default function Home() {
     }
   };
 
-  const handleStopAmazonSync = async () => {
-    try {
-      const res = await fetch("/api/stop-amazon-sync", { 
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setAmazonSyncing(false);
-        setAmazonResult(null);
-        console.log('Amazon sync stopped');
-      } else {
-        console.error('Failed to stop Amazon sync:', data.error);
-      }
-    } catch (err) {
-      console.error('Error stopping Amazon sync:', (err as Error).message);
-    }
-  };
 
   const handleStopShipStationSync = async () => {
     try {
@@ -910,7 +868,7 @@ export default function Home() {
         <h1>Flowtrac → Shopify Inventory Sync</h1>
         
         <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: 16 }}>
-          Sync inventory from Flowtrac to Shopify and Amazon. Use the Preview CSV button to see what quantities would be synced without actually performing the sync.
+          Sync inventory from Flowtrac to Shopify and ShipStation. Use the Preview CSV button to see what quantities would be synced without actually performing the sync.
         </p>
 
         {/* --- Separate Sync Buttons and Status --- */}
@@ -960,43 +918,6 @@ export default function Home() {
               )}
             </div>
             
-            {/* Amazon Sync/Stop Button */}
-            <div style={{ display: 'flex', gap: 4, flex: 1, minWidth: "140px" }}>
-              <button
-                onClick={handleAmazonSync}
-                disabled={amazonSyncing}
-                style={{
-                  padding: "0.75rem 1.5rem",
-                  fontSize: "1rem",
-                  borderRadius: "6px",
-                  background: amazonSyncing ? "#ccc" : "#ff9900",
-                  color: "#fff",
-                  border: "none",
-                  cursor: amazonSyncing ? "not-allowed" : "pointer",
-                  flex: 1,
-                }}
-              >
-                {amazonSyncing ? "🔄 Syncing..." : "📦 Amazon Sync"}
-              </button>
-              {amazonSyncing && (
-                <button
-                  onClick={handleStopAmazonSync}
-                  style={{
-                    padding: "0.75rem 0.5rem",
-                    fontSize: "0.9rem",
-                    borderRadius: "6px",
-                    background: "#dc3545",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    minWidth: "60px",
-                  }}
-                  title="Stop Amazon Sync"
-                >
-                  ⏹️
-                </button>
-              )}
-            </div>
             
             {/* ShipStation Sync/Stop Button */}
             <div style={{ display: 'flex', gap: 4, flex: 1, minWidth: "140px" }}>
@@ -1037,24 +958,8 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Legacy Sync Button */}
+          {/* Database Preview Button */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              style={{
-                padding: "0.75rem 1.5rem",
-                fontSize: "1rem",
-                borderRadius: "6px",
-                background: syncing ? "#ccc" : "#0070f3",
-                color: "#fff",
-                border: "none",
-                cursor: syncing ? "not-allowed" : "pointer",
-                flex: 2,
-              }}
-            >
-              {syncing ? "Syncing..." : "🔄 Full Sync (All Platforms)"}
-            </button>
             <button
               onClick={handleExportInventoryCSV}
               disabled={exportingInventory}
@@ -1216,55 +1121,6 @@ export default function Home() {
               )}
             </div>
             
-            {/* Amazon Sync Status */}
-            <div style={{ 
-              flex: 1, 
-              minWidth: "250px",
-              padding: 16, 
-              border: "1px solid #e9ecef", 
-              borderRadius: "8px",
-              backgroundColor: amazonResult ? "#f8f9fa" : "#fff"
-            }}>
-              <h4 style={{ margin: "0 0 8px 0", color: "#ff9900" }}>📦 Amazon Status</h4>
-              {amazonSyncing && (
-                <div style={{ color: "#6c757d", fontSize: "0.9rem" }}>
-                  🔄 Syncing Amazon inventory...
-                </div>
-              )}
-              {amazonResult && !amazonSyncing && (
-                <div>
-                  {amazonResult.error ? (
-                    <div style={{ color: "#dc3545", fontSize: "0.9rem" }}>
-                      ❌ {amazonResult.error}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: "0.9rem" }}>
-                      <div style={{ color: "#28a745", fontWeight: "bold", marginBottom: 4 }}>
-                        ✅ {amazonResult.message}
-                      </div>
-                      <div style={{ color: "#6c757d" }}>
-                        📊 Success Rate: {amazonResult.results?.successRate}% ({amazonResult.results?.successful}/{amazonResult.results?.total})
-                      </div>
-                      {amazonResult.results?.errors?.length > 0 && (
-                        <details style={{ marginTop: 8 }}>
-                          <summary style={{ cursor: "pointer", color: "#dc3545" }}>
-                            ❌ {amazonResult.results.errors.length} errors
-                          </summary>
-                          <ul style={{ fontSize: "0.8rem", margin: "4px 0 0 0", paddingLeft: 16 }}>
-                            {amazonResult.results.errors.slice(0, 3).map((error: string, index: number) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                            {amazonResult.results.errors.length > 3 && (
-                              <li>... and {amazonResult.results.errors.length - 3} more</li>
-                            )}
-                          </ul>
-                        </details>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
             
             {/* ShipStation Sync Status */}
             <div style={{ 
@@ -1605,9 +1461,8 @@ export default function Home() {
                       </li>
                     ));
                   } else {
-                    // Regular SKU results have shopify and amazon properties
+                    // Regular SKU results have shopify properties
                     const shopifyResult = res.shopify;
-                    const amazonResult = res.amazon;
                     return (
                       <li key={sku}>
                         <strong>{sku}:</strong>
@@ -1615,11 +1470,6 @@ export default function Home() {
                           <li style={{ color: shopifyResult?.success ? "green" : "red" }}>
                             Shopify: {shopifyResult?.success ? "Success" : `Error: ${shopifyResult?.error || 'Unknown error'}`}
                           </li>
-                          {amazonResult && (
-                            <li style={{ color: amazonResult?.success ? "green" : "red" }}>
-                              Amazon: {amazonResult?.success ? "Success" : `Error: ${amazonResult?.error || 'Unknown error'}`}
-                            </li>
-                          )}
                         </ul>
                       </li>
                     );
