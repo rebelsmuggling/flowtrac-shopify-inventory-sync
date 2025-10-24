@@ -1877,6 +1877,35 @@ export default function Home() {
             >
               {migrating ? "Migrating..." : "🔄 Migrate Old Format"}
             </button>
+            <button
+              onClick={async () => {
+                if (confirm('⚠️ This will clear ALL stored Flowtrac product IDs. The system will need to fetch them fresh from Flowtrac on the next sync. Continue?')) {
+                  try {
+                    const res = await fetch("/api/reset-flowtrac-ids", { method: "POST" });
+                    const data = await res.json();
+                    if (data.success) {
+                      setSheetsResult(`✅ ${data.message}`);
+                    } else {
+                      setSheetsResult(`❌ Reset failed: ${data.error}`);
+                    }
+                  } catch (err) {
+                    setSheetsResult(`❌ Reset failed: ${(err as Error).message}`);
+                  }
+                }
+              }}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: "#ff6b6b",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                flex: 1,
+              }}
+            >
+              🧹 Reset Flowtrac IDs
+            </button>
           </div>
           
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
