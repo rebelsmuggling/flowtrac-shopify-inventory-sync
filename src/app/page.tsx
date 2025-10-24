@@ -534,8 +534,6 @@ export default function Home() {
         console.log(`✅ Import successful: ${data.productCount} products imported`);
         setSheetsResult(`✅ ${data.message}`);
         setImportedMapping(data.mapping);
-        // Refresh mapping data after import
-        loadMappingData();
       } else {
         console.error(`❌ Import failed: ${data.error}`);
         setSheetsResult(`❌ Import failed: ${data.error}`);
@@ -561,8 +559,6 @@ export default function Home() {
       if (data.success) {
         setSheetsResult(`✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.`);
         setImportedMapping(null); // Clear the imported mapping since it's now active
-        // Refresh mapping data
-        loadMappingData();
       } else {
         setSheetsResult(`❌ Update failed: ${data.error}`);
       }
