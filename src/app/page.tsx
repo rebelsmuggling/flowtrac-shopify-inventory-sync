@@ -28,8 +28,6 @@ export default function Home() {
   const [mappingData, setMappingData] = useState<any>(null);
   const [loadingMapping, setLoadingMapping] = useState(false);
   const [mappingStatus, setMappingStatus] = useState<any>(null);
-  const [githubTestResult, setGithubTestResult] = useState<any>(null);
-  const [syncingToGitHub, setSyncingToGitHub] = useState(false);
   const [exportingInventory, setExportingInventory] = useState(false);
   const [fetchingDescriptions, setFetchingDescriptions] = useState(false);
   const [descriptionsResult, setDescriptionsResult] = useState<any>(null);
@@ -576,36 +574,6 @@ export default function Home() {
     }
   };
 
-  const testGitHubMapping = async () => {
-    try {
-      // First test if API routing is working
-      console.log('Testing simple endpoint first...');
-      const simpleRes = await fetch("/api/test-simple");
-      const simpleData = await simpleRes.json();
-      console.log('Simple endpoint result:', simpleData);
-      
-      // Now test GitHub endpoint with timeout
-      console.log('Testing GitHub endpoint...');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const res = await fetch("/api/test-github", {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      const data = await res.json();
-      console.log('GitHub endpoint result:', data);
-      setGithubTestResult(data);
-    } catch (err: any) {
-      console.error('Test failed:', err);
-      if (err.name === 'AbortError') {
-        setGithubTestResult({ success: false, error: 'Request timed out - likely no GitHub token configured' });
-      } else {
-        setGithubTestResult({ success: false, error: (err as Error).message });
-      }
-    }
-  };
 
   const handleExportToSheets = async () => {
     setExportingToSheets(true);
@@ -701,14 +669,7 @@ export default function Home() {
       
       const data = await res.json();
       if (data.success) {
-        const githubStatus = data.githubUpdated ? ' (GitHub updated)' : ' (GitHub update failed)';
-        let resultMessage = `✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.${githubStatus}`;
-        
-        if (!data.githubUpdated && data.githubError) {
-          resultMessage += `\n\nGitHub Error Details: ${JSON.stringify(data.githubError, null, 2)}`;
-        }
-        
-        setSheetsResult(resultMessage);
+        setSheetsResult(`✅ ${data.message} The mapping has been automatically updated and will be used for future syncs.`);
         setImportedMapping(null); // Clear the imported mapping since it's now active
         // Refresh mapping data
         loadMappingData();
@@ -720,45 +681,6 @@ export default function Home() {
     }
   };
 
-  const syncCurrentMappingToGitHub = async () => {
-    setSyncingToGitHub(true);
-    try {
-      // Get current mapping data
-      const mappingRes = await fetch("/api/mapping");
-      const mappingData = await mappingRes.json();
-      
-      if (!mappingData.success) {
-        setSheetsResult("❌ Failed to get current mapping data");
-        return;
-      }
-
-      // Update GitHub with current mapping
-      const updateRes = await fetch("/api/update-mapping", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mapping: mappingData.mapping })
-      });
-      
-      const updateData = await updateRes.json();
-      if (updateData.success) {
-        const githubStatus = updateData.githubUpdated ? ' (GitHub updated)' : ' (GitHub update failed)';
-        let resultMessage = `✅ Current mapping synced to GitHub${githubStatus}`;
-        
-        if (!updateData.githubUpdated && updateData.githubError) {
-          resultMessage += `\n\nGitHub Error Details: ${JSON.stringify(updateData.githubError, null, 2)}`;
-        }
-        
-        setSheetsResult(resultMessage);
-        // Clear any previous test results
-        setGithubTestResult(null);
-      } else {
-        setSheetsResult(`❌ GitHub sync failed: ${updateData.error}`);
-      }
-    } catch (err) {
-      setSheetsResult("❌ GitHub sync failed: " + (err as Error).message);
-    }
-    setSyncingToGitHub(false);
-  };
 
   const handleMigrateBundleFormat = async () => {
     setMigrating(true);
@@ -1615,8 +1537,6 @@ export default function Home() {
                 <strong>Mapping Status:</strong> 
                 {mappingStatus?.hasCachedMapping ? 
                   ` ✅ Active (${mappingStatus.productCount} products)` : 
-                  mappingData?.source === 'github' ?
-                  ` 🔗 GitHub (${mappingData?.productCount} products)` :
                   ' ⚠️ Using original mapping.json'
                 }
               </span>
@@ -1629,73 +1549,12 @@ export default function Home() {
                   background: "#007bff",
                   color: "#fff",
                   border: "none",
-                  cursor: "pointer",
-                  marginRight: "8px"
+                  cursor: "pointer"
                 }}
               >
                 Refresh
               </button>
-              <button
-                onClick={testGitHubMapping}
-                style={{
-                  padding: "2px 8px",
-                  fontSize: "0.7rem",
-                  borderRadius: "3px",
-                  background: "#28a745",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  marginRight: "8px"
-                }}
-              >
-                Test GitHub
-              </button>
-              <button
-                onClick={syncCurrentMappingToGitHub}
-                disabled={syncingToGitHub}
-                style={{
-                  padding: "2px 8px",
-                  fontSize: "0.7rem",
-                  borderRadius: "3px",
-                  background: syncingToGitHub ? "#6c757d" : "#dc3545",
-                  color: "#fff",
-                  border: "none",
-                  cursor: syncingToGitHub ? "not-allowed" : "pointer"
-                }}
-              >
-                {syncingToGitHub ? "Syncing..." : "Sync to GitHub"}
-              </button>
             </div>
-            
-            {/* GitHub Test Result */}
-            {githubTestResult && (
-              <div style={{ 
-                fontSize: "0.8rem", 
-                color: "#666", 
-                marginBottom: 16,
-                padding: "8px 12px",
-                background: githubTestResult.success ? "#d4edda" : "#f8d7da",
-                borderRadius: "4px",
-                border: `1px solid ${githubTestResult.success ? "#c3e6cb" : "#f5c6cb"}`
-              }}>
-                <strong>GitHub Test Result:</strong> {githubTestResult.success ? 
-                  `✅ ${githubTestResult.message} (${githubTestResult.productCount} products)` :
-                  `❌ ${githubTestResult.error || githubTestResult.message}`
-                }
-                {githubTestResult.success && githubTestResult.products && (
-                  <div style={{ marginTop: "4px", fontSize: "0.7rem" }}>
-                    <strong>Products in GitHub:</strong>
-                    <div style={{ maxHeight: "100px", overflowY: "auto", marginTop: "2px" }}>
-                      {githubTestResult.products.map((p: any, i: number) => (
-                        <div key={i} style={{ marginBottom: "1px" }}>
-                          {p.flowtrac_sku} → {p.shopify_sku} {p.amazon_sku ? `(${p.amazon_sku})` : ''}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           <div style={{ 
             fontSize: "0.8rem", 
