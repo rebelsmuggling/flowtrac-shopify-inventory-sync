@@ -1906,6 +1906,35 @@ export default function Home() {
             >
               🧹 Reset Flowtrac IDs
             </button>
+            <button
+              onClick={async () => {
+                if (confirm('⚠️ This will clear ALL stored Shopify product IDs (variant IDs and inventory item IDs). The system will need to fetch them fresh from Shopify on the next sync. Continue?')) {
+                  try {
+                    const res = await fetch("/api/reset-shopify-ids", { method: "POST" });
+                    const data = await res.json();
+                    if (data.success) {
+                      setSheetsResult(`✅ ${data.message}`);
+                    } else {
+                      setSheetsResult(`❌ Reset failed: ${data.error}`);
+                    }
+                  } catch (err) {
+                    setSheetsResult(`❌ Reset failed: ${(err as Error).message}`);
+                  }
+                }
+              }}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                background: "#95bf47",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                flex: 1,
+              }}
+            >
+              🛍️ Reset Shopify IDs
+            </button>
           </div>
           
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
