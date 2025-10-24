@@ -19,7 +19,17 @@ export async function POST(request: NextRequest) {
     }
     
     const mappingData = currentMapping.rows[0].products;
-    console.log(`Found mapping with ${mappingData.products?.length || 0} products`);
+    console.log('Mapping data structure:', JSON.stringify(mappingData, null, 2));
+    
+    // Check if products array exists
+    if (!mappingData.products || !Array.isArray(mappingData.products)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'No products array found in mapping data' 
+      }, { status: 400 });
+    }
+    
+    console.log(`Found mapping with ${mappingData.products.length} products`);
     
     // Clear Shopify IDs from each product
     const updatedProducts = mappingData.products.map((product: any) => {
